@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2e7d32">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<title>Evaluación Fitosanitaria</title>
+<style>
+:root{--verde:#2e7d32;--verde-osc:#1b5e20;--fondo:#f4f6f3;--borde:#cfd8cc;--texto:#1c2a1c;--rojo:#c62828;--ambar:#f9a825}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:system-ui,-apple-system,Roboto,Arial,sans-serif;background:var(--fondo);color:var(--texto);font-size:17px;padding-bottom:84px}
+header{background:var(--verde);color:#fff;padding:12px 16px;position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:18px;margin:0}
+#estado{font-size:13px;padding:3px 10px;border-radius:12px;background:rgba(255,255,255,.2)}
+main{padding:12px;max-width:640px;margin:0 auto}
+section{display:none}
+section.activa{display:block}
+.card{background:#fff;border:1px solid var(--borde);border-radius:12px;padding:12px;margin-bottom:12px}
+label{display:block;font-size:14px;font-weight:600;margin:10px 0 4px}
+label:first-child{margin-top:0}
+input,select,textarea{width:100%;font-size:18px;padding:12px;border:1.5px solid var(--borde);border-radius:10px;background:#fff;color:var(--texto);font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--verde);border-color:var(--verde)}
+.fila{display:flex;gap:10px}
+.fila>*{flex:1}
+.plaga{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #eef1ec}
+.plaga:last-child{border-bottom:0}
+.plaga .nombre{flex:1;font-weight:600}
+.contador{display:flex;align-items:center;gap:6px}
+.contador button{width:52px;height:52px;border-radius:12px;border:0;font-size:28px;font-weight:700;background:var(--verde);color:#fff}
+.contador button.menos{background:#8d9a8b}
+.contador button:active{transform:scale(.94)}
+.contador input{width:66px;text-align:center;font-size:22px;font-weight:700;padding:10px 4px}
+.btn{display:block;width:100%;padding:15px;font-size:18px;font-weight:700;border:0;border-radius:12px;background:var(--verde);color:#fff;margin-top:10px}
+.btn.sec{background:#fff;color:var(--verde-osc);border:2px solid var(--verde)}
+.btn.peligro{background:#fff;color:var(--rojo);border:2px solid var(--rojo)}
+.btn:disabled{opacity:.5}
+.barra-guardar{position:fixed;left:0;right:0;bottom:56px;padding:8px 12px;background:linear-gradient(transparent,var(--fondo) 30%);z-index:4}
+.barra-guardar .btn{max-width:616px;margin:0 auto;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+nav{position:fixed;left:0;right:0;bottom:0;height:56px;background:#fff;border-top:1px solid var(--borde);display:flex;z-index:6}
+nav button{flex:1;border:0;background:none;font-size:14px;font-weight:600;color:#667;padding:6px}
+nav button.activa{color:var(--verde-osc);border-top:3px solid var(--verde)}
+.planta-n{display:flex;align-items:center;gap:8px}
+.planta-n input{text-align:center;font-weight:700;font-size:24px}
+.planta-n button{width:52px;height:52px;border-radius:12px;border:2px solid var(--verde);background:#fff;font-size:26px;color:var(--verde-osc);flex:none}
+.gps{font-size:13px;color:#556;margin-top:6px}
+.gps.ok{color:var(--verde-osc)}
+.gps.mal{color:var(--rojo)}
+.resumen{display:flex;gap:8px;margin-bottom:12px}
+.resumen div{flex:1;background:#fff;border:1px solid var(--borde);border-radius:12px;padding:10px;text-align:center}
+.resumen b{display:block;font-size:26px}
+.resumen small{color:#556}
+.reg{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #eef1ec;font-size:15px}
+.reg .t{font-weight:700}
+.reg small{color:#556;display:block}
+.reg button{border:0;background:none;color:var(--rojo);font-size:22px;padding:8px}
+.tag{font-size:11px;padding:2px 7px;border-radius:10px;background:#fff3cd;color:#7a5b00;margin-left:6px}
+.tag.ok{background:#d8f0d9;color:var(--verde-osc)}
+#toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 18px;border-radius:20px;font-size:15px;opacity:0;transition:opacity .25s;z-index:20;pointer-events:none;max-width:90%;text-align:center}
+#toast.ver{opacity:.95}
+.ayuda{font-size:13px;color:#556;margin:4px 0 0}
+textarea{min-height:130px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌿 Evaluación de plagas</h1>
+  <span id="estado">…</span>
+</header>
+
+<main>
+
+<!-- ================= EVALUAR ================= -->
+<section id="s-evaluar" class="activa">
+  <div class="card">
+    <label for="evaluador">Evaluador</label>
+    <input id="evaluador" autocomplete="off" placeholder="Nombre y apellido">
+    <div class="fila">
+      <div><label for="fundo">Fundo / Sector</label><input id="fundo" autocomplete="off" placeholder="Ej. Fundo 1"></div>
+      <div><label for="lote">Lote / Válvula</label><input id="lote" autocomplete="off" placeholder="Ej. L-12"></div>
+    </div>
+    <label for="organo">Órgano evaluado</label>
+    <select id="organo"></select>
+  </div>
+
+  <div class="card">
+    <label>Planta / punto N°</label>
+    <div class="planta-n">
+      <button type="button" id="p-menos">−</button>
+      <input id="planta" type="number" inputmode="numeric" min="1" value="1">
+      <button type="button" id="p-mas">+</button>
+    </div>
+    <div class="gps" id="gps">📍 Buscando ubicación…</div>
+  </div>
+
+  <div class="card">
+    <label style="margin-bottom:0">Conteo de individuos por plaga</label>
+    <p class="ayuda">Deja en 0 las plagas que no encuentres. Si todo es 0, la planta queda registrada como sana.</p>
+    <div id="lista-plagas"></div>
+  </div>
+
+  <div class="card">
+    <label for="obs">Observaciones (opcional)</label>
+    <textarea id="obs" style="min-height:80px" placeholder="Ej. daño en bordes del lote"></textarea>
+  </div>
+
+  <div class="barra-guardar">
+    <button class="btn" id="guardar">Guardar y pasar a la siguiente planta</button>
+  </div>
+</section>
+
+<!-- ================= REGISTROS ================= -->
+<section id="s-registros">
+  <div class="resumen">
+    <div><b id="r-total">0</b><small>Registros</small></div>
+    <div><b id="r-pend">0</b><small id="r-pend-lbl">Sin enviar</small></div>
+  </div>
+  <div class="card">
+    <button class="btn" id="enviar-ahora">☁ Enviar ahora</button>
+    <p class="ayuda" id="ayuda-envio">Los registros se envían solos cuando hay señal. Este botón fuerza el envío.</p>
+  </div>
+  <div class="card">
+    <label style="margin-bottom:0">Respaldo manual</label>
+    <button class="btn sec" id="exp-pend">Exportar pendientes (CSV)</button>
+    <button class="btn sec" id="exp-todo">Exportar todo (CSV)</button>
+    <p class="ayuda">Solo si hace falta un respaldo. El archivo se abre directo en Excel.</p>
+  </div>
+  <div class="card">
+    <label style="margin-bottom:6px">Últimos registros</label>
+    <div id="lista-reg"></div>
+  </div>
+  <button class="btn peligro" id="borrar-exp">Borrar del celular los ya enviados</button>
+</section>
+
+<!-- ================= AJUSTES ================= -->
+<section id="s-ajustes">
+  <div class="card">
+    <label for="cfg-plagas">Lista de plagas (una por línea)</label>
+    <textarea id="cfg-plagas"></textarea>
+    <label for="cfg-organos">Órganos evaluables (uno por línea)</label>
+    <textarea id="cfg-organos" style="min-height:90px"></textarea>
+    <label for="cfg-sep">Separador del CSV</label>
+    <select id="cfg-sep">
+      <option value=",">Coma ( , )</option>
+      <option value=";">Punto y coma ( ; )</option>
+    </select>
+    <p class="ayuda">Si al abrir el CSV en Excel todo queda en una sola columna, cambia el separador.</p>
+    <button class="btn" id="cfg-guardar">Guardar ajustes</button>
+  </div>
+  <p class="ayuda" style="text-align:center">Versión 2.0 · Los datos quedan en este celular hasta que se envían a la hoja central.</p>
+</section>
+
+</main>
+
+<div id="toast"></div>
+
+<nav>
+  <button class="activa" data-s="s-evaluar">📝 Evaluar</button>
+  <button data-s="s-registros">📋 Registros</button>
+  <button data-s="s-ajustes">⚙️ Ajustes</button>
+</nav>
+
+<script>
+"use strict";
+/* ---------- ENVÍO AUTOMÁTICO A LA HOJA CENTRAL ----------
+   Pega aquí la URL que te da Apps Script (termina en /exec) y la misma clave
+   que pusiste en Code.gs. Si dejas la URL vacía, la app funciona solo con
+   exportación manual a CSV. */
+const SYNC = {
+  url:   "",
+  clave: ""
+};
+
+/* ---------- Configuración por defecto (editable en Ajustes) ---------- */
+const CFG_DEF = {
+  plagas: ["Mosca blanca","Trips","Arañita roja","Pulgón","Minador de hoja","Cochinilla"],
+  organos: ["Hoja","Brote","Flor","Fruto"],
+  sep: ","
+};
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function toast(msg){
+  const t=$("toast"); t.textContent=msg; t.classList.add("ver");
+  clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("ver"),2200);
+}
+function uuid(){
+  if (crypto && crypto.randomUUID) return crypto.randomUUID();
+  return Date.now().toString(36)+Math.random().toString(36).slice(2,10);
+}
+function pad(n){return String(n).padStart(2,"0")}
+
+/* ---------- Config y sesión (localStorage) ---------- */
+function loadCfg(){
+  try{
+    const c = JSON.parse(localStorage.getItem("cfg")||"null");
+    if(c && Array.isArray(c.plagas) && c.plagas.length) return Object.assign({},CFG_DEF,c);
+  }catch(e){}
+  return JSON.parse(JSON.stringify(CFG_DEF));
+}
+let cfg = loadCfg();
+function loadSes(){ try{return JSON.parse(localStorage.getItem("ses")||"{}")}catch(e){return {}} }
+function saveSes(){
+  try{
+    localStorage.setItem("ses", JSON.stringify({
+      evaluador:$("evaluador").value, fundo:$("fundo").value, lote:$("lote").value,
+      organo:$("organo").value, planta:$("planta").value
+    }));
+  }catch(e){}
+}
+
+/* ---------- IndexedDB ---------- */
+const DB_NAME="evalcampo", STORE="registros";
+function openDB(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open(DB_NAME,1);
+    r.onupgradeneeded=()=>r.result.createObjectStore(STORE,{keyPath:"id"});
+    r.onsuccess=()=>res(r.result);
+    r.onerror=()=>rej(r.error);
+  });
+}
+async function dbOp(mode, fn){
+  const db=await openDB();
+  return new Promise((res,rej)=>{
+    const t=db.transaction(STORE,mode);
+    const req=fn(t.objectStore(STORE));
+    t.oncomplete=()=>{db.close(); res(req && req.result);};
+    t.onerror=()=>{db.close(); rej(t.error);};
+    t.onabort=()=>{db.close(); rej(t.error);};
+  });
+}
+const dbAll = () => dbOp("readonly", s=>s.getAll());
+const dbPut = r  => dbOp("readwrite", s=>s.put(r));
+const dbDel = id => dbOp("readwrite", s=>s.delete(id));
+
+/* ---------- GPS ---------- */
+let pos=null;
+function iniciarGPS(){
+  const g=$("gps");
+  if(!navigator.geolocation){ g.textContent="📍 Este equipo no tiene GPS"; g.className="gps mal"; return; }
+  navigator.geolocation.watchPosition(p=>{
+    pos={lat:p.coords.latitude,lon:p.coords.longitude,prec:p.coords.accuracy};
+    g.textContent=`📍 GPS listo (±${Math.round(p.coords.accuracy)} m)`; g.className="gps ok";
+  }, e=>{
+    pos=null;
+    g.textContent = e.code===1 ? "📍 Permiso de ubicación denegado (se guardará sin coordenadas)" : "📍 Sin señal GPS por ahora";
+    g.className="gps mal";
+  }, {enableHighAccuracy:true, maximumAge:15000, timeout:20000});
+}
+
+/* ---------- UI: construir listas ---------- */
+function construirPlagas(){
+  $("lista-plagas").innerHTML = cfg.plagas.map((p,i)=>`
+    <div class="plaga">
+      <span class="nombre">${esc(p)}</span>
+      <div class="contador">
+        <button type="button" class="menos" data-i="${i}" data-d="-1">−</button>
+        <input type="number" inputmode="numeric" min="0" value="0" id="c${i}" data-i="${i}">
+        <button type="button" data-i="${i}" data-d="1">+</button>
+      </div>
+    </div>`).join("");
+}
+function construirOrganos(sel){
+  $("organo").innerHTML = cfg.organos.map(o=>`<option>${esc(o)}</option>`).join("");
+  if(sel && cfg.organos.includes(sel)) $("organo").value=sel;
+}
+function resetConteos(){ cfg.plagas.forEach((_,i)=>{ $("c"+i).value=0; }); $("obs").value=""; }
+
+$("lista-plagas").addEventListener("click", e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  const inp=$("c"+b.dataset.i);
+  inp.value=Math.max(0,(parseInt(inp.value)||0)+parseInt(b.dataset.d));
+  if(navigator.vibrate) navigator.vibrate(15);
+});
+
+$("p-menos").onclick=()=>{ $("planta").value=Math.max(1,(parseInt($("planta").value)||1)-1); saveSes(); };
+$("p-mas").onclick  =()=>{ $("planta").value=(parseInt($("planta").value)||0)+1; saveSes(); };
+["evaluador","fundo","lote","organo","planta"].forEach(id=>$(id).addEventListener("change",saveSes));
+
+/* ---------- Guardar ---------- */
+$("guardar").onclick = async ()=>{
+  const evaluador=$("evaluador").value.trim(), fundo=$("fundo").value.trim(), lote=$("lote").value.trim();
+  if(!evaluador||!fundo||!lote){ toast("Completa evaluador, fundo y lote"); return; }
+  const planta=parseInt($("planta").value);
+  if(!planta||planta<1){ toast("N° de planta no válido"); return; }
+
+  const conteos={}; let total=0, atipico=false;
+  cfg.plagas.forEach((p,i)=>{
+    const v=Math.max(0,parseInt($("c"+i).value)||0);
+    conteos[p]=v; total+=v; if(v>100) atipico=true;
+  });
+  if(atipico && !confirm("Hay un conteo mayor a 100. ¿Es correcto?")) return;
+
+  const ahora=new Date();
+  const reg={
+    id:uuid(),
+    fecha:`${ahora.getFullYear()}-${pad(ahora.getMonth()+1)}-${pad(ahora.getDate())}`,
+    hora:`${pad(ahora.getHours())}:${pad(ahora.getMinutes())}:${pad(ahora.getSeconds())}`,
+    ts:ahora.getTime(),
+    evaluador, fundo, lote, organo:$("organo").value, planta,
+    lat:pos?pos.lat:"", lon:pos?pos.lon:"", prec:pos?Math.round(pos.prec):"",
+    conteos, total, obs:$("obs").value.trim(), exportado:false, enviado:false
+  };
+  try{
+    await dbPut(reg);
+    toast(total===0?`Planta ${planta} guardada (sana)`:`Planta ${planta} guardada · total ${total}`);
+    $("planta").value=planta+1; saveSes(); resetConteos();
+    window.scrollTo({top:0,behavior:"smooth"});
+    await refrescarRegistros();
+    sincronizar(false);
+  }catch(e){ toast("Error al guardar: "+(e&&e.message||e)); }
+};
+
+/* ---------- Registros ---------- */
+let nPend=0;
+// "Resuelto" = ya llegó a la hoja central (si hay envío configurado) o ya se exportó a CSV
+const resuelto = r => SYNC.url ? !!r.enviado : !!r.exportado;
+async function refrescarRegistros(){
+  const todos=(await dbAll()||[]).sort((a,b)=>b.ts-a.ts);
+  nPend=todos.filter(r=>!resuelto(r)).length;
+  $("r-total").textContent=todos.length;
+  $("r-pend").textContent=nPend;
+  $("r-pend-lbl").textContent=SYNC.url?"Sin enviar":"Sin exportar";
+  actualizarRed();
+  $("lista-reg").innerHTML = todos.slice(0,50).map(r=>`
+    <div class="reg">
+      <div>
+        <span class="t">${esc(r.fundo)} · ${esc(r.lote)} · Pl. ${r.planta}</span>
+        <span class="tag ${resuelto(r)?"ok":""}">${SYNC.url?(r.enviado?"enviado":"sin enviar"):(r.exportado?"exportado":"pendiente")}</span>
+        <small>${esc(r.fecha)} ${esc(r.hora.slice(0,5))} · ${esc(r.organo)} · total ${r.total}</small>
+      </div>
+      <button data-id="${esc(r.id)}" aria-label="Eliminar">🗑</button>
+    </div>`).join("") || "<p class='ayuda'>Aún no hay registros.</p>";
+}
+$("lista-reg").addEventListener("click", async e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  if(confirm("¿Eliminar este registro?")){ await dbDel(b.dataset.id); refrescarRegistros(); }
+});
+
+/* ---------- Exportar CSV ---------- */
+function csvCell(v,sep){
+  const s=String(v===undefined||v===null?"":v);
+  return (s.includes(sep)||/["\n\r]/.test(s)) ? '"'+s.replace(/"/g,'""')+'"' : s;
+}
+function construirCSV(regs){
+  const sep=cfg.sep||",";
+  const plagas=[...cfg.plagas];
+  regs.forEach(r=>Object.keys(r.conteos).forEach(p=>{ if(!plagas.includes(p)) plagas.push(p); }));
+  const cab=["id","fecha","hora","evaluador","fundo","lote","organo","planta","latitud","longitud","precision_m",...plagas,"total_individuos","observaciones"];
+  const filas=regs.map(r=>[
+    r.id,r.fecha,r.hora,r.evaluador,r.fundo,r.lote,r.organo,r.planta,r.lat,r.lon,r.prec,
+    ...plagas.map(p=>r.conteos[p]===undefined?"":r.conteos[p]), r.total, r.obs
+  ]);
+  const txt=[cab,...filas].map(f=>f.map(c=>csvCell(c,sep)).join(sep)).join("\r\n");
+  return "\uFEFF"+txt;   // BOM para que Excel respete tildes y ñ
+}
+async function exportar(soloPend){
+  let regs=(await dbAll()||[]).sort((a,b)=>a.ts-b.ts);
+  if(soloPend) regs=regs.filter(r=>!r.exportado);
+  if(!regs.length){ toast("No hay registros para exportar"); return; }
+  const ahora=new Date();
+  const nombre=`plagas_${ahora.getFullYear()}${pad(ahora.getMonth()+1)}${pad(ahora.getDate())}_${pad(ahora.getHours())}${pad(ahora.getMinutes())}.csv`;
+  const blob=new Blob([construirCSV(regs)],{type:"text/csv;charset=utf-8"});
+  const file=new File([blob],nombre,{type:"text/csv"});
+  let hecho=false;
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file],title:nombre}); hecho=true; }
+    catch(e){ if(e&&e.name==="AbortError"){ toast("Exportación cancelada"); return; } }
+  }
+  if(!hecho){
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob); a.download=nombre;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  }
+  for(const r of regs){ r.exportado=true; await dbPut(r); }
+  toast(`${regs.length} registros exportados`);
+  refrescarRegistros();
+}
+$("exp-pend").onclick=()=>exportar(true);
+$("exp-todo").onclick=()=>exportar(false);
+
+$("borrar-exp").onclick=async ()=>{
+  const regs=(await dbAll()||[]).filter(r=>r.enviado||r.exportado);
+  if(!regs.length){ toast("No hay registros enviados o exportados"); return; }
+  if(!confirm(`Se borrarán ${regs.length} registros que ya fueron enviados o exportados. Los que no se han enviado NO se tocan. ¿Continuar?`)) return;
+  for(const r of regs) await dbDel(r.id);
+  toast("Registros ya enviados eliminados del celular");
+  refrescarRegistros();
+};
+
+/* ---------- Envío automático a la hoja central ---------- */
+let sincronizando=false;
+async function sincronizar(manual){
+  if(!SYNC.url){ if(manual) toast("El envío automático no está configurado"); return; }
+  if(sincronizando) return;
+  if(!navigator.onLine){ if(manual) toast("Sin señal: se enviará solo cuando haya conexión"); return; }
+  sincronizando=true;
+  try{
+    const pend=(await dbAll()||[]).filter(r=>!r.enviado).sort((a,b)=>a.ts-b.ts);
+    if(!pend.length){ if(manual) toast("Todo está enviado ✔"); return; }
+    let enviados=0;
+    for(let i=0;i<pend.length;i+=50){
+      const grupo=pend.slice(i,i+50);
+      const resp=await fetch(SYNC.url,{
+        method:"POST",
+        headers:{"Content-Type":"text/plain;charset=utf-8"},   // evita el preflight CORS de Apps Script
+        body:JSON.stringify({clave:SYNC.clave,registros:grupo})
+      });
+      const j=await resp.json();
+      if(!j.ok) throw new Error(j.error||"respuesta no válida");
+      const okIds=new Set(j.ids||[]);
+      for(const r of grupo){ if(okIds.has(r.id)){ r.enviado=true; await dbPut(r); enviados++; } }
+    }
+    if(manual||enviados) toast(`${enviados} registros enviados ✔`);
+  }catch(e){
+    if(manual) toast("No se pudo enviar: "+(e&&e.message||e)+". Se reintentará solo.");
+  }finally{
+    sincronizando=false;
+    refrescarRegistros();
+  }
+}
+$("enviar-ahora").onclick=()=>sincronizar(true);
+
+/* ---------- Ajustes ---------- */
+function cargarAjustes(){
+  $("cfg-plagas").value=cfg.plagas.join("\n");
+  $("cfg-organos").value=cfg.organos.join("\n");
+  $("cfg-sep").value=cfg.sep||",";
+}
+const lineas=t=>[...new Set(t.split("\n").map(s=>s.trim()).filter(Boolean))];
+$("cfg-guardar").onclick=()=>{
+  const plagas=lineas($("cfg-plagas").value), organos=lineas($("cfg-organos").value);
+  if(!plagas.length||!organos.length){ toast("Las listas no pueden quedar vacías"); return; }
+  cfg={plagas,organos,sep:$("cfg-sep").value};
+  try{ localStorage.setItem("cfg",JSON.stringify(cfg)); }catch(e){}
+  construirPlagas(); construirOrganos($("organo").value);
+  toast("Ajustes guardados");
+};
+
+/* ---------- Navegación ---------- */
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("activa",x===b));
+  document.querySelectorAll("section").forEach(s=>s.classList.toggle("activa",s.id===b.dataset.s));
+  document.querySelector(".barra-guardar").style.display = b.dataset.s==="s-evaluar" ? "" : "none";
+  if(b.dataset.s==="s-registros") refrescarRegistros();
+  window.scrollTo(0,0);
+});
+
+/* ---------- Estado de red ---------- */
+function actualizarRed(){
+  const e=$("estado");
+  e.textContent = (navigator.onLine ? "● En línea" : "○ Sin señal")
+    + (nPend ? ` · ${nPend} ${SYNC.url?"sin enviar":"sin exportar"}` : "");
+}
+addEventListener("online",()=>{ actualizarRed(); sincronizar(false); });
+addEventListener("offline",actualizarRed);
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) sincronizar(false); });
+
+/* ---------- Inicio ---------- */
+(function init(){
+  const s=loadSes();
+  construirPlagas(); construirOrganos(s.organo); cargarAjustes();
+  $("evaluador").value=s.evaluador||""; $("fundo").value=s.fundo||""; $("lote").value=s.lote||"";
+  $("planta").value=s.planta||1;
+  actualizarRed(); iniciarGPS();
+  refrescarRegistros().then(()=>sincronizar(false));
+  $("enviar-ahora").parentElement.style.display = SYNC.url ? "" : "none";
+  if(navigator.storage && navigator.storage.persist) navigator.storage.persist();
+  if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+})();
+</script>
+</body>
+</html>
