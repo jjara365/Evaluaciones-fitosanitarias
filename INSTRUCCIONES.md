@@ -1,52 +1,91 @@
-# Puesta en marcha (aprox. 30 minutos, una sola vez)
+# Puesta en marcha — versión 4 (maestra, plantilla y cierre de lotes)
 
-La idea: los evaluadores abren la app y trabajan. Los datos se envían solos a UNA hoja central
-cuando hay señal. Una persona descarga el Excel de esa hoja.
+## Qué cambió respecto a la versión 3
 
-## Parte 1. Crear la hoja central
+- El **administrador** carga la **tabla maestra** (campaña, fundo, módulo, lote, turno, válvula, área, plantas,
+  fecha de poda, inicio de cosecha) y **cierra lotes** al terminar la campaña.
+- El **administrador** crea la **plantilla** (los campos del formulario y su tipo de dato).
+- El **evaluador** ya no escribe fundo ni lote: elige en listas encadenadas
+  (campaña > fundo > módulo > lote > turno > válvula) y llena el formulario que definió la plantilla.
 
-1. Usa una cuenta de Google **dedicada al proyecto** (idealmente creada por la empresa, no una cuenta personal).
-2. Crea una hoja de cálculo nueva en Google Sheets. Llámala `Evaluaciones de campo`.
-3. Menú **Extensiones > Apps Script**. Borra el contenido y pega todo el archivo `Code.gs`.
-4. Cambia `CAMBIA_ESTA_CLAVE` por una clave tuya (letras y números, por ejemplo `plg-8472-kx`). Guarda.
-5. Botón **Implementar > Nueva implementación**.
-   - Tipo: **Aplicación web**
-   - Ejecutar como: **Yo**
-   - Quién tiene acceso: **Cualquier persona**
-6. Autoriza los permisos que pida Google (aparece un aviso de "app no verificada": entra a *Avanzado* y continúa; es tu propio código).
-7. Copia la **URL de la aplicación web** (termina en `/exec`).
+## Parte 1. Actualizar la hoja central
 
-## Parte 2. Conectar la app
+1. Abre tu hoja de Google Sheets.
+2. **Extensiones > Apps Script**. Borra TODO el contenido y pega el nuevo `Code.gs`. Guarda.
+3. **Implementar > Administrar implementaciones > lápiz > Versión: Nueva versión > Implementar.**
+   La URL NO cambia, así que no hay que tocar `index.html` si ya tenías la URL puesta.
+4. Si ya habías hecho pruebas con la versión 3, **borra la pestaña `Registros`** (eran datos de prueba).
+   Así la hoja nace con el orden de columnas nuevo. Se vuelve a crear sola al llegar el primer dato.
+   **No borres la pestaña `Usuarios`.**
+5. Aparecerán solas las pestañas `Maestra` y `Plantillas`.
+   **Adminístralas desde la app, no escribiendo en la hoja**: la app valida duplicados, fechas y tipos.
+   (Si igual editas la hoja a mano, usa el menú **Evaluaciones > Forzar actualización en los celulares**.)
 
-1. Abre `index.html` con el Bloc de notas.
-2. Al inicio del script, busca el bloque `SYNC` y completa:
-   ```
-   const SYNC = {
-     url:   "https://script.google.com/macros/s/XXXX/exec",
-     clave: "plg-8472-kx"
-   };
-   ```
-3. Guarda y sube los archivos a tu hosting (GitHub Pages u otro con https), reemplazando los anteriores.
+## Parte 2. Subir la app
 
-## Parte 3. Instalar en los celulares
+Reemplaza los 7 archivos en GitHub (Add file > Upload files, mismo nombre) y espera 1 o 2 minutos.
+Los celulares se actualizan al abrir la app con internet. Si no cambia, ciérrala por completo y ábrela otra vez.
 
-1. Envía el enlace de la app por WhatsApp o como código QR.
-2. En Chrome: **⋮ > Instalar aplicación** y aceptar el permiso de ubicación (con internet, una sola vez).
-3. Desde ahí, todo se envía automáticamente al volver la señal. Arriba se ve cuántos registros faltan por enviar.
+## Parte 3. Orden recomendado para configurar (como administrador, con internet)
 
-## Para quien descarga los datos
+1. **Pestaña Maestra.** Dos formas de cargarla:
+   - **Importar desde Excel** (recomendado): toca *Descargar formato (CSV)*, llénalo en Excel, copia las filas
+     con los títulos y pégalas en el cuadro (o sube el CSV) > *Revisar e importar*.
+     Acepta fechas como 15/06/2026 o 2026-06-15, y área con coma o punto.
+     La app te dice cuántas filas entraron y cuáles tienen error (con el número de fila de tu Excel).
+     Si importas de nuevo una válvula que ya existe en esa campaña, se **actualiza** (no se duplica).
+   - **Una por una:** formulario *Agregar válvula*. Al guardar, conserva campaña, fundo, módulo, lote y fechas
+     para que cargues rápido las demás válvulas del mismo lote.
+2. **Pestaña Plantilla.** Ya viene una plantilla inicial de plagas. Edítala o crea otra:
+   - Cada campo tiene: nombre, **tipo de dato**, grupo (sección en pantalla), obligatorio, mínimo/máximo,
+     valor por defecto, unidad, texto de ayuda y si **recuerda el valor** entre plantas.
+   - Tipos disponibles: **Conteo** (botones + y −, desde 0), **Número entero**, **Número decimal**,
+     **Texto**, **Lista de opciones**, **Sí / No** y **Fecha**.
+   - Cada campo se vuelve **una columna** en el Excel. El nombre de la columna se crea solo a partir del nombre
+     del campo (por ejemplo «Mosca blanca» > `mosca_blanca`) y **no cambia aunque luego renombres el campo**.
+   - Un campo ya guardado **no se borra ni cambia de tipo**: desmarca *Visible* para dejar de usarlo.
+     Así nunca se rompen los datos históricos.
+   - Al guardar, la plantilla sube de versión y cada registro lleva la versión con que se hizo.
+3. **Pestaña Usuarios.** Crea a los evaluadores y entrégales usuario y clave en persona.
 
-En la hoja central: **Archivo > Descargar > Microsoft Excel (.xlsx)** o **Valores separados por comas (.csv)**.
-Cada registro tiene un ID único, así que no se duplican aunque el celular reintente.
+## Cerrar lotes al terminar la campaña
 
-## Para probarlo antes de salir a campo
+Pestaña **Maestra** > sección **Lotes** > **Cerrar lote**. Pasa por Cerrados y puedes **Reabrir** si te equivocaste.
+- Un lote cerrado desaparece de las listas de los evaluadores en cuanto su celular se actualice.
+- Los datos ya registrados **no se tocan**.
+- Si un evaluador tenía elegido el lote que cierras, la app le **avisa y deja la selección en blanco**
+  (no lo cambia a otro lote en silencio).
+- Un celular que estuvo sin señal y aún no se actualizó puede registrar un par de plantas en un lote que ya
+  cerraste; esos datos igual llegan a la hoja (no se pierden) y los puedes filtrar por fecha.
 
-1. Abre la app, llena 2 o 3 plantas y toca **Registros > Enviar ahora**.
-2. Revisa que aparezcan las filas en la hoja `Registros`.
-3. Prueba en modo avión: guarda un registro, apaga el modo avión y verifica que se envía solo.
+## Cómo se actualizan los celulares
 
-## Importante
+La maestra y la plantilla se descargan solas al ingresar, al volver la señal y al abrir la app
+(como máximo cada 1 minuto). En *Ajustes > Actualizar configuración ahora* se fuerza.
+Sin señal se usa la última configuración descargada.
 
-- Si cambias `Code.gs` después, hay que hacer **Implementar > Administrar implementaciones > Editar > Nueva versión**.
-- La clave va dentro de la app; protege contra envíos casuales, no contra alguien que inspeccione el código. No guardes datos muy sensibles aquí.
-- Si tu empresa exige que los datos no salgan a Google, avísame: la app puede enviar al mismo formato a otro destino (por ejemplo Power Automate con tu OneDrive).
+## Qué verá cada evaluador al guardar una planta
+
+- La app calcula sola los **días desde la poda** y la guarda en cada registro.
+- Valida según el tipo: obligatorios, números enteros o decimales, mínimo y máximo.
+- Avisa si repite la misma planta de la misma válvula el mismo día, o si el número de planta supera las plantas
+  de la válvula, o si algún conteo pasa de 100 (cuando el campo no tiene un máximo propio).
+- Recuerda por válvula cuál era la siguiente planta.
+
+## Para probar antes de salir a campo
+
+1. Como administrador: importa 3 o 4 válvulas, revisa la plantilla y crea un usuario evaluador de prueba.
+2. Ingresa como ese evaluador en otro celular (con internet). Debe ver las listas encadenadas y el formulario.
+3. Guarda 2 o 3 plantas > *Registros > Enviar ahora* > revisa la hoja `Registros`.
+4. Cierra el lote desde la cuenta de administrador y actualiza el celular del evaluador: el lote debe desaparecer.
+5. Prueba sin señal: ingresa en modo avión, guarda una planta, vuelve la señal y verifica que se envía sola.
+
+## Límites a tener presentes
+
+- Formato numérico de pantalla: punto decimal (estilo Perú).
+- Si dos válvulas se llaman igual dentro del mismo turno, lote, módulo, fundo y campaña, la app las trata como la
+  misma. Usa nombres únicos por válvula.
+- La clave de cada usuario viaja por https y la valida el servidor; la entrada sin señal solo protege contra
+  uso casual del celular.
+- La hoja de Google tiene un límite de 10 millones de celdas: con decenas de miles de registros conviene
+  descargar y archivar por campaña.

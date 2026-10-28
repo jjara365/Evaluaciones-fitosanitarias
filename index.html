@@ -10,11 +10,15 @@
 <style>
 :root{--verde:#2e7d32;--verde-osc:#1b5e20;--fondo:#f4f6f3;--borde:#cfd8cc;--texto:#1c2a1c;--rojo:#c62828;--ambar:#f9a825}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
 body{margin:0;font-family:system-ui,-apple-system,Roboto,Arial,sans-serif;background:var(--fondo);color:var(--texto);font-size:17px;padding-bottom:84px}
-header{background:var(--verde);color:#fff;padding:12px 16px;position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center}
+header{background:var(--verde);color:#fff;padding:10px 16px;position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:8px}
 header h1{font-size:18px;margin:0}
-#estado{font-size:13px;padding:3px 10px;border-radius:12px;background:rgba(255,255,255,.2)}
-main{padding:12px;max-width:640px;margin:0 auto}
+#quien{font-size:12px;opacity:.9;margin-top:2px}
+.der{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+#estado{font-size:12px;padding:3px 10px;border-radius:12px;background:rgba(255,255,255,.2)}
+#salir{border:1.5px solid rgba(255,255,255,.7);background:none;color:#fff;border-radius:10px;padding:6px 12px;font-size:14px;font-weight:600}
+main{padding:12px;max-width:680px;margin:0 auto}
 section{display:none}
 section.activa{display:block}
 .card{background:#fff;border:1px solid var(--borde);border-radius:12px;padding:12px;margin-bottom:12px}
@@ -22,8 +26,12 @@ label{display:block;font-size:14px;font-weight:600;margin:10px 0 4px}
 label:first-child{margin-top:0}
 input,select,textarea{width:100%;font-size:18px;padding:12px;border:1.5px solid var(--borde);border-radius:10px;background:#fff;color:var(--texto);font-family:inherit}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--verde);border-color:var(--verde)}
+input[readonly],select:disabled{background:#eef1ec;color:#445}
+input[type=checkbox]{width:auto;margin-right:8px;transform:scale(1.3)}
 .fila{display:flex;gap:10px}
 .fila>*{flex:1}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.grid2>div{min-width:0}
 .plaga{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #eef1ec}
 .plaga:last-child{border-bottom:0}
 .plaga .nombre{flex:1;font-weight:600}
@@ -37,9 +45,10 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--verde);border-co
 .btn.peligro{background:#fff;color:var(--rojo);border:2px solid var(--rojo)}
 .btn:disabled{opacity:.5}
 .barra-guardar{position:fixed;left:0;right:0;bottom:56px;padding:8px 12px;background:linear-gradient(transparent,var(--fondo) 30%);z-index:4}
-.barra-guardar .btn{max-width:616px;margin:0 auto;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.barra-guardar .btn{max-width:656px;margin:0 auto;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 nav{position:fixed;left:0;right:0;bottom:0;height:56px;background:#fff;border-top:1px solid var(--borde);display:flex;z-index:6}
-nav button{flex:1;border:0;background:none;font-size:14px;font-weight:600;color:#667;padding:6px}
+nav button{flex:1;border:0;background:none;font-size:11px;font-weight:600;color:#667;padding:4px 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+nav button span{font-size:19px;line-height:1}
 nav button.activa{color:var(--verde-osc);border-top:3px solid var(--verde)}
 .planta-n{display:flex;align-items:center;gap:8px}
 .planta-n input{text-align:center;font-weight:700;font-size:24px}
@@ -47,42 +56,91 @@ nav button.activa{color:var(--verde-osc);border-top:3px solid var(--verde)}
 .gps{font-size:13px;color:#556;margin-top:6px}
 .gps.ok{color:var(--verde-osc)}
 .gps.mal{color:var(--rojo)}
+.ficha{background:#eef6ee;border:1px solid #cfe3cf;border-radius:10px;padding:8px 10px;margin-top:10px;font-size:14px;line-height:1.5}
+.grupo-t{font-size:15px;font-weight:700;color:var(--verde-osc);margin:0 0 6px}
+.req{color:var(--rojo)}
 .resumen{display:flex;gap:8px;margin-bottom:12px}
 .resumen div{flex:1;background:#fff;border:1px solid var(--borde);border-radius:12px;padding:10px;text-align:center}
 .resumen b{display:block;font-size:26px}
 .resumen small{color:#556}
 .reg{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #eef1ec;font-size:15px}
+.reg>div:first-child{min-width:0}
 .reg .t{font-weight:700}
 .reg small{color:#556;display:block}
-.reg button{border:0;background:none;color:var(--rojo);font-size:22px;padding:8px}
-.tag{font-size:11px;padding:2px 7px;border-radius:10px;background:#fff3cd;color:#7a5b00;margin-left:6px}
+.reg button.x{border:0;background:none;color:var(--rojo);font-size:22px;padding:8px}
+.acc{display:flex;gap:6px;flex:none;flex-wrap:wrap;justify-content:flex-end}
+.acc button{border:1.5px solid var(--verde);background:#fff;color:var(--verde-osc);border-radius:10px;padding:8px 10px;font-size:13px;font-weight:600}
+.acc button.rojo{border-color:var(--rojo);color:var(--rojo)}
+.valvula{padding:6px 0 6px 12px;font-size:14px;display:flex;justify-content:space-between;gap:8px;align-items:center;border-top:1px dashed #e3e9e1}
+.valvula small{color:#556;display:block}
+.tag{font-size:11px;padding:2px 7px;border-radius:10px;background:#fff3cd;color:#7a5b00;margin-left:6px;white-space:nowrap}
 .tag.ok{background:#d8f0d9;color:var(--verde-osc)}
+.tag.no{background:#fde0e0;color:var(--rojo)}
 #toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 18px;border-radius:20px;font-size:15px;opacity:0;transition:opacity .25s;z-index:20;pointer-events:none;max-width:90%;text-align:center}
 #toast.ver{opacity:.95}
 .ayuda{font-size:13px;color:#556;margin:4px 0 0}
-textarea{min-height:130px}
+.aviso{background:#fff8e1;border:1px solid #f0d98a;color:#6b5200;font-size:14px}
+textarea{min-height:110px}
+.login{max-width:420px;margin:0 auto;padding:24px 12px}
+.login h2{margin:0 0 4px}
+#l-msg{color:var(--rojo);font-size:14px;min-height:20px;font-weight:600}
+.verclave{display:flex;align-items:center;font-weight:400;font-size:14px;margin-top:10px}
+.campo-ed{border:1.5px solid var(--borde);border-radius:12px;padding:10px;margin-bottom:10px;background:#fafcfa}
+.campo-ed.oculto{opacity:.6}
+.mini{display:flex;flex-wrap:wrap;margin-top:4px}
+.mini label{display:flex;align-items:center;font-weight:400;font-size:14px;margin:6px 14px 0 0}
+.res-imp{font-size:14px;margin-top:8px;line-height:1.5}
+.res-imp .mal{color:var(--rojo)}
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🌿 Evaluación de plagas</h1>
-  <span id="estado">…</span>
+  <div>
+    <h1>🌿 Evaluación de plagas</h1>
+    <div id="quien"></div>
+  </div>
+  <div class="der">
+    <span id="estado">…</span>
+    <button id="salir" hidden>Salir</button>
+  </div>
 </header>
 
+<!-- ================= INGRESO ================= -->
+<div id="login" class="login" hidden>
+  <div class="card">
+    <h2>Ingresar</h2>
+    <p class="ayuda" style="margin-bottom:10px">Usa el usuario y la clave que te dio el administrador.</p>
+    <label for="l-usuario">Usuario</label>
+    <input id="l-usuario" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
+    <label for="l-clave">Clave</label>
+    <input id="l-clave" type="password" autocomplete="current-password" autocapitalize="none">
+    <label class="verclave"><input type="checkbox" id="l-ver"> Mostrar clave</label>
+    <button class="btn" id="l-entrar">Ingresar</button>
+    <p id="l-msg"></p>
+    <p class="ayuda">La primera vez en cada celular necesitas internet. Después puedes entrar sin señal.</p>
+  </div>
+</div>
+
+<div id="app" hidden>
 <main>
 
 <!-- ================= EVALUAR ================= -->
 <section id="s-evaluar" class="activa">
+  <div class="card aviso" id="aviso-cfg" hidden></div>
   <div class="card">
+    <div id="wrap-plantilla"><label for="plantilla">Plantilla</label><select id="plantilla"></select></div>
     <label for="evaluador">Evaluador</label>
-    <input id="evaluador" autocomplete="off" placeholder="Nombre y apellido">
-    <div class="fila">
-      <div><label for="fundo">Fundo / Sector</label><input id="fundo" autocomplete="off" placeholder="Ej. Fundo 1"></div>
-      <div><label for="lote">Lote / Válvula</label><input id="lote" autocomplete="off" placeholder="Ej. L-12"></div>
+    <input id="evaluador" readonly>
+    <div class="grid2">
+      <div><label for="sel-campana">Campaña</label><select id="sel-campana"></select></div>
+      <div><label for="sel-fundo">Fundo</label><select id="sel-fundo"></select></div>
+      <div><label for="sel-modulo">Módulo</label><select id="sel-modulo"></select></div>
+      <div><label for="sel-lote">Lote</label><select id="sel-lote"></select></div>
+      <div><label for="sel-turno">Turno</label><select id="sel-turno"></select></div>
+      <div><label for="sel-valvula">Válvula</label><select id="sel-valvula"></select></div>
     </div>
-    <label for="organo">Órgano evaluado</label>
-    <select id="organo"></select>
+    <div class="ficha" id="ficha" hidden></div>
   </div>
 
   <div class="card">
@@ -95,19 +153,11 @@ textarea{min-height:130px}
     <div class="gps" id="gps">📍 Buscando ubicación…</div>
   </div>
 
-  <div class="card">
-    <label style="margin-bottom:0">Conteo de individuos por plaga</label>
-    <p class="ayuda">Deja en 0 las plagas que no encuentres. Si todo es 0, la planta queda registrada como sana.</p>
-    <div id="lista-plagas"></div>
-  </div>
+  <div id="form-dinamico"></div>
 
   <div class="card">
     <label for="obs">Observaciones (opcional)</label>
     <textarea id="obs" style="min-height:80px" placeholder="Ej. daño en bordes del lote"></textarea>
-  </div>
-
-  <div class="barra-guardar">
-    <button class="btn" id="guardar">Guardar y pasar a la siguiente planta</button>
   </div>
 </section>
 
@@ -119,7 +169,7 @@ textarea{min-height:130px}
   </div>
   <div class="card">
     <button class="btn" id="enviar-ahora">☁ Enviar ahora</button>
-    <p class="ayuda" id="ayuda-envio">Los registros se envían solos cuando hay señal. Este botón fuerza el envío.</p>
+    <p class="ayuda">Los registros se envían solos cuando hay señal. Este botón fuerza el envío.</p>
   </div>
   <div class="card">
     <label style="margin-bottom:0">Respaldo manual</label>
@@ -134,82 +184,212 @@ textarea{min-height:130px}
   <button class="btn peligro" id="borrar-exp">Borrar del celular los ya enviados</button>
 </section>
 
+<!-- ================= MAESTRA (administrador) ================= -->
+<section id="s-maestra">
+  <div class="card">
+    <label id="mf-titulo" style="margin-bottom:0">Agregar válvula</label>
+    <p class="ayuda">Cada fila es una válvula. Un lote puede tener varias válvulas y turnos.</p>
+    <div class="grid2">
+      <div><label for="mf-campana">Campaña</label><input id="mf-campana" list="dl-campana" autocomplete="off" placeholder="Ej. 2026-27"></div>
+      <div><label for="mf-fundo">Fundo</label><input id="mf-fundo" list="dl-fundo" autocomplete="off"></div>
+      <div><label for="mf-modulo">Módulo</label><input id="mf-modulo" list="dl-modulo" autocomplete="off"></div>
+      <div><label for="mf-lote">Lote</label><input id="mf-lote" autocomplete="off"></div>
+      <div><label for="mf-turno">Turno</label><input id="mf-turno" autocomplete="off"></div>
+      <div><label for="mf-valvula">Válvula</label><input id="mf-valvula" autocomplete="off"></div>
+      <div><label for="mf-area">Área (ha)</label><input id="mf-area" inputmode="decimal" autocomplete="off"></div>
+      <div><label for="mf-plantas">N° de plantas</label><input id="mf-plantas" inputmode="numeric" autocomplete="off"></div>
+      <div><label for="mf-poda">Fecha de poda</label><input id="mf-poda" type="date"></div>
+      <div><label for="mf-cosecha">Inicio de cosecha</label><input id="mf-cosecha" type="date"></div>
+    </div>
+    <button class="btn" id="mf-guardar">Guardar válvula</button>
+    <button class="btn sec" id="mf-cancelar" hidden>Cancelar edición</button>
+    <datalist id="dl-campana"></datalist><datalist id="dl-fundo"></datalist><datalist id="dl-modulo"></datalist>
+  </div>
+
+  <div class="card">
+    <label style="margin-bottom:0">Importar desde Excel</label>
+    <p class="ayuda">Descarga el formato, llénalo en Excel y luego copia las filas (con los títulos) y pégalas aquí, o sube el archivo CSV. Si la válvula ya existe en esa campaña, se actualiza.</p>
+    <button class="btn sec" id="mi-formato">Descargar formato (CSV)</button>
+    <label for="mi-archivo">Archivo CSV</label>
+    <input id="mi-archivo" type="file" accept=".csv,.txt,text/csv,text/plain">
+    <label for="mi-texto">…o pega aquí desde Excel</label>
+    <textarea id="mi-texto" placeholder="campaña&#9;fundo&#9;módulo&#9;lote&#9;turno&#9;válvula&#9;área&#9;plantas&#9;fecha de poda&#9;inicio de cosecha"></textarea>
+    <button class="btn" id="mi-importar">Revisar e importar</button>
+    <div class="res-imp" id="mi-res"></div>
+  </div>
+
+  <div class="card">
+    <label style="margin-bottom:6px">Lotes</label>
+    <div class="grid2">
+      <div><label for="m-camp">Campaña</label><select id="m-camp"></select></div>
+      <div><label for="m-est">Estado</label>
+        <select id="m-est"><option value="ABIERTO">Abiertos</option><option value="CERRADO">Cerrados</option><option value="TODOS">Todos</option></select>
+      </div>
+    </div>
+    <div id="m-lotes" style="margin-top:8px"></div>
+    <p class="ayuda">Cerrar un lote lo quita de las listas de los evaluadores. Los datos ya registrados no se tocan, y puedes reabrirlo.</p>
+  </div>
+</section>
+
+<!-- ================= PLANTILLA (administrador) ================= -->
+<section id="s-plantilla">
+  <div class="card" id="pl-listado">
+    <label style="margin-bottom:6px">Plantillas</label>
+    <div id="pl-lista"></div>
+    <button class="btn" id="pl-nueva">+ Nueva plantilla</button>
+    <p class="ayuda">La plantilla define qué campos ve el evaluador y de qué tipo es cada uno. Cada campo se convierte en una columna del Excel.</p>
+  </div>
+  <div id="pl-editor" hidden>
+    <div class="card">
+      <label for="ed-nombre">Nombre de la plantilla</label>
+      <input id="ed-nombre" data-ed="nombre" autocomplete="off" placeholder="Ej. Evaluación fitosanitaria - Plagas">
+      <div class="mini"><label><input type="checkbox" id="ed-activa" data-ed="activa"> Activa (visible para los evaluadores)</label></div>
+      <p class="ayuda" id="ed-info"></p>
+    </div>
+    <div id="ed-campos"></div>
+    <datalist id="dl-grupos"></datalist>
+    <div class="card">
+      <button class="btn sec" id="ed-agregar">+ Agregar campo</button>
+      <button class="btn" id="ed-guardar">Guardar plantilla</button>
+      <button class="btn sec" id="ed-cerrar">Cerrar sin guardar</button>
+      <p class="ayuda">Al guardar, los celulares reciben la nueva versión cuando tengan internet. Un campo ya guardado no se elimina ni cambia de tipo: se oculta, para no romper los datos históricos.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= USUARIOS (administrador) ================= -->
+<section id="s-usuarios">
+  <div class="card">
+    <label style="margin-bottom:0">Nuevo usuario</label>
+    <div class="fila">
+      <div><label for="nu-usuario">Usuario</label><input id="nu-usuario" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="ej. jperez"></div>
+      <div><label for="nu-rol">Rol</label>
+        <select id="nu-rol"><option value="evaluador">Evaluador</option><option value="admin">Administrador</option></select>
+      </div>
+    </div>
+    <label for="nu-nombre">Nombre completo</label>
+    <input id="nu-nombre" autocomplete="off" placeholder="Juan Pérez">
+    <label for="nu-clave">Clave inicial</label>
+    <input id="nu-clave" autocomplete="off" autocapitalize="none" placeholder="Mínimo 6 caracteres">
+    <button class="btn" id="nu-crear">Crear usuario</button>
+    <p class="ayuda">Entrega la clave en persona. Usuario en minúsculas, sin espacios.</p>
+  </div>
+  <div class="card">
+    <label style="margin-bottom:6px">Usuarios</label>
+    <div id="lista-usr"><p class="ayuda">Cargando…</p></div>
+    <button class="btn sec" id="u-recargar">Actualizar lista</button>
+    <p class="ayuda">Requiere internet. Un usuario desactivado ya no puede ingresar con internet ni enviar datos.</p>
+  </div>
+</section>
+
 <!-- ================= AJUSTES ================= -->
 <section id="s-ajustes">
   <div class="card">
-    <label for="cfg-plagas">Lista de plagas (una por línea)</label>
-    <textarea id="cfg-plagas"></textarea>
-    <label for="cfg-organos">Órganos evaluables (uno por línea)</label>
-    <textarea id="cfg-organos" style="min-height:90px"></textarea>
-    <label for="cfg-sep">Separador del CSV</label>
+    <label style="margin-bottom:0">Configuración descargada</label>
+    <p class="ayuda" id="aj-info"></p>
+    <button class="btn sec" id="aj-actualizar">Actualizar configuración ahora</button>
+    <label for="cfg-sep">Separador del CSV de respaldo</label>
     <select id="cfg-sep">
       <option value=",">Coma ( , )</option>
       <option value=";">Punto y coma ( ; )</option>
     </select>
     <p class="ayuda">Si al abrir el CSV en Excel todo queda en una sola columna, cambia el separador.</p>
-    <button class="btn" id="cfg-guardar">Guardar ajustes</button>
   </div>
-  <p class="ayuda" style="text-align:center">Versión 2.0 · Los datos quedan en este celular hasta que se envían a la hoja central.</p>
+  <p class="ayuda" style="text-align:center">Versión 4.0 · Los datos quedan en este celular hasta que se envían a la hoja central.</p>
 </section>
 
 </main>
 
-<div id="toast"></div>
+<div class="barra-guardar">
+  <button class="btn" id="guardar">Guardar y pasar a la siguiente planta</button>
+</div>
 
-<nav>
-  <button class="activa" data-s="s-evaluar">📝 Evaluar</button>
-  <button data-s="s-registros">📋 Registros</button>
-  <button data-s="s-ajustes">⚙️ Ajustes</button>
-</nav>
+<nav id="nav"></nav>
+</div>
+
+<div id="toast"></div>
 
 <script>
 "use strict";
-/* ---------- ENVÍO AUTOMÁTICO A LA HOJA CENTRAL ----------
-   Pega aquí la URL que te da Apps Script (termina en /exec) y la misma clave
-   que pusiste en Code.gs. Si dejas la URL vacía, la app funciona solo con
-   exportación manual a CSV. */
+/* ---------- SERVIDOR CENTRAL ----------
+   Pega aquí la URL que te da Apps Script (termina en /exec).
+   Sin esta URL nadie puede ingresar a la app. */
 const SYNC = {
-  url:   "",
-  clave: ""
+  url: ""
 };
 
-/* ---------- Configuración por defecto (editable en Ajustes) ---------- */
-const CFG_DEF = {
-  plagas: ["Mosca blanca","Trips","Arañita roja","Pulgón","Minador de hoja","Cochinilla"],
-  organos: ["Hoja","Brote","Flor","Fruto"],
-  sep: ","
+const ROLES = { admin:"Administrador", evaluador:"Evaluador" };
+const NIV = ["campana","fundo","modulo","lote","turno","valvula"];
+const NIV_TXT = { campana:"Campaña", fundo:"Fundo", modulo:"Módulo", lote:"Lote", turno:"Turno", valvula:"Válvula" };
+const TIPOS = {
+  conteo:"Conteo: número entero desde 0, con botones + y −. Se suma en «total_conteos».",
+  entero:"Número entero (se puede limitar con mínimo y máximo).",
+  decimal:"Número con decimales (se puede limitar con mínimo y máximo).",
+  texto:"Texto libre.",
+  lista:"Lista: el evaluador elige una de las opciones que definas.",
+  si_no:"Sí / No.",
+  fecha:"Fecha (calendario)."
 };
+const TIPOS_CORTO = { conteo:"Conteo (+/−)", entero:"Número entero", decimal:"Número decimal", texto:"Texto", lista:"Lista de opciones", si_no:"Sí / No", fecha:"Fecha" };
+const RESERVADAS = ["id","fecha","hora","usuario","evaluador","plantilla","version_plantilla","campana","fundo","modulo","lote",
+  "turno","valvula","planta","dias_desde_poda","latitud","longitud","precision_m","total_conteos","observaciones",
+  "enviado_por","recibido","maestra_id","plantilla_id"];
+const MSG_SESION = "Tu sesión venció o tu usuario fue desactivado. Sal e ingresa de nuevo con internet.";
 
 const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc = s => String(s===undefined||s===null?"":s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const coll = (a,b) => String(a).localeCompare(String(b),"es",{numeric:true,sensitivity:"base"});
+const num = n => (Math.round(Number(n)*100)/100).toLocaleString("es-PE");
 
 function toast(msg){
   const t=$("toast"); t.textContent=msg; t.classList.add("ver");
-  clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("ver"),2200);
+  clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("ver"),2800);
 }
 function uuid(){
   if (crypto && crypto.randomUUID) return crypto.randomUUID();
   return Date.now().toString(36)+Math.random().toString(36).slice(2,10);
 }
 function pad(n){return String(n).padStart(2,"0")}
-
-/* ---------- Config y sesión (localStorage) ---------- */
-function loadCfg(){
-  try{
-    const c = JSON.parse(localStorage.getItem("cfg")||"null");
-    if(c && Array.isArray(c.plagas) && c.plagas.length) return Object.assign({},CFG_DEF,c);
-  }catch(e){}
-  return JSON.parse(JSON.stringify(CFG_DEF));
+function hoyISO(){ const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function diasEntre(a,b){
+  const x=a.split("-").map(Number), y=b.split("-").map(Number);
+  return Math.round((Date.UTC(y[0],y[1]-1,y[2])-Date.UTC(x[0],x[1]-1,x[2]))/86400000);
 }
-let cfg = loadCfg();
-function loadSes(){ try{return JSON.parse(localStorage.getItem("ses")||"{}")}catch(e){return {}} }
-function saveSes(){
-  try{
-    localStorage.setItem("ses", JSON.stringify({
-      evaluador:$("evaluador").value, fundo:$("fundo").value, lote:$("lote").value,
-      organo:$("organo").value, planta:$("planta").value
-    }));
-  }catch(e){}
+
+/* ---------- Estado global ---------- */
+let SES=null;                                   // {usuario, nombre, rol}
+let CFG={version:0,maestra:[],plantillas:[]};   // configuración descargada del servidor
+let TRAB={plantilla:"",sel:{},plantas:{},rec:{}};
+let sesionVencida=false, nPend=0, filaPrevId="";
+
+/* ---------- Almacenamiento local ---------- */
+function getSep(){ try{ return localStorage.getItem("sep")||","; }catch(e){ return ","; } }
+function credLoad(){ try{ return JSON.parse(localStorage.getItem("cred")||"{}"); }catch(e){ return {}; } }
+function credSave(m){ try{ localStorage.setItem("cred",JSON.stringify(m)); }catch(e){} }
+function loadCfgSrv(u){
+  try{ const c=JSON.parse(localStorage.getItem("cfgsrv_"+u)||"null"); if(c&&Array.isArray(c.maestra)&&Array.isArray(c.plantillas)) return c; }catch(e){}
+  return {version:0,maestra:[],plantillas:[]};
+}
+function saveCfgSrv(){ try{ localStorage.setItem("cfgsrv_"+SES.usuario, JSON.stringify(CFG)); }catch(e){ toast("No se pudo guardar la configuración en el celular"); } }
+function loadTrab(){
+  let t={};
+  try{ t=JSON.parse(localStorage.getItem("trab4_"+SES.usuario)||"{}"); }catch(e){}
+  return Object.assign({plantilla:"",sel:{},plantas:{},rec:{}}, t);
+}
+function saveTrab(){
+  if(!SES) return;
+  TRAB.plantilla=$("plantilla").value; TRAB.sel=selActual();
+  const f=filaSel(); if(f) TRAB.plantas[f.id]=parseInt($("planta").value)||1;
+  try{ localStorage.setItem("trab4_"+SES.usuario, JSON.stringify(TRAB)); }catch(e){}
+}
+
+/* ---------- Cifrado local de la clave (solo para entrar sin señal) ---------- */
+const hexb = b => [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");
+function saltAleatoria(){ return hexb(crypto.getRandomValues(new Uint8Array(16))); }
+async function pbkdf2(clave, saltHex){
+  const salt = Uint8Array.from(saltHex.match(/../g).map(h=>parseInt(h,16)));
+  const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(clave), "PBKDF2", false, ["deriveBits"]);
+  return hexb(await crypto.subtle.deriveBits({name:"PBKDF2",salt,iterations:100000,hash:"SHA-256"}, k, 256));
 }
 
 /* ---------- IndexedDB ---------- */
@@ -236,9 +416,108 @@ const dbAll = () => dbOp("readonly", s=>s.getAll());
 const dbPut = r  => dbOp("readwrite", s=>s.put(r));
 const dbDel = id => dbOp("readwrite", s=>s.delete(id));
 
+/* ---------- Llamadas al servidor ---------- */
+async function api(accion, datos, ms){
+  const ctl=new AbortController();
+  const t=setTimeout(()=>ctl.abort(), ms||20000);
+  try{
+    const r=await fetch(SYNC.url,{
+      method:"POST",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},   // evita el preflight CORS de Apps Script
+      body:JSON.stringify(Object.assign({accion},datos)),
+      signal:ctl.signal
+    });
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+// Llamada con la sesión del usuario. Lanza Error("sesion") si el servidor la rechaza.
+async function srv(accion, datos, ms){
+  const c=credLoad()[SES.usuario];
+  let j;
+  try{ j=await api(accion, Object.assign({token:c&&c.token}, datos), ms); }
+  catch(e){ throw new Error("No se pudo conectar con el servidor"); }
+  if(!j||!j.ok){
+    if(j&&j.error==="sesion"){ sesionVencida=true; actualizarRed(); throw new Error("sesion"); }
+    throw new Error((j&&j.error)||"Respuesta no válida del servidor");
+  }
+  if(j.token){ const cr=credLoad(); if(cr[SES.usuario]){ cr[SES.usuario].token=j.token; credSave(cr); } }   // sesión renovada
+  return j;
+}
+async function apiAdmin(accion, datos){
+  if(!navigator.onLine) throw new Error("Necesitas internet para esta acción");
+  try{ return await srv(accion, datos, 40000); }
+  catch(e){ throw new Error(e.message==="sesion" ? "Sesión vencida: sal e ingresa de nuevo con internet" : e.message); }
+}
+
+/* ---------- Ingreso ---------- */
+function msgLogin(t){ $("l-msg").textContent=t||""; }
+$("l-ver").onchange=()=>{ $("l-clave").type=$("l-ver").checked?"text":"password"; };
+$("l-clave").addEventListener("keydown",e=>{ if(e.key==="Enter") $("l-entrar").click(); });
+$("l-usuario").addEventListener("keydown",e=>{ if(e.key==="Enter") $("l-clave").focus(); });
+
+$("l-entrar").onclick = async ()=>{
+  const u=$("l-usuario").value.trim().toLowerCase(), c=$("l-clave").value;
+  if(!u||!c){ msgLogin("Escribe tu usuario y tu clave"); return; }
+  if(!SYNC.url){ msgLogin("La app no está configurada con el servidor (revisa INSTRUCCIONES)."); return; }
+  $("l-entrar").disabled=true; msgLogin("Verificando…");
+  try{
+    let resp=null;
+    if(navigator.onLine){ try{ resp=await api("login",{usuario:u,clave:c}); }catch(e){ resp=null; } }
+    const cred=credLoad();
+
+    if(resp){                                    // el servidor respondió: manda lo que diga
+      if(!resp.ok){
+        msgLogin(resp.error==="bloqueado" ? "Demasiados intentos. Espera 10 minutos." : "Usuario o clave incorrectos, o usuario desactivado.");
+        if(resp.error!=="bloqueado" && cred[u] && await pbkdf2(c,cred[u].salt)===cred[u].hash){ delete cred[u]; credSave(cred); }
+        return;
+      }
+      const salt=saltAleatoria();
+      cred[u]={nombre:resp.nombre, rol:resp.rol, token:resp.token, salt, hash:await pbkdf2(c,salt)};
+      credSave(cred); msgLogin(""); iniciarSesion(resp.usuario||u); return;
+    }
+
+    // sin conexión (o el servidor no respondió): entrada local
+    const cu=cred[u];
+    if(!cu){ msgLogin("Sin conexión: la primera vez en este celular necesitas internet."); return; }
+    if(await pbkdf2(c,cu.salt)!==cu.hash){ msgLogin("Usuario o clave incorrectos."); return; }
+    msgLogin(""); iniciarSesion(u);
+  } finally { $("l-entrar").disabled=false; }
+};
+
+function mostrarLogin(){
+  SES=null; nPend=0;
+  $("app").hidden=true; $("login").hidden=false; $("salir").hidden=true;
+  $("quien").textContent=""; $("l-clave").value=""; $("l-clave").type="password"; $("l-ver").checked=false;
+  actualizarRed();
+}
+function iniciarSesion(u){
+  const c=credLoad()[u];
+  SES={usuario:u, nombre:c.nombre, rol:c.rol};
+  try{ localStorage.setItem("sesion",u); }catch(e){}
+  sesionVencida=false; cfgUlt=0; filaPrevId="";
+  CFG=loadCfgSrv(u); TRAB=loadTrab(); ED=null;
+  $("login").hidden=true; $("app").hidden=false; $("salir").hidden=false;
+  $("quien").textContent=`${SES.nombre} · ${ROLES[SES.rol]||SES.rol}`;
+  $("evaluador").value=SES.nombre;
+  $("cfg-sep").value=getSep();
+  $("mi-res").innerHTML=""; $("mi-texto").value="";
+  construirNav(); aplicarConfig(true); iniciarGPS();
+  refrescarRegistros().then(()=>sincronizar(false));
+  cargarConfig(true, true);
+  if(navigator.storage && navigator.storage.persist) navigator.storage.persist();
+}
+$("salir").onclick = async ()=>{
+  const mis=visibles(await dbAll()||[]).filter(r=>!resuelto(r)).length;
+  const aviso = mis ? `Tienes ${mis} registros sin enviar. Seguirán guardados en este celular, pero solo se enviarán cuando ingreses de nuevo. ¿Salir?` : "¿Cerrar sesión?";
+  if(!confirm(aviso)) return;
+  try{ localStorage.removeItem("sesion"); }catch(e){}
+  mostrarLogin();
+};
+
 /* ---------- GPS ---------- */
-let pos=null;
+let pos=null, gpsIniciado=false;
 function iniciarGPS(){
+  if(gpsIniciado) return; gpsIniciado=true;
   const g=$("gps");
   if(!navigator.geolocation){ g.textContent="📍 Este equipo no tiene GPS"; g.className="gps mal"; return; }
   navigator.geolocation.watchPosition(p=>{
@@ -251,63 +530,266 @@ function iniciarGPS(){
   }, {enableHighAccuracy:true, maximumAge:15000, timeout:20000});
 }
 
-/* ---------- UI: construir listas ---------- */
-function construirPlagas(){
-  $("lista-plagas").innerHTML = cfg.plagas.map((p,i)=>`
-    <div class="plaga">
-      <span class="nombre">${esc(p)}</span>
-      <div class="contador">
-        <button type="button" class="menos" data-i="${i}" data-d="-1">−</button>
-        <input type="number" inputmode="numeric" min="0" value="0" id="c${i}" data-i="${i}">
-        <button type="button" data-i="${i}" data-d="1">+</button>
-      </div>
-    </div>`).join("");
+/* ---------- Navegación por rol ---------- */
+function construirNav(){
+  const items=[["s-evaluar","📝","Evaluar"],["s-registros","📋","Registros"]];
+  if(SES.rol==="admin") items.push(["s-maestra","🗺️","Maestra"],["s-plantilla","🧩","Plantilla"],["s-usuarios","👥","Usuarios"]);
+  items.push(["s-ajustes","⚙️","Ajustes"]);
+  $("nav").innerHTML=items.map(([s,i,t])=>`<button data-s="${s}"><span>${i}</span>${t}</button>`).join("");
+  irA("s-evaluar");
 }
-function construirOrganos(sel){
-  $("organo").innerHTML = cfg.organos.map(o=>`<option>${esc(o)}</option>`).join("");
-  if(sel && cfg.organos.includes(sel)) $("organo").value=sel;
+function irA(id){
+  document.querySelectorAll("#nav button").forEach(x=>x.classList.toggle("activa",x.dataset.s===id));
+  document.querySelectorAll("main section").forEach(s=>s.classList.toggle("activa",s.id===id));
+  document.querySelector(".barra-guardar").style.display = id==="s-evaluar" ? "" : "none";
+  if(id==="s-registros") refrescarRegistros();
+  if(id==="s-usuarios") cargarUsuarios();
+  if(id==="s-maestra") renderMaestra();
+  if(id==="s-plantilla") renderPlantillas();
+  if(id==="s-ajustes") renderAjustes();
+  window.scrollTo(0,0);
 }
-function resetConteos(){ cfg.plagas.forEach((_,i)=>{ $("c"+i).value=0; }); $("obs").value=""; }
+$("nav").addEventListener("click",e=>{ const b=e.target.closest("button"); if(b) irA(b.dataset.s); });
 
-$("lista-plagas").addEventListener("click", e=>{
-  const b=e.target.closest("button"); if(!b) return;
-  const inp=$("c"+b.dataset.i);
+/* =====================================================================
+   CONFIGURACIÓN DESCARGADA (maestra + plantillas)
+   ===================================================================== */
+let cfgCargando=false, cfgUlt=0;
+async function cargarConfig(forzar, silencioso){
+  if(!SES||!SYNC.url||cfgCargando) return false;
+  if(!navigator.onLine){ if(forzar&&!silencioso) toast("Sin señal: se actualizará cuando haya conexión"); return false; }
+  if(!forzar && Date.now()-cfgUlt<60000) return false;
+  cfgCargando=true;
+  try{
+    const j=await srv("config_obtener",{version:CFG.version},30000);
+    cfgUlt=Date.now();
+    if(j.cambio){
+      CFG={version:j.version,maestra:j.maestra||[],plantillas:j.plantillas||[]};
+      saveCfgSrv(); aplicarConfig(false);
+      if(!silencioso) toast("Configuración actualizada");
+    } else if(!silencioso) toast("Ya tienes la última configuración");
+    return true;
+  }catch(e){
+    if(!silencioso) toast(e.message==="sesion" ? MSG_SESION : "No se pudo actualizar: "+e.message);
+    return false;
+  }finally{ cfgCargando=false; }
+}
+
+function aplicarConfig(inicial){
+  // conserva lo que el evaluador ya escribió en el formulario
+  const prev = inicial ? null : leerValoresCrudos();
+  renderPlantillaSelect(inicial ? TRAB.plantilla : $("plantilla").value);
+  const sel = inicial ? TRAB.sel : selActual();
+  renderCascada(sel);
+  onValvulaCambio(true);
+  renderForm(prev);
+  actualizarAviso();
+  renderMaestra(); renderPlantillas(); renderAjustes();
+}
+
+function actualizarAviso(){
+  const a=$("aviso-cfg"); let m="";
+  if(!CFG.version) m="Aún no se descargó la configuración (maestra y plantilla). Conéctate a internet una vez.";
+  else if(!CFG.plantillas.some(p=>p.activa)) m = SES.rol==="admin" ? "No hay una plantilla activa. Créala en la pestaña Plantilla." : "No hay una plantilla activa. Avisa al administrador.";
+  else if(!abiertas().length) m = SES.rol==="admin" ? "No hay válvulas abiertas. Carga la maestra en la pestaña Maestra." : "No hay lotes abiertos. Avisa al administrador.";
+  a.textContent=m; a.hidden=!m;
+}
+
+/* =====================================================================
+   EVALUAR: selección en cascada + formulario dinámico
+   ===================================================================== */
+const abiertas = () => CFG.maestra.filter(r=>r.estado!=="CERRADO");
+
+function selActual(){ const s={}; NIV.forEach(n=>s[n]=$("sel-"+n).value); return s; }
+function filaSel(){
+  const s=selActual();
+  if(NIV.some(n=>!s[n])) return null;
+  return abiertas().find(r=>NIV.every(n=>r[n]===s[n]))||null;
+}
+function renderCascada(sel){
+  const res={}; let ok=true, perdida=false;
+  NIV.forEach(n=>{
+    const el=$("sel-"+n);
+    let opts=[];
+    if(ok){
+      let rows=abiertas();
+      for(const m of NIV){ if(m===n) break; rows=rows.filter(r=>r[m]===res[m]); }
+      opts=[...new Set(rows.map(r=>r[n]))].sort(coll);
+    }
+    let v=(sel&&sel[n])||"";
+    if(!opts.includes(v)){
+      // Solo se autoselecciona cuando el usuario NO había elegido nada en este nivel.
+      // Si lo que había elegido ya no existe (p. ej. lote cerrado), se deja en blanco y se avisa:
+      // moverlo en silencio a otro lote haría que registre datos en el lugar equivocado.
+      if(v) perdida=true;
+      v = (!(sel&&sel[n]) && opts.length===1) ? opts[0] : "";
+    }
+    el.innerHTML=`<option value="">${opts.length?"Selecciona…":"—"}</option>`+opts.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join("");
+    el.value=v; el.disabled=!opts.length;
+    res[n]=v; if(!v) ok=false;
+  });
+  if(perdida) toast("Tu selección anterior ya no está disponible (lote cerrado o cambiado). Elige de nuevo.");
+  return res;
+}
+NIV.forEach((n,i)=>$("sel-"+n).addEventListener("change",()=>{
+  const sel={}; NIV.forEach((m,j)=>{ sel[m]= j<=i ? $("sel-"+m).value : ""; });
+  renderCascada(sel); onValvulaCambio(false); saveTrab();
+}));
+
+function onValvulaCambio(conservarPlanta){
+  const f=filaSel(), box=$("ficha");
+  if(f){
+    const hoy=hoyISO(); let h=`<b>Área:</b> ${f.area_ha===""?"—":num(f.area_ha)+" ha"} · <b>Plantas:</b> ${f.plantas===""?"—":num(f.plantas)}`;
+    h+=`<br><b>Poda:</b> ${f.fecha_poda?esc(f.fecha_poda)+" ("+diasEntre(f.fecha_poda,hoy)+" días)":"—"}`;
+    h+=` · <b>Inicio cosecha:</b> ${f.inicio_cosecha?esc(f.inicio_cosecha):"—"}`;
+    box.innerHTML=h; box.hidden=false;
+  } else { box.hidden=true; box.innerHTML=""; }
+  const id=f?f.id:"";
+  if(id!==filaPrevId){
+    filaPrevId=id;
+    if(f) $("planta").value=TRAB.plantas[id]||1;          // cada válvula recuerda su siguiente planta
+    else if(!conservarPlanta) $("planta").value=1;
+  }
+}
+
+function renderPlantillaSelect(sel){
+  const act=CFG.plantillas.filter(p=>p.activa);
+  $("plantilla").innerHTML=act.map(p=>`<option value="${esc(p.id)}">${esc(p.nombre)}</option>`).join("");
+  if(sel && act.some(p=>p.id===sel)) $("plantilla").value=sel;
+  $("wrap-plantilla").hidden = act.length<=1;
+}
+$("plantilla").addEventListener("change",()=>{ renderForm(null); saveTrab(); });
+const plantillaActual = () => CFG.plantillas.find(p=>p.id===$("plantilla").value && p.activa) || null;
+
+function valorInicial(c, prev){
+  if(prev && c.clave in prev && prev[c.clave]!=="") return prev[c.clave];
+  if(c.recordar && TRAB.rec && c.clave in TRAB.rec) return TRAB.rec[c.clave];
+  if(c.tipo==="conteo") return c.defecto!=="" && c.defecto!==undefined ? c.defecto : 0;
+  if(c.tipo==="lista"||c.tipo==="si_no"||c.tipo==="fecha") return "";
+  return c.defecto===undefined||c.defecto===null ? "" : c.defecto;
+}
+
+function renderForm(prev){
+  const p=plantillaActual(), cont=$("form-dinamico");
+  if(!p){ cont.innerHTML=""; return; }
+  const campos=p.campos.filter(c=>c.activo!==false);
+  const grupos=[];
+  campos.forEach(c=>{
+    const g=c.grupo||"Datos";
+    let x=grupos.find(y=>y.n===g); if(!x){ x={n:g,c:[]}; grupos.push(x); }
+    x.c.push(c);
+  });
+  cont.innerHTML=grupos.map(g=>`<div class="card"><p class="grupo-t">${esc(g.n)}</p>${g.c.map(c=>htmlCampo(c,valorInicial(c,prev))).join("")}</div>`).join("");
+}
+function htmlCampo(c,v){
+  const id="f_"+c.clave, req=c.obligatorio?` <span class="req">*</span>`:"";
+  const unidad=c.unidad?` (${esc(c.unidad)})`:"";
+  const ayuda=c.ayuda?`<p class="ayuda">${esc(c.ayuda)}</p>`:"";
+  switch(c.tipo){
+    case "conteo":
+      return `<div class="plaga"><span class="nombre">${esc(c.nombre)}${req}${ayuda}</span>
+        <div class="contador"><button type="button" class="menos" data-k="${esc(c.clave)}" data-d="-1">−</button>
+        <input type="number" inputmode="numeric" min="0" id="${esc(id)}" value="${esc(v)}">
+        <button type="button" data-k="${esc(c.clave)}" data-d="1">+</button></div></div>`;
+    case "entero": case "decimal":
+      return `<label for="${esc(id)}">${esc(c.nombre)}${unidad}${req}</label>
+        <input id="${esc(id)}" inputmode="${c.tipo==="entero"?"numeric":"decimal"}" autocomplete="off" value="${esc(v)}">${ayuda}`;
+    case "texto":
+      return `<label for="${esc(id)}">${esc(c.nombre)}${req}</label><input id="${esc(id)}" autocomplete="off" value="${esc(v)}">${ayuda}`;
+    case "fecha":
+      return `<label for="${esc(id)}">${esc(c.nombre)}${req}</label><input id="${esc(id)}" type="date" value="${esc(v)}">${ayuda}`;
+    case "si_no":
+      return `<label for="${esc(id)}">${esc(c.nombre)}${req}</label><select id="${esc(id)}">
+        <option value="">Selecciona…</option><option${v==="Sí"?" selected":""}>Sí</option><option${v==="No"?" selected":""}>No</option></select>${ayuda}`;
+    case "lista":
+      return `<label for="${esc(id)}">${esc(c.nombre)}${req}</label><select id="${esc(id)}">
+        <option value="">Selecciona…</option>${(c.opciones||[]).map(o=>`<option value="${esc(o)}"${o===v?" selected":""}>${esc(o)}</option>`).join("")}</select>${ayuda}`;
+  }
+  return "";
+}
+$("form-dinamico").addEventListener("click", e=>{
+  const b=e.target.closest("button[data-k]"); if(!b) return;
+  const inp=$("f_"+b.dataset.k);
   inp.value=Math.max(0,(parseInt(inp.value)||0)+parseInt(b.dataset.d));
   if(navigator.vibrate) navigator.vibrate(15);
 });
+function leerValoresCrudos(){
+  const p=plantillaActual(); const o={};
+  if(!p) return o;
+  p.campos.filter(c=>c.activo!==false).forEach(c=>{ const el=$("f_"+c.clave); if(el) o[c.clave]=el.value; });
+  return o;
+}
+function leerCampo(c){
+  const el=$("f_"+c.clave); let v=String(el.value||"").trim();
+  const mal=m=>({err:`${c.nombre}: ${m}`,el});
+  if(v===""){ return c.obligatorio ? {err:`Falta: ${c.nombre}`,el} : {v:""}; }
+  let n=null;
+  if(c.tipo==="conteo"||c.tipo==="entero"){
+    if(!/^-?\d+$/.test(v)) return mal("debe ser un número entero");
+    n=parseInt(v,10);
+    if(c.tipo==="conteo"&&n<0) return mal("no puede ser negativo");
+  } else if(c.tipo==="decimal"){
+    v=v.replace(",",".");
+    if(!/^-?\d+(\.\d+)?$/.test(v)) return mal("debe ser un número");
+    n=parseFloat(v);
+  }
+  if(n!==null){
+    if(c.min!==""&&c.min!==undefined&&n<Number(c.min)) return mal(`el mínimo es ${c.min}`);
+    if(c.max!==""&&c.max!==undefined&&n>Number(c.max)) return mal(`el máximo es ${c.max}`);
+    return {v:n};
+  }
+  if(c.tipo==="lista"&&!(c.opciones||[]).includes(v)) return mal("opción no válida");
+  return {v:v};
+}
 
-$("p-menos").onclick=()=>{ $("planta").value=Math.max(1,(parseInt($("planta").value)||1)-1); saveSes(); };
-$("p-mas").onclick  =()=>{ $("planta").value=(parseInt($("planta").value)||0)+1; saveSes(); };
-["evaluador","fundo","lote","organo","planta"].forEach(id=>$(id).addEventListener("change",saveSes));
+/* ---------- Número de planta ---------- */
+$("p-menos").onclick=()=>{ $("planta").value=Math.max(1,(parseInt($("planta").value)||1)-1); saveTrab(); };
+$("p-mas").onclick  =()=>{ $("planta").value=(parseInt($("planta").value)||0)+1; saveTrab(); };
+$("planta").addEventListener("change",saveTrab);
 
-/* ---------- Guardar ---------- */
+/* ---------- Guardar evaluación ---------- */
 $("guardar").onclick = async ()=>{
-  const evaluador=$("evaluador").value.trim(), fundo=$("fundo").value.trim(), lote=$("lote").value.trim();
-  if(!evaluador||!fundo||!lote){ toast("Completa evaluador, fundo y lote"); return; }
+  if(!SES) return;
+  const p=plantillaActual();
+  if(!p){ toast("No hay una plantilla activa"); return; }
+  const fila=filaSel();
+  if(!fila){ toast("Selecciona campaña, fundo, módulo, lote, turno y válvula"); return; }
   const planta=parseInt($("planta").value);
   if(!planta||planta<1){ toast("N° de planta no válido"); return; }
 
-  const conteos={}; let total=0, atipico=false;
-  cfg.plagas.forEach((p,i)=>{
-    const v=Math.max(0,parseInt($("c"+i).value)||0);
-    conteos[p]=v; total+=v; if(v>100) atipico=true;
-  });
-  if(atipico && !confirm("Hay un conteo mayor a 100. ¿Es correcto?")) return;
+  const valores={}; let total=0, atipico="";
+  for(const c of p.campos.filter(x=>x.activo!==false)){
+    const r=leerCampo(c);
+    if(r.err){ toast(r.err); if(r.el&&r.el.focus){ r.el.focus(); try{ r.el.scrollIntoView({block:"center"}); }catch(e){} } return; }
+    valores[c.clave]=r.v;
+    if(c.tipo==="conteo"){ total+=r.v; if(r.v>100 && (c.max===""||c.max===undefined)) atipico=c.nombre; }
+  }
+  if(atipico && !confirm(`${atipico} tiene un conteo mayor a 100. ¿Es correcto?`)) return;
+  if(fila.plantas!=="" && planta>fila.plantas && !confirm(`Esta válvula tiene ${num(fila.plantas)} plantas y estás registrando la N° ${planta}. ¿Es correcto?`)) return;
+  const hoy=hoyISO();
+  const dup=(await dbAll()||[]).some(r=>r.usuario===SES.usuario&&r.maestra_id===fila.id&&r.plantilla_id===p.id&&r.planta===planta&&r.fecha===hoy);
+  if(dup && !confirm(`Ya registraste hoy la planta N° ${planta} de esta válvula. ¿Guardar otra vez?`)) return;
 
   const ahora=new Date();
   const reg={
-    id:uuid(),
-    fecha:`${ahora.getFullYear()}-${pad(ahora.getMonth()+1)}-${pad(ahora.getDate())}`,
+    id:uuid(), fecha:hoy,
     hora:`${pad(ahora.getHours())}:${pad(ahora.getMinutes())}:${pad(ahora.getSeconds())}`,
     ts:ahora.getTime(),
-    evaluador, fundo, lote, organo:$("organo").value, planta,
+    usuario:SES.usuario, evaluador:SES.nombre,
+    plantilla_id:p.id, plantilla_nombre:p.nombre, plantilla_version:p.version,
+    maestra_id:fila.id, campana:fila.campana, fundo:fila.fundo, modulo:fila.modulo, lote:fila.lote,
+    turno:fila.turno, valvula:fila.valvula, planta,
+    dias_poda: fila.fecha_poda ? diasEntre(fila.fecha_poda,hoy) : "",
     lat:pos?pos.lat:"", lon:pos?pos.lon:"", prec:pos?Math.round(pos.prec):"",
-    conteos, total, obs:$("obs").value.trim(), exportado:false, enviado:false
+    valores, total_conteos:total, obs:$("obs").value.trim(), exportado:false, enviado:false
   };
   try{
     await dbPut(reg);
-    toast(total===0?`Planta ${planta} guardada (sana)`:`Planta ${planta} guardada · total ${total}`);
-    $("planta").value=planta+1; saveSes(); resetConteos();
+    toast(`Planta ${planta} guardada`+(total?` · total ${total}`:""));
+    TRAB.rec=TRAB.rec||{};
+    p.campos.forEach(c=>{ if(c.recordar&&c.clave in valores) TRAB.rec[c.clave]=valores[c.clave]; });
+    $("planta").value=planta+1; saveTrab();
+    $("obs").value=""; renderForm(null);
     window.scrollTo({top:0,behavior:"smooth"});
     await refrescarRegistros();
     sincronizar(false);
@@ -315,11 +797,12 @@ $("guardar").onclick = async ()=>{
 };
 
 /* ---------- Registros ---------- */
-let nPend=0;
-// "Resuelto" = ya llegó a la hoja central (si hay envío configurado) o ya se exportó a CSV
+const visibles = todos => (SES && SES.rol==="admin") ? todos : todos.filter(r=>SES && r.usuario===SES.usuario);
 const resuelto = r => SYNC.url ? !!r.enviado : !!r.exportado;
+
 async function refrescarRegistros(){
-  const todos=(await dbAll()||[]).sort((a,b)=>b.ts-a.ts);
+  if(!SES) return;
+  const todos=visibles(await dbAll()||[]).sort((a,b)=>b.ts-a.ts);
   nPend=todos.filter(r=>!resuelto(r)).length;
   $("r-total").textContent=todos.length;
   $("r-pend").textContent=nPend;
@@ -328,11 +811,11 @@ async function refrescarRegistros(){
   $("lista-reg").innerHTML = todos.slice(0,50).map(r=>`
     <div class="reg">
       <div>
-        <span class="t">${esc(r.fundo)} · ${esc(r.lote)} · Pl. ${r.planta}</span>
+        <span class="t">${esc(r.fundo)} · ${esc(r.modulo||"")} · ${esc(r.lote)} · V${esc(r.valvula||"")} · Pl. ${esc(r.planta)}</span>
         <span class="tag ${resuelto(r)?"ok":""}">${SYNC.url?(r.enviado?"enviado":"sin enviar"):(r.exportado?"exportado":"pendiente")}</span>
-        <small>${esc(r.fecha)} ${esc(r.hora.slice(0,5))} · ${esc(r.organo)} · total ${r.total}</small>
+        <small>${esc(r.fecha)} ${esc(String(r.hora||"").slice(0,5))}${r.total_conteos!==undefined?" · total "+esc(r.total_conteos):""}${SES.rol==="admin"&&r.evaluador?" · "+esc(r.evaluador):""}</small>
       </div>
-      <button data-id="${esc(r.id)}" aria-label="Eliminar">🗑</button>
+      <button class="x" data-id="${esc(r.id)}" aria-label="Eliminar">🗑</button>
     </div>`).join("") || "<p class='ayuda'>Aún no hay registros.</p>";
 }
 $("lista-reg").addEventListener("click", async e=>{
@@ -340,42 +823,50 @@ $("lista-reg").addEventListener("click", async e=>{
   if(confirm("¿Eliminar este registro?")){ await dbDel(b.dataset.id); refrescarRegistros(); }
 });
 
-/* ---------- Exportar CSV ---------- */
+/* ---------- Exportar CSV (respaldo) ---------- */
 function csvCell(v,sep){
   const s=String(v===undefined||v===null?"":v);
   return (s.includes(sep)||/["\n\r]/.test(s)) ? '"'+s.replace(/"/g,'""')+'"' : s;
 }
+function csvTexto(cab, filas){
+  const sep=getSep();
+  return "﻿"+[cab,...filas].map(f=>f.map(c=>csvCell(c,sep)).join(sep)).join("\r\n");   // BOM: Excel respeta tildes y ñ
+}
 function construirCSV(regs){
-  const sep=cfg.sep||",";
-  const plagas=[...cfg.plagas];
-  regs.forEach(r=>Object.keys(r.conteos).forEach(p=>{ if(!plagas.includes(p)) plagas.push(p); }));
-  const cab=["id","fecha","hora","evaluador","fundo","lote","organo","planta","latitud","longitud","precision_m",...plagas,"total_individuos","observaciones"];
-  const filas=regs.map(r=>[
-    r.id,r.fecha,r.hora,r.evaluador,r.fundo,r.lote,r.organo,r.planta,r.lat,r.lon,r.prec,
-    ...plagas.map(p=>r.conteos[p]===undefined?"":r.conteos[p]), r.total, r.obs
-  ]);
-  const txt=[cab,...filas].map(f=>f.map(c=>csvCell(c,sep)).join(sep)).join("\r\n");
-  return "\uFEFF"+txt;   // BOM para que Excel respete tildes y ñ
+  const claves=[];
+  CFG.plantillas.forEach(p=>p.campos.forEach(c=>{ if(!claves.includes(c.clave)) claves.push(c.clave); }));
+  regs.forEach(r=>Object.keys(r.valores||r.conteos||{}).forEach(k=>{ if(!claves.includes(k)) claves.push(k); }));
+  const cab=["id","fecha","hora","usuario","evaluador","plantilla","version_plantilla","campana","fundo","modulo","lote","turno","valvula","planta",
+             "dias_desde_poda","latitud","longitud","precision_m","total_conteos","observaciones",...claves];
+  const filas=regs.map(r=>{
+    const v=r.valores||r.conteos||{};
+    const tot=r.total_conteos!==undefined?r.total_conteos:(r.total===undefined?"":r.total);
+    return [r.id,r.fecha,r.hora,r.usuario,r.evaluador,r.plantilla_nombre||"",r.plantilla_version||"",r.campana||"",r.fundo,r.modulo||"",r.lote,
+            r.turno||"",r.valvula||"",r.planta,r.dias_poda===undefined?"":r.dias_poda,r.lat,r.lon,r.prec,tot,r.obs,
+            ...claves.map(k=>v[k]===undefined?"":v[k])];
+  });
+  return csvTexto(cab,filas);
+}
+async function entregarArchivo(nombre, texto){
+  const blob=new Blob([texto],{type:"text/csv;charset=utf-8"});
+  const file=new File([blob],nombre,{type:"text/csv"});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file],title:nombre}); return true; }
+    catch(e){ if(e&&e.name==="AbortError") return false; }
+  }
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=nombre;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  return true;
 }
 async function exportar(soloPend){
-  let regs=(await dbAll()||[]).sort((a,b)=>a.ts-b.ts);
+  let regs=visibles(await dbAll()||[]).sort((a,b)=>a.ts-b.ts);
   if(soloPend) regs=regs.filter(r=>!r.exportado);
   if(!regs.length){ toast("No hay registros para exportar"); return; }
   const ahora=new Date();
-  const nombre=`plagas_${ahora.getFullYear()}${pad(ahora.getMonth()+1)}${pad(ahora.getDate())}_${pad(ahora.getHours())}${pad(ahora.getMinutes())}.csv`;
-  const blob=new Blob([construirCSV(regs)],{type:"text/csv;charset=utf-8"});
-  const file=new File([blob],nombre,{type:"text/csv"});
-  let hecho=false;
-  if(navigator.canShare && navigator.canShare({files:[file]})){
-    try{ await navigator.share({files:[file],title:nombre}); hecho=true; }
-    catch(e){ if(e&&e.name==="AbortError"){ toast("Exportación cancelada"); return; } }
-  }
-  if(!hecho){
-    const a=document.createElement("a");
-    a.href=URL.createObjectURL(blob); a.download=nombre;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
-  }
+  const nombre=`plagas_${SES.usuario}_${ahora.getFullYear()}${pad(ahora.getMonth()+1)}${pad(ahora.getDate())}_${pad(ahora.getHours())}${pad(ahora.getMinutes())}.csv`;
+  if(!(await entregarArchivo(nombre, construirCSV(regs)))){ toast("Exportación cancelada"); return; }
   for(const r of regs){ r.exportado=true; await dbPut(r); }
   toast(`${regs.length} registros exportados`);
   refrescarRegistros();
@@ -384,7 +875,7 @@ $("exp-pend").onclick=()=>exportar(true);
 $("exp-todo").onclick=()=>exportar(false);
 
 $("borrar-exp").onclick=async ()=>{
-  const regs=(await dbAll()||[]).filter(r=>r.enviado||r.exportado);
+  const regs=visibles(await dbAll()||[]).filter(r=>r.enviado||r.exportado);
   if(!regs.length){ toast("No hay registros enviados o exportados"); return; }
   if(!confirm(`Se borrarán ${regs.length} registros que ya fueron enviados o exportados. Los que no se han enviado NO se tocan. ¿Continuar?`)) return;
   for(const r of regs) await dbDel(r.id);
@@ -395,6 +886,7 @@ $("borrar-exp").onclick=async ()=>{
 /* ---------- Envío automático a la hoja central ---------- */
 let sincronizando=false;
 async function sincronizar(manual){
+  if(!SES) return;
   if(!SYNC.url){ if(manual) toast("El envío automático no está configurado"); return; }
   if(sincronizando) return;
   if(!navigator.onLine){ if(manual) toast("Sin señal: se enviará solo cuando haya conexión"); return; }
@@ -405,19 +897,15 @@ async function sincronizar(manual){
     let enviados=0;
     for(let i=0;i<pend.length;i+=50){
       const grupo=pend.slice(i,i+50);
-      const resp=await fetch(SYNC.url,{
-        method:"POST",
-        headers:{"Content-Type":"text/plain;charset=utf-8"},   // evita el preflight CORS de Apps Script
-        body:JSON.stringify({clave:SYNC.clave,registros:grupo})
-      });
-      const j=await resp.json();
-      if(!j.ok) throw new Error(j.error||"respuesta no válida");
+      const j=await srv("sync",{registros:grupo},60000);
       const okIds=new Set(j.ids||[]);
       for(const r of grupo){ if(okIds.has(r.id)){ r.enviado=true; await dbPut(r); enviados++; } }
     }
+    sesionVencida=false;
     if(manual||enviados) toast(`${enviados} registros enviados ✔`);
   }catch(e){
-    if(manual) toast("No se pudo enviar: "+(e&&e.message||e)+". Se reintentará solo.");
+    if(e&&e.message==="sesion") toast(MSG_SESION);
+    else if(manual) toast("No se pudo enviar: "+(e&&e.message||e)+". Se reintentará solo.");
   }finally{
     sincronizando=false;
     refrescarRegistros();
@@ -425,52 +913,415 @@ async function sincronizar(manual){
 }
 $("enviar-ahora").onclick=()=>sincronizar(true);
 
-/* ---------- Ajustes ---------- */
-function cargarAjustes(){
-  $("cfg-plagas").value=cfg.plagas.join("\n");
-  $("cfg-organos").value=cfg.organos.join("\n");
-  $("cfg-sep").value=cfg.sep||",";
+/* =====================================================================
+   ADMINISTRADOR: MAESTRA
+   ===================================================================== */
+const MF={campana:"",estado:"ABIERTO",ver:new Set(),editId:""};
+let LOTES=[];
+
+function claveLoteTxt(r){ return [r.campana,r.fundo,r.modulo,r.lote].join("\u0001"); }
+
+function renderMaestra(){
+  if(!SES||SES.rol!=="admin") return;
+  const camps=[...new Set(CFG.maestra.map(r=>r.campana))].sort(coll).reverse();
+  if(!MF.campana || !camps.includes(MF.campana)) MF.campana = camps[0]||"";
+  $("m-camp").innerHTML=`<option value="">Todas</option>`+camps.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  $("m-camp").value=MF.campana; $("m-est").value=MF.estado;
+  const dl=(id,k)=>{ $(id).innerHTML=[...new Set(CFG.maestra.map(r=>r[k]))].sort(coll).map(v=>`<option value="${esc(v)}">`).join(""); };
+  dl("dl-campana","campana"); dl("dl-fundo","fundo"); dl("dl-modulo","modulo");
+
+  const grupos=new Map();
+  CFG.maestra.forEach(r=>{
+    if(MF.campana && r.campana!==MF.campana) return;
+    const k=claveLoteTxt(r);
+    if(!grupos.has(k)) grupos.set(k,{campana:r.campana,fundo:r.fundo,modulo:r.modulo,lote:r.lote,filas:[]});
+    grupos.get(k).filas.push(r);
+  });
+  LOTES=[...grupos.values()].map(g=>{ g.cerrado=g.filas.every(f=>f.estado==="CERRADO"); return g; })
+    .filter(g=> MF.estado==="TODOS" || (MF.estado==="CERRADO")===g.cerrado)
+    .sort((a,b)=>coll(a.campana,b.campana)||coll(a.fundo,b.fundo)||coll(a.modulo,b.modulo)||coll(a.lote,b.lote));
+
+  $("m-lotes").innerHTML = LOTES.map((g,i)=>{
+    const area=g.filas.reduce((s,f)=>s+(Number(f.area_ha)||0),0), pl=g.filas.reduce((s,f)=>s+(Number(f.plantas)||0),0);
+    const abierto=MF.ver.has(claveLoteTxt(g.filas[0]));
+    const val = abierto ? g.filas.slice().sort((a,b)=>coll(a.turno,b.turno)||coll(a.valvula,b.valvula)).map(f=>`
+        <div class="valvula"><div>T ${esc(f.turno)} · Válvula ${esc(f.valvula)}
+          <small>${f.area_ha===""?"—":num(f.area_ha)+" ha"} · ${f.plantas===""?"—":num(f.plantas)} plantas · poda ${esc(f.fecha_poda||"—")} · cosecha ${esc(f.inicio_cosecha||"—")}</small></div>
+          <div class="acc"><button data-acc="editar" data-id="${esc(f.id)}">Editar</button></div></div>`).join("") : "";
+    return `<div class="lote"><div class="reg"><div>
+        <span class="t">${esc(g.fundo)} · ${esc(g.modulo)} · Lote ${esc(g.lote)}</span><span class="tag ${g.cerrado?"no":"ok"}">${g.cerrado?"cerrado":"abierto"}</span>
+        <small>Campaña ${esc(g.campana)} · ${g.filas.length} válvulas · ${num(area)} ha · ${num(pl)} plantas${g.cerrado&&g.filas[0].fecha_cierre?" · cerrado el "+esc(g.filas[0].fecha_cierre):""}</small></div>
+        <div class="acc"><button data-acc="ver" data-i="${i}">${abierto?"Ocultar":"Válvulas"}</button>
+        <button class="${g.cerrado?"":"rojo"}" data-acc="cierre" data-i="${i}">${g.cerrado?"Reabrir":"Cerrar lote"}</button></div></div>${val}</div>`;
+  }).join("") || "<p class='ayuda'>No hay lotes con este filtro.</p>";
 }
-const lineas=t=>[...new Set(t.split("\n").map(s=>s.trim()).filter(Boolean))];
-$("cfg-guardar").onclick=()=>{
-  const plagas=lineas($("cfg-plagas").value), organos=lineas($("cfg-organos").value);
-  if(!plagas.length||!organos.length){ toast("Las listas no pueden quedar vacías"); return; }
-  cfg={plagas,organos,sep:$("cfg-sep").value};
-  try{ localStorage.setItem("cfg",JSON.stringify(cfg)); }catch(e){}
-  construirPlagas(); construirOrganos($("organo").value);
-  toast("Ajustes guardados");
+$("m-camp").onchange=()=>{ MF.campana=$("m-camp").value; renderMaestra(); };
+$("m-est").onchange=()=>{ MF.estado=$("m-est").value; renderMaestra(); };
+
+$("m-lotes").addEventListener("click", async e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  try{
+    if(b.dataset.acc==="ver"){
+      const g=LOTES[b.dataset.i], k=claveLoteTxt(g.filas[0]);
+      if(MF.ver.has(k)) MF.ver.delete(k); else MF.ver.add(k);
+      renderMaestra();
+    } else if(b.dataset.acc==="cierre"){
+      const g=LOTES[b.dataset.i], cerrar=!g.cerrado;
+      const nom=`${g.fundo} · ${g.modulo} · lote ${g.lote} (campaña ${g.campana})`;
+      if(!confirm(cerrar ? `¿Cerrar el lote ${nom}?\nLos evaluadores ya no podrán seleccionarlo. Podrás reabrirlo.` : `¿Reabrir el lote ${nom}?`)) return;
+      await apiAdmin("lote_estado",{campana:g.campana,fundo:g.fundo,modulo:g.modulo,lote:g.lote,estado:cerrar?"CERRADO":"ABIERTO"});
+      toast(cerrar?"Lote cerrado":"Lote reabierto");
+      await cargarConfig(true,true); renderMaestra(); actualizarAviso();
+    } else if(b.dataset.acc==="editar"){
+      const f=CFG.maestra.find(x=>x.id===b.dataset.id); if(!f) return;
+      MF.editId=f.id;
+      $("mf-campana").value=f.campana; $("mf-fundo").value=f.fundo; $("mf-modulo").value=f.modulo; $("mf-lote").value=f.lote;
+      $("mf-turno").value=f.turno; $("mf-valvula").value=f.valvula; $("mf-area").value=f.area_ha; $("mf-plantas").value=f.plantas;
+      $("mf-poda").value=f.fecha_poda; $("mf-cosecha").value=f.inicio_cosecha;
+      $("mf-titulo").textContent="Editando válvula"; $("mf-guardar").textContent="Guardar cambios"; $("mf-cancelar").hidden=false;
+      window.scrollTo(0,0);
+    }
+  }catch(err){ toast(err.message); }
+});
+
+function limpiarFormMaestra(){
+  MF.editId="";
+  ["mf-fundo","mf-modulo","mf-lote","mf-turno","mf-valvula","mf-area","mf-plantas","mf-poda","mf-cosecha"].forEach(id=>$(id).value="");
+  $("mf-titulo").textContent="Agregar válvula"; $("mf-guardar").textContent="Guardar válvula"; $("mf-cancelar").hidden=true;
+}
+$("mf-cancelar").onclick=limpiarFormMaestra;
+$("mf-guardar").onclick=async ()=>{
+  const fila={
+    id:MF.editId||undefined,
+    campana:$("mf-campana").value, fundo:$("mf-fundo").value, modulo:$("mf-modulo").value, lote:$("mf-lote").value,
+    turno:$("mf-turno").value, valvula:$("mf-valvula").value,
+    area_ha:$("mf-area").value.replace(",","."), plantas:$("mf-plantas").value.replace(/\s/g,""),
+    fecha_poda:$("mf-poda").value, inicio_cosecha:$("mf-cosecha").value
+  };
+  $("mf-guardar").disabled=true;
+  try{
+    await apiAdmin("maestra_guardar",{fila});
+    toast(MF.editId?"Cambios guardados":"Válvula agregada");
+    if(MF.estado==="CERRADO") MF.estado="ABIERTO";
+    MF.campana=fila.campana.replace(/\s+/g," ").trim();
+    // al agregar varias válvulas seguidas se conservan campaña, fundo, módulo, lote y fechas
+    if(MF.editId) limpiarFormMaestra(); else ["mf-turno","mf-valvula","mf-area","mf-plantas"].forEach(id=>$(id).value="");
+    await cargarConfig(true,true); renderMaestra(); actualizarAviso();
+  }catch(err){ toast(err.message); }
+  finally{ $("mf-guardar").disabled=false; }
 };
 
-/* ---------- Navegación ---------- */
-document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
-  document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("activa",x===b));
-  document.querySelectorAll("section").forEach(s=>s.classList.toggle("activa",s.id===b.dataset.s));
-  document.querySelector(".barra-guardar").style.display = b.dataset.s==="s-evaluar" ? "" : "none";
-  if(b.dataset.s==="s-registros") refrescarRegistros();
-  window.scrollTo(0,0);
+/* ---------- Importar maestra desde Excel / CSV ---------- */
+const norm = s => String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g," ").trim();
+const COLS_IMP = {
+  campana:["campana"], fundo:["fundo"], modulo:["modulo"], lote:["lote"], turno:["turno"],
+  valvula:["valvula","valvulas"], area_ha:["area","area ha","area has"],
+  plantas:["plantas","n plantas","nro plantas","numero de plantas","n de plantas"],
+  fecha_poda:["fecha de poda","fecha poda","poda"],
+  inicio_cosecha:["fecha inicio de cosecha","fecha inicio cosecha","inicio de cosecha","inicio cosecha","fecha de inicio de cosecha","cosecha"]
+};
+function partirLinea(l,sep){
+  const out=[]; let cur="", q=false;
+  for(let i=0;i<l.length;i++){
+    const ch=l[i];
+    if(q){ if(ch==='"'){ if(l[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=ch; }
+    else if(ch==='"') q=true;
+    else if(ch===sep){ out.push(cur); cur=""; }
+    else cur+=ch;
+  }
+  out.push(cur); return out;
+}
+function convFecha(s){
+  s=String(s||"").trim(); if(!s) return "";
+  let m=s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+  if(m) return `${m[1]}-${pad(m[2])}-${pad(m[3])}`;
+  m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);       // día/mes/año
+  if(m) return `${m[3]}-${pad(m[2])}-${pad(m[1])}`;
+  return s;
+}
+function convNumero(s,entero){
+  s=String(s||"").trim().replace(/\s/g,""); if(!s) return "";
+  if(entero){ if(/^\d{1,3}([.,]\d{3})+$/.test(s)) return s.replace(/[.,]/g,""); return s; }
+  return s.replace(",",".");
+}
+function parsearMaestra(texto){
+  const lineas=String(texto||"").replace(/^﻿/,"").split(/\r?\n/).map((l,i)=>({l,n:i+1})).filter(x=>x.l.trim());
+  if(lineas.length<2) return {error:"Pega o sube al menos la fila de títulos y una fila de datos."};
+  const c=lineas[0].l;
+  const sep = c.includes("\t") ? "\t" : (c.split(";").length>c.split(",").length ? ";" : ",");
+  const cab=partirLinea(c,sep).map(norm);
+  const idx={};
+  Object.keys(COLS_IMP).forEach(k=>{ const i=cab.findIndex(h=>COLS_IMP[k].includes(h)); if(i>=0) idx[k]=i; });
+  const falta=["campana","fundo","modulo","lote","turno","valvula"].filter(k=>!(k in idx));
+  if(falta.length) return {error:"Faltan columnas: "+falta.map(k=>NIV_TXT[k]).join(", ")+". Revisa los títulos (usa el formato descargable)."};
+  const filas=lineas.slice(1).map(x=>{
+    const v=partirLinea(x.l,sep), g=k=>(k in idx ? (v[idx[k]]||"") : "");
+    return { _n:x.n, campana:g("campana"), fundo:g("fundo"), modulo:g("modulo"), lote:g("lote"), turno:g("turno"), valvula:g("valvula"),
+      area_ha:convNumero(g("area_ha")), plantas:convNumero(g("plantas"),true),
+      fecha_poda:convFecha(g("fecha_poda")), inicio_cosecha:convFecha(g("inicio_cosecha")) };
+  });
+  return {filas};
+}
+$("mi-archivo").onchange=async ()=>{
+  const f=$("mi-archivo").files[0]; if(!f) return;
+  try{ $("mi-texto").value=await f.text(); toast("Archivo cargado: revisa y toca «Revisar e importar»"); }
+  catch(e){ toast("No se pudo leer el archivo"); }
+};
+$("mi-formato").onclick=async ()=>{
+  const cab=["campaña","fundo","módulo","lote","turno","válvula","área (ha)","plantas","fecha de poda","inicio de cosecha"];
+  const ej=[["2026-27","Fundo 1","M1","L-01","T1","V-01","2.5","4500","2026-06-15","2026-12-01"],
+            ["2026-27","Fundo 1","M1","L-01","T1","V-02","2.0","3600","2026-06-15","2026-12-01"]];
+  await entregarArchivo("formato_maestra.csv", csvTexto(cab,ej));
+};
+$("mi-importar").onclick=async ()=>{
+  const r=parsearMaestra($("mi-texto").value), res=$("mi-res");
+  if(r.error){ res.innerHTML=`<span class="mal">${esc(r.error)}</span>`; return; }
+  if(!confirm(`Se importarán ${r.filas.length} filas (las que ya existan en esa campaña se actualizan). ¿Continuar?`)) return;
+  $("mi-importar").disabled=true; res.textContent="Importando…";
+  try{
+    const j=await apiAdmin("maestra_importar",{filas:r.filas});
+    let h=`Nuevas: <b>${j.nuevos}</b> · Actualizadas: <b>${j.actualizados}</b> · Con error: <b class="${j.errores.length?"mal":""}">${j.errores.length}</b>`;
+    if(j.errores.length) h+="<br>"+j.errores.slice(0,15).map(e=>`<span class="mal">Fila ${esc(e.n)}: ${esc(e.error)}</span>`).join("<br>")+(j.errores.length>15?"<br>…":"")+"<br>Corrige esas filas en tu Excel e impórtalas de nuevo.";
+    res.innerHTML=h;
+    if(!j.errores.length) $("mi-texto").value="";
+    await cargarConfig(true,true); renderMaestra(); actualizarAviso();
+  }catch(err){ res.innerHTML=`<span class="mal">${esc(err.message)}</span>`; }
+  finally{ $("mi-importar").disabled=false; }
+};
+
+/* =====================================================================
+   ADMINISTRADOR: PLANTILLAS
+   ===================================================================== */
+let ED=null;     // plantilla en edición
+function nuevoCampo(grupo){
+  return {clave:"",nombre:"",tipo:"conteo",grupo:grupo||"",obligatorio:true,min:0,max:"",defecto:0,opciones:[],ayuda:"",unidad:"",recordar:false,activo:true,_nuevo:true};
+}
+function renderPlantillas(){
+  if(!SES||SES.rol!=="admin") return;
+  $("pl-lista").innerHTML=CFG.plantillas.map(p=>`
+    <div class="reg"><div><span class="t">${esc(p.nombre)}</span><span class="tag ${p.activa?"ok":"no"}">${p.activa?"activa":"inactiva"}</span>
+      <small>Versión ${esc(p.version)} · ${p.campos.length} campos</small></div>
+      <div class="acc"><button data-id="${esc(p.id)}">Editar</button></div></div>`).join("") || "<p class='ayuda'>Aún no hay plantillas.</p>";
+}
+$("pl-lista").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  const p=CFG.plantillas.find(x=>x.id===b.dataset.id); if(!p) return;
+  abrirEditor({id:p.id,nombre:p.nombre,activa:p.activa,version:p.version,
+    campos:JSON.parse(JSON.stringify(p.campos)).map(c=>Object.assign(c,{_nuevo:false}))});
 });
+$("pl-nueva").onclick=()=>abrirEditor({id:"",nombre:"",activa:true,version:0,campos:[nuevoCampo("")]});
+
+function abrirEditor(p){
+  ED=p; $("pl-listado").hidden=true; $("pl-editor").hidden=false;
+  $("ed-nombre").value=p.nombre; $("ed-activa").checked=p.activa;
+  $("ed-info").textContent = p.id ? `Versión actual: ${p.version}. Al guardar pasará a la ${p.version+1}.` : "Plantilla nueva.";
+  renderEditor(); window.scrollTo(0,0);
+}
+function cerrarEditor(){ ED=null; $("pl-editor").hidden=true; $("pl-listado").hidden=false; renderPlantillas(); }
+$("ed-cerrar").onclick=()=>{ if(!ED || confirm("¿Cerrar sin guardar los cambios?")) cerrarEditor(); };
+
+function renderEditor(){
+  if(!ED) return;
+  const grupos=[...new Set(ED.campos.map(c=>c.grupo).filter(Boolean))];
+  $("dl-grupos").innerHTML=grupos.map(g=>`<option value="${esc(g)}">`).join("");
+  $("ed-campos").innerHTML=ED.campos.map((c,i)=>{
+    const numerico=["conteo","entero","decimal"].includes(c.tipo);
+    return `<div class="campo-ed ${c.activo?"":"oculto"}">
+      <div class="grid2">
+        <div><label>Nombre del campo</label><input data-i="${i}" data-f="nombre" value="${esc(c.nombre)}" placeholder="Ej. Mosca blanca"></div>
+        <div><label>Tipo de dato</label><select data-i="${i}" data-f="tipo" ${c._nuevo?"":"disabled"}>${Object.keys(TIPOS_CORTO).map(t=>`<option value="${t}"${t===c.tipo?" selected":""}>${TIPOS_CORTO[t]}</option>`).join("")}</select></div>
+      </div>
+      <p class="ayuda">${esc(TIPOS[c.tipo])}</p>
+      <label>Grupo (sección en la pantalla)</label><input list="dl-grupos" data-i="${i}" data-f="grupo" value="${esc(c.grupo)}" placeholder="Ej. Plagas">
+      ${numerico?`<div class="grid2"><div><label>Mínimo</label><input data-i="${i}" data-f="min" inputmode="decimal" value="${esc(c.min)}"></div>
+        <div><label>Máximo</label><input data-i="${i}" data-f="max" inputmode="decimal" value="${esc(c.max)}"></div>
+        <div><label>Valor por defecto</label><input data-i="${i}" data-f="defecto" inputmode="decimal" value="${esc(c.defecto)}"></div>
+        <div><label>Unidad (opcional)</label><input data-i="${i}" data-f="unidad" value="${esc(c.unidad)}" placeholder="Ej. cm"></div></div>`:""}
+      ${c.tipo==="texto"?`<label>Valor por defecto</label><input data-i="${i}" data-f="defecto" value="${esc(c.defecto)}">`:""}
+      ${c.tipo==="lista"?`<label>Opciones (una por línea)</label><textarea data-i="${i}" data-f="opciones" style="min-height:90px">${esc((c.opciones||[]).join("\n"))}</textarea>`:""}
+      <label>Texto de ayuda (opcional)</label><input data-i="${i}" data-f="ayuda" value="${esc(c.ayuda)}">
+      <div class="mini">
+        <label><input type="checkbox" data-i="${i}" data-f="obligatorio"${c.obligatorio?" checked":""}> Obligatorio</label>
+        <label><input type="checkbox" data-i="${i}" data-f="activo"${c.activo?" checked":""}> Visible</label>
+        ${c.tipo!=="conteo"?`<label><input type="checkbox" data-i="${i}" data-f="recordar"${c.recordar?" checked":""}> Recordar el valor entre plantas</label>`:""}
+      </div>
+      <p class="ayuda">${c._nuevo?"Columna en el Excel: se creará al guardar.":"Columna en el Excel: <b>"+esc(c.clave)+"</b>"}</p>
+      <div class="acc" style="justify-content:flex-start;margin-top:8px">
+        <button data-acc="sube" data-i="${i}">▲</button><button data-acc="baja" data-i="${i}">▼</button>
+        ${c._nuevo?`<button class="rojo" data-acc="borra" data-i="${i}">Quitar</button>`:`<span class="ayuda" style="align-self:center">Para dejar de usarlo, desmarca «Visible».</span>`}
+      </div></div>`;
+  }).join("");
+}
+function editorCambio(el){
+  if(!ED) return;
+  if(el.dataset.ed){
+    if(el.dataset.ed==="nombre") ED.nombre=el.value;
+    if(el.dataset.ed==="activa") ED.activa=el.checked;
+    return;
+  }
+  const i=el.dataset.i, f=el.dataset.f; if(i===undefined||!f) return;
+  const c=ED.campos[i]; if(!c) return;
+  if(el.type==="checkbox") c[f]=el.checked;
+  else if(f==="opciones") c.opciones=el.value.split("\n");
+  else c[f]=el.value;
+  if(f==="activo") renderEditor();
+}
+$("ed-campos").addEventListener("input",e=>{ if(e.target.dataset.f && e.target.dataset.f!=="tipo" && e.target.type!=="checkbox") editorCambio(e.target); });
+$("ed-campos").addEventListener("change",e=>{
+  const el=e.target; if(!el.dataset.f) return;
+  editorCambio(el);
+  if(el.dataset.f==="tipo"){
+    const c=ED.campos[el.dataset.i];
+    if(c.tipo==="conteo"){ c.min=0; c.defecto=0; } else { c.min=""; c.max=""; c.defecto=""; }
+    c.opciones = c.tipo==="lista" ? (c.opciones&&c.opciones.length?c.opciones:["",""]) : [];
+    renderEditor();
+  }
+});
+document.querySelector("#s-plantilla").addEventListener("input",e=>{ if(e.target.dataset.ed) editorCambio(e.target); });
+document.querySelector("#s-plantilla").addEventListener("change",e=>{ if(e.target.dataset.ed) editorCambio(e.target); });
+$("ed-campos").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-acc]"); if(!b||!ED) return;
+  const i=parseInt(b.dataset.i), a=ED.campos;
+  if(b.dataset.acc==="sube" && i>0){ [a[i-1],a[i]]=[a[i],a[i-1]]; }
+  else if(b.dataset.acc==="baja" && i<a.length-1){ [a[i+1],a[i]]=[a[i],a[i+1]]; }
+  else if(b.dataset.acc==="borra"){ a.splice(i,1); }
+  renderEditor();
+});
+$("ed-agregar").onclick=()=>{
+  if(!ED) return;
+  const ult=ED.campos.length?ED.campos[ED.campos.length-1].grupo:"";
+  ED.campos.push(nuevoCampo(ult)); renderEditor();
+  const cs=document.querySelectorAll("#ed-campos .campo-ed"); const u=cs[cs.length-1];
+  if(u){ try{ u.scrollIntoView({block:"center"}); }catch(e){} const inp=u.querySelector("input"); if(inp) inp.focus(); }
+};
+function slug(t){
+  let s=String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"").slice(0,34);
+  if(!s) s="campo"; if(!/^[a-z]/.test(s)) s="c_"+s;
+  return s;
+}
+function numOVacio(v){ if(v===""||v===undefined||v===null) return ""; const n=Number(String(v).replace(",",".")); return isNaN(n)?NaN:n; }
+$("ed-guardar").onclick=async ()=>{
+  if(!ED) return;
+  ED.nombre=$("ed-nombre").value; ED.activa=$("ed-activa").checked;
+  if(!ED.nombre.trim()){ toast("Falta el nombre de la plantilla"); return; }
+  const usadas=new Set(RESERVADAS.concat(ED.campos.filter(c=>c.clave).map(c=>c.clave)));
+  const nuevasClaves=[];
+  for(const c of ED.campos){
+    if(!String(c.nombre).trim()){ toast("Hay un campo sin nombre"); return; }
+    if(!c.clave){ const base=slug(c.nombre); let k=base,n=2; while(usadas.has(k)){ k=base+"_"+(n++); } c.clave=k; usadas.add(k); nuevasClaves.push(c); }
+  }
+  const campos=[];
+  for(const c of ED.campos){
+    const o={clave:c.clave,nombre:c.nombre,tipo:c.tipo,grupo:c.grupo,obligatorio:!!c.obligatorio,activo:c.activo!==false,recordar:!!c.recordar,
+             ayuda:c.ayuda,unidad:c.unidad,opciones:c.tipo==="lista"?(c.opciones||[]).map(x=>x.trim()).filter(Boolean):[],
+             min:"",max:"",defecto:""};
+    if(["conteo","entero","decimal"].includes(c.tipo)){
+      o.min=numOVacio(c.min); o.max=numOVacio(c.max); o.defecto=numOVacio(c.defecto);
+      if([o.min,o.max,o.defecto].some(x=>typeof x==="number"&&isNaN(x))){ toast(`Mínimo, máximo o valor por defecto no válido en «${c.nombre}»`); nuevasClaves.forEach(x=>x.clave=""); return; }
+    } else if(c.tipo==="texto") o.defecto=c.defecto||"";
+    campos.push(o);
+  }
+  $("ed-guardar").disabled=true;
+  try{
+    const j=await apiAdmin("plantilla_guardar",{plantilla:{id:ED.id||undefined,nombre:ED.nombre,activa:ED.activa,campos}});
+    ED.id=j.id; ED.version=j.plantilla_version;
+    ED.campos.forEach(c=>{ c._nuevo=false; });
+    toast(`Plantilla guardada (versión ${j.plantilla_version})`);
+    $("ed-info").textContent=`Versión actual: ${ED.version}. Al guardar pasará a la ${ED.version+1}.`;
+    renderEditor();
+    await cargarConfig(true,true); renderPlantillas(); actualizarAviso();
+  }catch(err){
+    nuevasClaves.forEach(x=>x.clave="");      // si falló, los campos nuevos siguen siendo nuevos
+    toast(err.message);
+  }finally{ $("ed-guardar").disabled=false; }
+};
+
+/* =====================================================================
+   ADMINISTRADOR: USUARIOS
+   ===================================================================== */
+async function cargarUsuarios(){
+  if(!SES||SES.rol!=="admin") return;
+  const cont=$("lista-usr");
+  try{
+    const j=await apiAdmin("usuario_listar",{});
+    cont.innerHTML=j.usuarios.map(u=>`
+      <div class="reg">
+        <div>
+          <span class="t">${esc(u.nombre)}</span>
+          <span class="tag ${u.activo?"ok":"no"}">${u.activo?"activo":"desactivado"}</span>
+          <small>${esc(u.usuario)} · ${esc(ROLES[u.rol]||u.rol)}</small>
+        </div>
+        <div class="acc">
+          <button data-acc="clave" data-u="${esc(u.usuario)}">Clave</button>
+          <button class="rojo" data-acc="estado" data-u="${esc(u.usuario)}" data-act="${u.activo?"0":"1"}">${u.activo?"Desactivar":"Activar"}</button>
+        </div>
+      </div>`).join("") || "<p class='ayuda'>No hay usuarios.</p>";
+  }catch(e){ cont.innerHTML=`<p class="ayuda" style="color:var(--rojo)">${esc(e.message)}</p>`; }
+}
+$("u-recargar").onclick=cargarUsuarios;
+$("lista-usr").addEventListener("click", async e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  const u=b.dataset.u;
+  try{
+    if(b.dataset.acc==="estado"){
+      const activar=b.dataset.act==="1";
+      if(!confirm(`¿${activar?"Activar":"Desactivar"} al usuario ${u}?`)) return;
+      await apiAdmin("usuario_estado",{usuario:u,activo:activar});
+      toast(activar?"Usuario activado":"Usuario desactivado");
+    } else if(b.dataset.acc==="clave"){
+      const nueva=prompt(`Nueva clave para ${u} (mínimo 6 caracteres):`);
+      if(!nueva) return;
+      await apiAdmin("usuario_clave",{usuario:u,clave:nueva});
+      toast("Clave cambiada");
+    }
+    cargarUsuarios();
+  }catch(err){ toast(err.message); }
+});
+$("nu-crear").onclick=async ()=>{
+  const datos={
+    usuario:$("nu-usuario").value.trim().toLowerCase(), nombre:$("nu-nombre").value.trim(),
+    rol:$("nu-rol").value, clave:$("nu-clave").value
+  };
+  if(!datos.usuario||!datos.nombre||!datos.clave){ toast("Completa usuario, nombre y clave"); return; }
+  $("nu-crear").disabled=true;
+  try{
+    await apiAdmin("usuario_crear",datos);
+    toast(`Usuario ${datos.usuario} creado`);
+    ["nu-usuario","nu-nombre","nu-clave"].forEach(id=>$(id).value="");
+    cargarUsuarios();
+  }catch(err){ toast(err.message); }
+  finally{ $("nu-crear").disabled=false; }
+};
+
+/* ---------- Ajustes ---------- */
+function renderAjustes(){
+  if(!SES) return;
+  const ab=CFG.maestra.filter(r=>r.estado!=="CERRADO").length;
+  $("aj-info").textContent = CFG.version
+    ? `Versión ${CFG.version} · ${ab} válvulas abiertas · ${CFG.plantillas.filter(p=>p.activa).length} plantillas activas`
+    : "Aún no se ha descargado. Conéctate a internet.";
+}
+$("aj-actualizar").onclick=()=>cargarConfig(true,false);
+$("cfg-sep").onchange=()=>{ try{ localStorage.setItem("sep",$("cfg-sep").value); }catch(e){} toast("Separador guardado"); };
 
 /* ---------- Estado de red ---------- */
 function actualizarRed(){
   const e=$("estado");
   e.textContent = (navigator.onLine ? "● En línea" : "○ Sin señal")
-    + (nPend ? ` · ${nPend} ${SYNC.url?"sin enviar":"sin exportar"}` : "");
+    + (SES && nPend ? ` · ${nPend} ${SYNC.url?"sin enviar":"sin exportar"}` : "")
+    + (SES && sesionVencida ? " · ⚠ reingresar" : "");
 }
-addEventListener("online",()=>{ actualizarRed(); sincronizar(false); });
+addEventListener("online",()=>{ actualizarRed(); sincronizar(false); cargarConfig(false,true); });
 addEventListener("offline",actualizarRed);
-document.addEventListener("visibilitychange",()=>{ if(!document.hidden) sincronizar(false); });
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ sincronizar(false); cargarConfig(false,true); } });
 
 /* ---------- Inicio ---------- */
 (function init(){
-  const s=loadSes();
-  construirPlagas(); construirOrganos(s.organo); cargarAjustes();
-  $("evaluador").value=s.evaluador||""; $("fundo").value=s.fundo||""; $("lote").value=s.lote||"";
-  $("planta").value=s.planta||1;
-  actualizarRed(); iniciarGPS();
-  refrescarRegistros().then(()=>sincronizar(false));
-  $("enviar-ahora").parentElement.style.display = SYNC.url ? "" : "none";
-  if(navigator.storage && navigator.storage.persist) navigator.storage.persist();
+  actualizarRed();
   if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+  let u=null;
+  try{ u=localStorage.getItem("sesion"); }catch(e){}
+  if(u && credLoad()[u]) iniciarSesion(u); else mostrarLogin();
 })();
 </script>
 </body>
