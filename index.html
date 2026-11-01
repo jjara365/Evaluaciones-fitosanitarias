@@ -358,7 +358,19 @@ function diasEntre(a,b){
 
 /* ---------- Estado global ---------- */
 let SES=null;                                   // {usuario, nombre, rol}
-let CFG={version:0,maestra:[],plantillas:[]};   // configuración descargada del servidor
+let CFG={
+  version:0,
+  maestra:[],
+  plantillas:[],
+  catalogos:{
+    sedes:[],
+    cultivos:[],
+    subfundos:[],
+    variedades:[],
+    etapas:[],
+    cartillas:[]
+  }
+};   // configuración descargada del servidor
 let TRAB={plantilla:"",sel:{},plantas:{},rec:{}};
 let sesionVencida=false, nPend=0, filaPrevId="";
 
@@ -564,7 +576,19 @@ async function cargarConfig(forzar, silencioso){
     const j=await srv("config_obtener",{version:CFG.version},30000);
     cfgUlt=Date.now();
     if(j.cambio){
-      CFG={version:j.version,maestra:j.maestra||[],plantillas:j.plantillas||[]};
+      CFG={
+  version:j.version,
+  maestra:j.maestra || [],
+  plantillas:j.plantillas || [],
+  catalogos:j.catalogos || {
+    sedes:[],
+    cultivos:[],
+    subfundos:[],
+    variedades:[],
+    etapas:[],
+    cartillas:[]
+  }
+};
       saveCfgSrv(); aplicarConfig(false);
       if(!silencioso) toast("Configuración actualizada");
     } else if(!silencioso) toast("Ya tienes la última configuración");
