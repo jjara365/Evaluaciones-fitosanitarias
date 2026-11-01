@@ -13,6 +13,13 @@
  */
 
 const HOJA      = "Registros";
+const HOJA_SEDES        = "MAE_SEDES";
+const HOJA_CULTIVOS     = "MAE_CULTIVOS";
+const HOJA_SUBFUNDOS    = "MAE_SUBFUNDOS";
+const HOJA_VARIEDADES   = "MAE_VARIEDADES";
+const HOJA_ETAPAS       = "MAE_ETAPAS";
+const HOJA_CARTILLAS    = "MAE_CARTILLAS";
+const HOJA_UBICACIONES  = "MAE_UBICACIONES";
 const HOJA_USR  = "Usuarios";
 const HOJA_MAE  = "Maestra";
 const HOJA_PLA  = "Plantillas";
@@ -23,17 +30,51 @@ const BASE = ["id","fecha","hora","usuario","evaluador","plantilla","version_pla
               "latitud","longitud","precision_m","total_conteos","observaciones",
               "enviado_por","recibido"];
 const RESERVADAS = BASE.concat(["maestra_id","plantilla_id"]);
-const USR_COLS = ["usuario","nombre","rol","salt","hash","activo","creado"];
-const MAE_COLS = ["id","campana","fundo","modulo","lote","turno","valvula","area_ha","plantas",
-                  "fecha_poda","inicio_cosecha","estado","fecha_cierre"];
+const USR_COLS =  "dni",
+  "nombre_completo",
+  "usuario",
+  "rol",
+  "estado",
+  "subfundos",
+  "cartillas",
+  "salt",
+  "hash",
+  "creado",
+  "creado_por"
+];
+const MAE_COLS = [
+  "id_ubicacion",
+  "id_sede",
+  "sede",
+  "id_cultivo",
+  "cultivo",
+  "fundo",
+  "id_subfundo",
+  "subfundo",
+  "modulo",
+  "lote",
+  "turno",
+  "valvula",
+  "area_ha",
+  "plantas",
+  "id_variedad",
+  "variedad",
+  "id_etapa",
+  "etapa",
+  "fecha_poda",
+  "inicio_cosecha",
+  "campana",
+  "estado",
+  "fecha_cierre"
+];
 const PLA_COLS = ["id","nombre","version","activa","campos","actualizado"];
 const TIPOS = ["conteo","entero","decimal","texto","lista","si_no","fecha"];
 
 const DIAS_TOKEN  = 30;     // la sesión se renueva sola cada vez que el celular envía datos
 const MAX_FALLOS  = 5;      // intentos fallidos antes de bloquear
 const BLOQUEO_SEG = 600;    // 10 minutos
-const ITERACIONES = 500;    // rondas de cifrado de la clave
-const MIN_CLAVE   = 6;
+const ITERACIONES = 10000;    // rondas de cifrado de la clave
+const MIN_CLAVE   = 8;
 
 /* ============================ MENÚ DE LA HOJA ============================ */
 
@@ -116,6 +157,20 @@ function salida(obj) {
 }
 
 /* ============================ UTILIDADES ============================ */
+
+function generarIdUbicacion_(){
+
+  const sh = hojaMaestra_();
+
+  const n = Math.max(
+      1,
+      sh.getLastRow()
+  );
+
+  return "UB" +
+    String(n)
+      .padStart(6,"0");
+}
 
 function limpiar_(s) {
   return String(s === undefined || s === null ? "" : s).replace(/\s+/g, " ").trim();
@@ -212,32 +267,94 @@ function usuarios_() {
   const sh = hojaUsuarios_();
   const n = sh.getLastRow();
   if (n < 2) return [];
-  return sh.getRange(2, 1, n - 1, USR_COLS.length).getValues().map((f, i) => ({
-    fila: i + 2,
-    usuario: String(f[0]).trim().toLowerCase(),
-    nombre: String(f[1]),
-    rol: String(f[2]),
-    salt: String(f[3]),
-    hash: String(f[4]),
-    activo: String(f[5]).trim().toUpperCase() === "SI"
-  }));
+
+  return sh.getRange(2,1,n-1,USR_COLS.length)
+    .getValues()
+    .map((f,i)=>({
+
+      fila:i+2,
+
+      dni:String(f[0]||"").trim(),
+
+      nombre:String(f[1]||"").trim(),
+
+      usuario:String(f[2]||"").trim().toLowerCase(),
+
+      rol:String(f[3]||"evaluador").trim().toLowerCase(),
+
+      estado:String(f[4]||"ACTIVO").trim().toUpperCase(),
+
+      subfundos:String(f[5]||"")
+        .split(",")
+        .map(x=>x.trim())
+        .filter(Boolean),
+
+      cartillas:String(f[6]||"")
+        .split(",")
+        .map(x=>x.trim())
+        .filter(Boolean),
+
+      salt:String(f[7]||""),
+
+      hash:String(f[8]||""),
+
+      activo:String(f[4]||"ACTIVO")
+        .trim()
+        .toUpperCase()==="ACTIVO"
+
+    }));
 }
 
-function crearUsuario_(usuario, nombre, rol, clave) {
-  usuario = String(usuario || "").trim().toLowerCase();
-  nombre = String(nombre || "").trim();
-  clave = String(clave || "");
-  if (!/^[a-z0-9._-]{3,30}$/.test(usuario)) return { ok: false, error: "Usuario no válido: usa 3 a 30 letras minúsculas, números, punto, guion o guion bajo" };
-  if (!nombre) return { ok: false, error: "Falta el nombre completo" };
-  if (rol !== "admin" && rol !== "evaluador") return { ok: false, error: "Rol no válido" };
-  if (clave.length < MIN_CLAVE) return { ok: false, error: "La clave debe tener al menos " + MIN_CLAVE + " caracteres" };
-  if (usuarios_().some(x => x.usuario === usuario)) return { ok: false, error: "Ese usuario ya existe" };
+function crearUsuario_(d) {
 
-  const salt = Utilities.getUuid().replace(/-/g, "");
+  const dni = String(d.dni||"").trim();
+  const nombre = String(d.nombre||"").trim();
+  const usuario = String(d.usuario||"").trim().toLowerCase();
+  const rol = String(d.rol||"evaluador").trim().toLowerCase();
+  const clave = String(d.clave||"");
+  const subfundos = d.subfundos || [];
+  const cartillas = d.cartillas || [];
+  const creador = d.creado_por || "admin";
+
+  if(!/^\d{8}$/.test(dni))
+    return {ok:false,error:"DNI inválido"};
+
+  if(!nombre)
+    return {ok:false,error:"Falta nombre"};
+
+  if(!/^[a-z0-9._-]{3,30}$/.test(usuario))
+    return {ok:false,error:"Usuario inválido"};
+
+  if(!["admin","supervisor","evaluador"].includes(rol))
+    return {ok:false,error:"Rol inválido"};
+
+  if(clave.length < MIN_CLAVE)
+    return {ok:false,error:"Clave muy corta"};
+
+  if(usuarios_().some(x=>x.usuario===usuario))
+    return {ok:false,error:"Usuario ya existe"};
+
+  const salt = Utilities
+      .getUuid()
+      .replace(/-/g,"");
+
   const sh = hojaUsuarios_();
-  asegurarTamano_(sh, sh.getLastRow() + 1, USR_COLS.length);
-  sh.appendRow([usuario, nombre, rol, salt, hashClave_(clave, salt), "SI", new Date()]);
-  return { ok: true };
+
+  sh.appendRow([
+      dni,
+      nombre,
+      usuario,
+      rol,
+      "ACTIVO",
+      subfundos.join(","),
+      cartillas.join(","),
+      salt,
+      hashClave_(clave,salt),
+      new Date(),
+      creador
+  ]);
+
+  return {ok:true};
 }
 
 function login_(d) {
@@ -271,29 +388,69 @@ function hojaMaestra_() {
   return sh;
 }
 
-function claveFila_(o) {
-  return [o.campana, o.fundo, o.modulo, o.lote, o.turno, o.valvula].map(x => limpiar_(x).toLowerCase()).join("|");
+function claveFila_(o){
+
+  return [
+    o.fundo,
+    o.subfundo,
+    o.modulo,
+    o.lote,
+    o.turno,
+    o.valvula
+  ]
+  .map(x=>limpiar_(x).toLowerCase())
+  .join("|");
+
 }
-function claveLote_(o) {
-  return [o.campana, o.fundo, o.modulo, o.lote].map(x => limpiar_(x).toLowerCase()).join("|");
+function claveLote_(o){
+
+  return [
+    o.fundo,
+    o.subfundo,
+    o.modulo,
+    o.lote
+  ]
+  .map(x=>limpiar_(x).toLowerCase())
+  .join("|");
+
 }
 
-function maestra_() {
-  const sh = hojaMaestra_();
-  const n = sh.getLastRow();
-  if (n < 2) return [];
-  return sh.getRange(2, 1, n - 1, MAE_COLS.length).getValues()
-    .filter(f => String(f[0]) !== "")
-    .map(f => ({
-      id: String(f[0]),
-      campana: limpiar_(f[1]), fundo: limpiar_(f[2]), modulo: limpiar_(f[3]),
-      lote: limpiar_(f[4]), turno: limpiar_(f[5]), valvula: limpiar_(f[6]),
-      area_ha: f[7] === "" ? "" : Number(f[7]),
-      plantas: f[8] === "" ? "" : Number(f[8]),
-      fecha_poda: fechaTxt_(f[9]), inicio_cosecha: fechaTxt_(f[10]),
-      estado: String(f[11] || "ABIERTO").trim().toUpperCase() === "CERRADO" ? "CERRADO" : "ABIERTO",
-      fecha_cierre: fechaTxt_(f[12])
-    }));
+{
+  id_ubicacion:String(f[0]),
+
+  id_sede:String(f[1]),
+  sede:limpiar_(f[2]),
+
+  id_cultivo:String(f[3]),
+  cultivo:limpiar_(f[4]),
+
+  fundo:limpiar_(f[5]),
+
+  id_subfundo:String(f[6]),
+  subfundo:limpiar_(f[7]),
+
+  modulo:limpiar_(f[8]),
+  lote:limpiar_(f[9]),
+  turno:limpiar_(f[10]),
+  valvula:limpiar_(f[11]),
+
+  area_ha:f[12],
+  plantas:f[13],
+
+  id_variedad:String(f[14]),
+  variedad:limpiar_(f[15]),
+
+  id_etapa:String(f[16]),
+  etapa:limpiar_(f[17]),
+
+  fecha_poda:fechaTxt_(f[18]),
+  inicio_cosecha:fechaTxt_(f[19]),
+
+  campana:limpiar_(f[20]),
+
+  estado:String(f[21] || "ABIERTO"),
+
+  fecha_cierre:fechaTxt_(f[22])
 }
 
 function maestraEscribir_(lista) {
@@ -343,7 +500,8 @@ function maestraGuardar_(o) {
     lista[i] = f;
   } else {
     if (lista.some(x => claveFila_(x) === k)) return { ok: false, error: "Ya existe esa válvula en esa campaña" };
-    f.id = Utilities.getUuid(); f.estado = "ABIERTO"; f.fecha_cierre = "";
+    f.id_ubicacion =
+    generarIdUbicacion_(); f.estado = "ABIERTO"; f.fecha_cierre = "";
     lista.push(f);
   }
   maestraEscribir_(lista);
@@ -512,6 +670,57 @@ function plantillaGuardar_(p) {
   return { ok: true, id: id, plantilla_version: 1, version: subirVersion_() };
 }
 
+function catalogos_(){
+
+  const ss =
+    SpreadsheetApp.getActiveSpreadsheet();
+
+  const leer = nombre => {
+
+    const sh =
+      ss.getSheetByName(nombre);
+
+    if(!sh) return [];
+
+    const n = sh.getLastRow();
+
+    if(n < 2) return [];
+
+    return sh
+      .getRange(
+          2,
+          1,
+          n - 1,
+          sh.getLastColumn()
+      )
+      .getValues();
+
+  };
+
+  return {
+
+    sedes:
+      leer(HOJA_SEDES),
+
+    cultivos:
+      leer(HOJA_CULTIVOS),
+
+    subfundos:
+      leer(HOJA_SUBFUNDOS),
+
+    variedades:
+      leer(HOJA_VARIEDADES),
+
+    etapas:
+      leer(HOJA_ETAPAS),
+
+    cartillas:
+      leer(HOJA_CARTILLAS)
+
+  };
+
+}
+
 /* ============================ CONFIGURACIÓN PARA LOS CELULARES ============================ */
 
 // Los evaluadores reciben solo lo abierto y activo; el administrador recibe todo.
@@ -527,8 +736,14 @@ function configObtener_(d, us) {
       return p;
     });
   }
-  return { ok: true, cambio: true, version: v, maestra: maestra, plantillas: pl };
-}
+  return {
+  ok: true,
+  cambio: true,
+  version: v,
+  maestra: maestra,
+  plantillas: pl,
+  catalogos: catalogos_()
+};
 
 function accionAdmin_(d, admin) {
   switch (d.accion) {
