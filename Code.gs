@@ -30,7 +30,7 @@ const BASE = ["id","fecha","hora","usuario","evaluador","plantilla","version_pla
               "latitud","longitud","precision_m","total_conteos","observaciones",
               "enviado_por","recibido"];
 const RESERVADAS = BASE.concat(["maestra_id","plantilla_id"]);
-const USR_COLS =  "dni",
+const USR_COLS = [ "dni",
   "nombre_completo",
   "usuario",
   "rol",
@@ -415,42 +415,32 @@ function claveLote_(o){
 
 }
 
-{
-  id_ubicacion:String(f[0]),
+function maestra_() {
+  const sh = hojaMaestra_();
+  const n = sh.getLastRow();
 
-  id_sede:String(f[1]),
-  sede:limpiar_(f[2]),
+  if (n < 2) return [];
 
-  id_cultivo:String(f[3]),
-  cultivo:limpiar_(f[4]),
-
-  fundo:limpiar_(f[5]),
-
-  id_subfundo:String(f[6]),
-  subfundo:limpiar_(f[7]),
-
-  modulo:limpiar_(f[8]),
-  lote:limpiar_(f[9]),
-  turno:limpiar_(f[10]),
-  valvula:limpiar_(f[11]),
-
-  area_ha:f[12],
-  plantas:f[13],
-
-  id_variedad:String(f[14]),
-  variedad:limpiar_(f[15]),
-
-  id_etapa:String(f[16]),
-  etapa:limpiar_(f[17]),
-
-  fecha_poda:fechaTxt_(f[18]),
-  inicio_cosecha:fechaTxt_(f[19]),
-
-  campana:limpiar_(f[20]),
-
-  estado:String(f[21] || "ABIERTO"),
-
-  fecha_cierre:fechaTxt_(f[22])
+  return sh.getRange(2, 1, n - 1, MAE_COLS.length)
+    .getValues()
+    .filter(f => String(f[0]) !== "")
+    .map(f => ({
+      id: String(f[0]),
+      campana: limpiar_(f[1]),
+      fundo: limpiar_(f[2]),
+      modulo: limpiar_(f[3]),
+      lote: limpiar_(f[4]),
+      turno: limpiar_(f[5]),
+      valvula: limpiar_(f[6]),
+      area_ha: f[7] === "" ? "" : Number(f[7]),
+      plantas: f[8] === "" ? "" : Number(f[8]),
+      fecha_poda: fechaTxt_(f[9]),
+      inicio_cosecha: fechaTxt_(f[10]),
+      estado: String(f[11] || "ABIERTO").trim().toUpperCase() === "CERRADO"
+        ? "CERRADO"
+        : "ABIERTO",
+      fecha_cierre: fechaTxt_(f[12])
+    }));
 }
 
 function maestraEscribir_(lista) {
@@ -744,7 +734,7 @@ function configObtener_(d, us) {
   plantillas: pl,
   catalogos: catalogos_()
 };
-
+}
 function accionAdmin_(d, admin) {
   switch (d.accion) {
     case "usuario_listar":
