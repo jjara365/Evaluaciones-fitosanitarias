@@ -46,8 +46,8 @@ input[type=checkbox]{width:auto;margin-right:8px;transform:scale(1.3)}
 .btn:disabled{opacity:.5}
 .barra-guardar{position:fixed;left:0;right:0;bottom:56px;padding:8px 12px;background:linear-gradient(transparent,var(--fondo) 30%);z-index:4}
 .barra-guardar .btn{max-width:656px;margin:0 auto;box-shadow:0 2px 8px rgba(0,0,0,.25)}
-nav{position:fixed;left:0;right:0;bottom:0;height:56px;background:#fff;border-top:1px solid var(--borde);display:flex;z-index:6}
-nav button{flex:1;border:0;background:none;font-size:11px;font-weight:600;color:#667;padding:4px 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+nav{position:fixed;left:0;right:0;bottom:0;height:56px;background:#fff;border-top:1px solid var(--borde);display:flex;z-index:6;overflow-x:auto}
+nav button{flex:1 0 auto;min-width:66px;border:0;background:none;font-size:11px;font-weight:600;color:#667;padding:4px 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
 nav button span{font-size:19px;line-height:1}
 nav button.activa{color:var(--verde-osc);border-top:3px solid var(--verde)}
 .planta-n{display:flex;align-items:center;gap:8px}
@@ -91,6 +91,8 @@ textarea{min-height:110px}
 .mini label{display:flex;align-items:center;font-weight:400;font-size:14px;margin:6px 14px 0 0}
 .res-imp{font-size:14px;margin-top:8px;line-height:1.5}
 .res-imp .mal{color:var(--rojo)}
+.chk-list{max-height:210px;overflow:auto;border:1.5px solid var(--borde);border-radius:10px;padding:2px 10px;margin-top:4px;background:#fff}
+.chk-list label{display:flex;align-items:center;font-weight:400;font-size:15px;margin:8px 0}
 </style>
 </head>
 <body>
@@ -134,6 +136,7 @@ textarea{min-height:110px}
     <input id="evaluador" readonly>
     <div class="grid2">
       <div><label for="sel-campana">Campaña</label><select id="sel-campana"></select></div>
+      <div><label for="sel-sub_fundo">Sub fundo</label><select id="sel-sub_fundo"></select></div>
       <div><label for="sel-fundo">Fundo</label><select id="sel-fundo"></select></div>
       <div><label for="sel-modulo">Módulo</label><select id="sel-modulo"></select></div>
       <div><label for="sel-lote">Lote</label><select id="sel-lote"></select></div>
@@ -186,34 +189,46 @@ textarea{min-height:110px}
 
 <!-- ================= MAESTRA (administrador) ================= -->
 <section id="s-maestra">
+  <div class="card aviso" id="m-aviso" hidden></div>
   <div class="card">
-    <label id="mf-titulo" style="margin-bottom:0">Agregar válvula</label>
-    <p class="ayuda">Cada fila es una válvula. Un lote puede tener varias válvulas y turnos.</p>
+    <label id="mf-titulo" style="margin-bottom:0">Agregar válvula al programa de producción</label>
+    <p class="ayuda">Cada fila es una válvula. Un lote puede tener varias válvulas y turnos. Densidad y PEP se calculan solos.</p>
     <div class="grid2">
-      <div><label for="mf-campana">Campaña</label><input id="mf-campana" list="dl-campana" autocomplete="off" placeholder="Ej. 2026-2027"></div>
+      <div><label for="mf-sede">Sede</label><select id="mf-sede"></select></div>
+      <div><label for="mf-cultivo">Cultivo</label><input id="mf-cultivo" list="dl-cultivo" autocomplete="off"></div>
+      <div><label for="mf-sub_fundo">Sub fundo</label><input id="mf-sub_fundo" list="dl-sub_fundo" autocomplete="off"></div>
       <div><label for="mf-fundo">Fundo</label><input id="mf-fundo" list="dl-fundo" autocomplete="off"></div>
       <div><label for="mf-modulo">Módulo</label><input id="mf-modulo" list="dl-modulo" autocomplete="off"></div>
       <div><label for="mf-lote">Lote</label><input id="mf-lote" autocomplete="off"></div>
       <div><label for="mf-turno">Turno</label><input id="mf-turno" autocomplete="off"></div>
       <div><label for="mf-valvula">Válvula</label><input id="mf-valvula" autocomplete="off"></div>
       <div><label for="mf-area">Área (ha)</label><input id="mf-area" inputmode="decimal" autocomplete="off"></div>
-      <div><label for="mf-plantas">N° de plantas</label><input id="mf-plantas" inputmode="numeric" autocomplete="off"></div>
-      <div><label for="mf-poda">Fecha de poda</label><input id="mf-poda" type="date"></div>
-      <div><label for="mf-cosecha">Inicio de cosecha</label><input id="mf-cosecha" type="date"></div>
+      <div><label for="mf-plantas">Plantas</label><input id="mf-plantas" inputmode="numeric" autocomplete="off"></div>
+      <div><label for="mf-densidad">Densidad (plantas ÷ área)</label><input id="mf-densidad" readonly></div>
+      <div><label for="mf-variedad">Variedad</label><input id="mf-variedad" list="dl-variedad" autocomplete="off"></div>
+      <div><label for="mf-etapa">Etapa</label><select id="mf-etapa"><option value="">—</option><option>M</option><option>I</option></select></div>
+      <div><label for="mf-campana">Campaña</label><input id="mf-campana" list="dl-campana" autocomplete="off" placeholder="Ej. 2026-27"></div>
+      <div><label for="mf-inicio_campana">Inicio de campaña</label><input id="mf-inicio_campana" type="date"></div>
+      <div><label for="mf-inicio_cosecha">Inicio de cosecha</label><input id="mf-inicio_cosecha" type="date"></div>
+      <div><label for="mf-cierre_campana">Cierre de campaña</label><input id="mf-cierre_campana" type="date"></div>
+      <div><label for="mf-estado">Estado campaña</label><select id="mf-estado"><option>ACTIVO</option><option>CERRADO</option></select></div>
     </div>
+    <label for="mf-pep">PEP (Fundo/Módulo/Lote)</label>
+    <input id="mf-pep" readonly>
     <button class="btn" id="mf-guardar">Guardar válvula</button>
     <button class="btn sec" id="mf-cancelar" hidden>Cancelar edición</button>
-    <datalist id="dl-campana"></datalist><datalist id="dl-fundo"></datalist><datalist id="dl-modulo"></datalist>
+    <datalist id="dl-cultivo"></datalist><datalist id="dl-sub_fundo"></datalist><datalist id="dl-fundo"></datalist>
+    <datalist id="dl-modulo"></datalist><datalist id="dl-variedad"></datalist><datalist id="dl-campana"></datalist>
   </div>
 
   <div class="card">
     <label style="margin-bottom:0">Importar desde Excel</label>
-    <p class="ayuda">Descarga el formato, llénalo en Excel y luego copia las filas (con los títulos) y pégalas aquí, o sube el archivo CSV. Si la válvula ya existe en esa campaña, se actualiza.</p>
+    <p class="ayuda">Descarga el formato (tiene las columnas en el orden de la maestra), llénalo en Excel y copia las filas con los títulos para pegarlas aquí, o sube el archivo CSV. Densidad y PEP se calculan solos: déjalos vacíos. Si la válvula ya existe en esa campaña, se actualiza.</p>
     <button class="btn sec" id="mi-formato">Descargar formato (CSV)</button>
     <label for="mi-archivo">Archivo CSV</label>
     <input id="mi-archivo" type="file" accept=".csv,.txt,text/csv,text/plain">
     <label for="mi-texto">…o pega aquí desde Excel</label>
-    <textarea id="mi-texto" placeholder="campaña&#9;fundo&#9;módulo&#9;lote&#9;turno&#9;válvula&#9;área&#9;plantas&#9;fecha de poda&#9;inicio de cosecha"></textarea>
+    <textarea id="mi-texto" placeholder="Sede&#9;Cultivo&#9;Sub_Fundo&#9;Fundo&#9;Módulo&#9;Lote&#9;Turno&#9;Válvula&#9;Área&#9;Plantas&#9;…"></textarea>
     <button class="btn" id="mi-importar">Revisar e importar</button>
     <div class="res-imp" id="mi-res"></div>
   </div>
@@ -222,12 +237,57 @@ textarea{min-height:110px}
     <label style="margin-bottom:6px">Lotes</label>
     <div class="grid2">
       <div><label for="m-camp">Campaña</label><select id="m-camp"></select></div>
-      <div><label for="m-est">Estado</label>
-        <select id="m-est"><option value="ABIERTO">Abiertos</option><option value="CERRADO">Cerrados</option><option value="TODOS">Todos</option></select>
+      <div><label for="m-sub">Sub fundo</label><select id="m-sub"></select></div>
+      <div><label for="m-est">Estado campaña</label>
+        <select id="m-est"><option value="ACTIVO">Activos</option><option value="CERRADO">Cerrados</option><option value="TODOS">Todos</option></select>
       </div>
     </div>
     <div id="m-lotes" style="margin-top:8px"></div>
-    <p class="ayuda">Cerrar un lote lo quita de las listas de los evaluadores. Los datos ya registrados no se tocan, y puedes reabrirlo.</p>
+    <p class="ayuda">Cerrar un lote lo quita de las listas de los evaluadores y le pone la fecha de cierre de campaña (hoy, si no tenía una). Los datos ya registrados no se tocan, y puedes reabrirlo.</p>
+  </div>
+</section>
+
+<!-- ================= UMBRALES (administrador) ================= -->
+<section id="s-umbrales">
+  <div class="card">
+    <label id="um-titulo" style="margin-bottom:0">Agregar umbral</label>
+    <p class="ayuda">Cada fila es un umbral para un grupo, variable, ítem y órgano en una semana de cultivo de una campaña.</p>
+    <div class="grid2">
+      <div><label for="um-grupo">Grupo</label><select id="um-grupo"></select></div>
+      <div><label for="um-organo">Órgano evaluado</label><select id="um-organo"></select></div>
+      <div><label for="um-variable">Variable</label><input id="um-variable" list="dl-um-variable" autocomplete="off" placeholder="Ej. Trips"></div>
+      <div><label for="um-item">Ítem</label><input id="um-item" list="dl-um-item" autocomplete="off" placeholder="Ej. Adulto"></div>
+      <div><label for="um-umbral">Umbral</label><input id="um-umbral" inputmode="decimal" autocomplete="off"></div>
+      <div><label for="um-semana">Semana de cultivo</label><input id="um-semana" inputmode="numeric" autocomplete="off"></div>
+    </div>
+    <label for="um-campana">Campaña</label>
+    <input id="um-campana" list="dl-um-campana" autocomplete="off" placeholder="Ej. 2026-27">
+    <datalist id="dl-um-variable"></datalist><datalist id="dl-um-item"></datalist><datalist id="dl-um-campana"></datalist>
+    <button class="btn" id="um-guardar">Guardar umbral</button>
+    <button class="btn sec" id="um-cancelar" hidden>Cancelar edición</button>
+  </div>
+
+  <div class="card">
+    <label style="margin-bottom:0">Importar umbrales desde Excel</label>
+    <p class="ayuda">Descarga el formato, borra las filas de ejemplo, llénalo y pega las filas con los títulos (o sube el CSV). Si el umbral ya existe (mismo grupo, variable, ítem, órgano, semana y campaña), se actualiza.</p>
+    <button class="btn sec" id="um-formato">Descargar formato (CSV)</button>
+    <label for="um-archivo">Archivo CSV</label>
+    <input id="um-archivo" type="file" accept=".csv,.txt,text/csv,text/plain">
+    <label for="um-texto">…o pega aquí desde Excel</label>
+    <textarea id="um-texto" placeholder="Grupo&#9;Variable&#9;Ítem&#9;Umbral&#9;Órgano evaluado&#9;Semana de cultivo&#9;Campaña"></textarea>
+    <button class="btn" id="um-importar">Revisar e importar</button>
+    <div class="res-imp" id="um-res"></div>
+  </div>
+
+  <div class="card">
+    <label style="margin-bottom:6px">Umbrales registrados</label>
+    <div class="grid2">
+      <div><label for="um-f-camp">Campaña</label><select id="um-f-camp"></select></div>
+      <div><label for="um-f-grupo">Grupo</label><select id="um-f-grupo"></select></div>
+    </div>
+    <label for="um-f-q">Buscar variable o ítem</label>
+    <input id="um-f-q" autocomplete="off" placeholder="Ej. trips">
+    <div id="um-lista" style="margin-top:8px"></div>
   </div>
 </section>
 
@@ -260,25 +320,48 @@ textarea{min-height:110px}
 <!-- ================= USUARIOS (administrador) ================= -->
 <section id="s-usuarios">
   <div class="card">
-    <label style="margin-bottom:0">Nuevo usuario</label>
-    <div class="fila">
-      <div><label for="nu-usuario">Usuario</label><input id="nu-usuario" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="ej. jperez"></div>
+    <label id="nu-titulo" style="margin-bottom:0">Nuevo usuario</label>
+    <div class="grid2">
+      <div><label for="nu-dni">DNI</label><input id="nu-dni" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="8 dígitos"></div>
       <div><label for="nu-rol">Rol</label>
         <select id="nu-rol"><option value="evaluador">Evaluador</option><option value="admin">Administrador</option></select>
       </div>
     </div>
     <label for="nu-nombre">Nombre completo</label>
-    <input id="nu-nombre" autocomplete="off" placeholder="Juan Pérez">
-    <label for="nu-clave">Clave inicial</label>
+    <input id="nu-nombre" autocomplete="off" placeholder="Juan Pérez Gómez">
+    <div class="grid2">
+      <div><label for="nu-usuario">Usuario abreviado</label><input id="nu-usuario" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="ej. jperez"></div>
+      <div><label for="nu-estatus">Estatus</label>
+        <select id="nu-estatus"><option>ACTIVO</option><option>CERRADO</option></select>
+      </div>
+    </div>
+    <label for="nu-clave" id="nu-clave-lbl">Clave</label>
     <input id="nu-clave" autocomplete="off" autocapitalize="none" placeholder="Mínimo 6 caracteres">
+
+    <div id="acc-wrap">
+      <label>Sub fundos con acceso</label>
+      <div class="chk-list" id="acc-sub"></div>
+      <div class="acc" style="justify-content:flex-start;margin-top:6px">
+        <button type="button" data-todos="sub">Marcar todos</button><button type="button" data-ninguno="sub">Quitar todos</button>
+      </div>
+      <label>Carillas de evaluación (plantillas) con acceso</label>
+      <div class="chk-list" id="acc-pla"></div>
+      <div class="acc" style="justify-content:flex-start;margin-top:6px">
+        <button type="button" data-todos="pla">Marcar todas</button><button type="button" data-ninguno="pla">Quitar todas</button>
+      </div>
+      <p class="ayuda">El evaluador solo verá los lotes de los sub fundos marcados y solo podrá usar las plantillas marcadas. Sin marcar nada, no verá nada.</p>
+    </div>
+    <p class="ayuda" id="acc-admin" hidden>El administrador tiene permisos para todo: no necesita accesos.</p>
+
     <button class="btn" id="nu-crear">Crear usuario</button>
-    <p class="ayuda">Entrega la clave en persona. Usuario en minúsculas, sin espacios.</p>
+    <button class="btn sec" id="nu-cancelar" hidden>Cancelar edición</button>
+    <p class="ayuda">Entrega la clave en persona. Usuario en minúsculas y sin espacios. Un usuario con estatus CERRADO no puede ingresar ni enviar datos.</p>
   </div>
   <div class="card">
     <label style="margin-bottom:6px">Usuarios</label>
     <div id="lista-usr"><p class="ayuda">Cargando…</p></div>
     <button class="btn sec" id="u-recargar">Actualizar lista</button>
-    <p class="ayuda">Requiere internet. Un usuario desactivado ya no puede ingresar con internet ni enviar datos.</p>
+    <p class="ayuda">Requiere internet. El DNI es un dato personal: solo lo ve el administrador.</p>
   </div>
 </section>
 
@@ -295,7 +378,7 @@ textarea{min-height:110px}
     </select>
     <p class="ayuda">Si al abrir el CSV en Excel todo queda en una sola columna, cambia el separador.</p>
   </div>
-  <p class="ayuda" style="text-align:center">Versión 4.0 · Los datos quedan en este celular hasta que se envían a la hoja central.</p>
+  <p class="ayuda" style="text-align:center">Versión 5.0 · Los datos quedan en este celular hasta que se envían a la hoja central.</p>
 </section>
 
 </main>
@@ -315,12 +398,16 @@ textarea{min-height:110px}
    Pega aquí la URL que te da Apps Script (termina en /exec).
    Sin esta URL nadie puede ingresar a la app. */
 const SYNC = {
-  url: "https://script.google.com/macros/s/AKfycbwww3I9xUCzQB6H5EODxcDwl-9NZbZzlCoVULoBgzoXq6dSm1jNym100zLT19RXE3EZ/exec"
+  url: ""
 };
 
 const ROLES = { admin:"Administrador", evaluador:"Evaluador" };
-const NIV = ["campana","fundo","modulo","lote","turno","valvula"];
-const NIV_TXT = { campana:"Campaña", fundo:"Fundo", modulo:"Módulo", lote:"Lote", turno:"Turno", valvula:"Válvula" };
+const NIV = ["campana","sub_fundo","fundo","modulo","lote","turno","valvula"];
+const NIV_TXT = { campana:"Campaña", sub_fundo:"Sub fundo", fundo:"Fundo", modulo:"Módulo", lote:"Lote", turno:"Turno", valvula:"Válvula" };
+const SEDES = ["CARAZ","ICA","NEPEÑA","NAZCA","CASCAS"];
+const GRUPOS = ["Benéficos","Plagas","Enfermedades"];
+const ORGANOS = ["Brote","Planta","Flores","Baya","Cobertura"];
+const ESQUEMA = 5;      // cambia cuando cambia la forma de la configuración descargada
 const TIPOS = {
   conteo:"Conteo: número entero desde 0, con botones + y −. Se suma en «total_conteos».",
   entero:"Número entero (se puede limitar con mínimo y máximo).",
@@ -331,9 +418,9 @@ const TIPOS = {
   fecha:"Fecha (calendario)."
 };
 const TIPOS_CORTO = { conteo:"Conteo (+/−)", entero:"Número entero", decimal:"Número decimal", texto:"Texto", lista:"Lista de opciones", si_no:"Sí / No", fecha:"Fecha" };
-const RESERVADAS = ["id","fecha","hora","usuario","evaluador","plantilla","version_plantilla","campana","fundo","modulo","lote",
-  "turno","valvula","planta","dias_desde_poda","latitud","longitud","precision_m","total_conteos","observaciones",
-  "enviado_por","recibido","maestra_id","plantilla_id"];
+const RESERVADAS = ["id","fecha","hora","usuario","evaluador","plantilla","version_plantilla","campana","sede","cultivo","sub_fundo",
+  "fundo","modulo","lote","turno","valvula","pep","variedad","etapa","planta","dias_desde_inicio_campana","latitud","longitud",
+  "precision_m","total_conteos","observaciones","alerta_permiso","enviado_por","recibido","maestra_id","plantilla_id"];
 const MSG_SESION = "Tu sesión venció o tu usuario fue desactivado. Sal e ingresa de nuevo con internet.";
 
 const $ = id => document.getElementById(id);
@@ -358,19 +445,7 @@ function diasEntre(a,b){
 
 /* ---------- Estado global ---------- */
 let SES=null;                                   // {usuario, nombre, rol}
-let CFG={
-  version:0,
-  maestra:[],
-  plantillas:[],
-  catalogos:{
-    sedes:[],
-    cultivos:[],
-    subfundos:[],
-    variedades:[],
-    etapas:[],
-    cartillas:[]
-  }
-};   // configuración descargada del servidor
+let CFG={version:0,esquema:ESQUEMA,maestra:[],plantillas:[],umbrales:[]};   // configuración descargada del servidor
 let TRAB={plantilla:"",sel:{},plantas:{},rec:{}};
 let sesionVencida=false, nPend=0, filaPrevId="";
 
@@ -379,8 +454,8 @@ function getSep(){ try{ return localStorage.getItem("sep")||","; }catch(e){ retu
 function credLoad(){ try{ return JSON.parse(localStorage.getItem("cred")||"{}"); }catch(e){ return {}; } }
 function credSave(m){ try{ localStorage.setItem("cred",JSON.stringify(m)); }catch(e){} }
 function loadCfgSrv(u){
-  try{ const c=JSON.parse(localStorage.getItem("cfgsrv_"+u)||"null"); if(c&&Array.isArray(c.maestra)&&Array.isArray(c.plantillas)) return c; }catch(e){}
-  return {version:0,maestra:[],plantillas:[]};
+  try{ const c=JSON.parse(localStorage.getItem("cfgsrv_"+u)||"null"); if(c&&c.esquema===ESQUEMA&&Array.isArray(c.maestra)&&Array.isArray(c.plantillas)){ c.umbrales=c.umbrales||[]; return c; } }catch(e){}
+  return {version:0,esquema:ESQUEMA,maestra:[],plantillas:[],umbrales:[]};   // una configuración guardada por una versión anterior se descarta
 }
 function saveCfgSrv(){ try{ localStorage.setItem("cfgsrv_"+SES.usuario, JSON.stringify(CFG)); }catch(e){ toast("No se pudo guardar la configuración en el celular"); } }
 function loadTrab(){
@@ -545,7 +620,7 @@ function iniciarGPS(){
 /* ---------- Navegación por rol ---------- */
 function construirNav(){
   const items=[["s-evaluar","📝","Evaluar"],["s-registros","📋","Registros"]];
-  if(SES.rol==="admin") items.push(["s-maestra","🗺️","Maestra"],["s-plantilla","🧩","Plantilla"],["s-usuarios","👥","Usuarios"]);
+  if(SES.rol==="admin") items.push(["s-maestra","🗺️","Maestra"],["s-umbrales","🎯","Umbrales"],["s-plantilla","🧩","Plantilla"],["s-usuarios","👥","Usuarios"]);
   items.push(["s-ajustes","⚙️","Ajustes"]);
   $("nav").innerHTML=items.map(([s,i,t])=>`<button data-s="${s}"><span>${i}</span>${t}</button>`).join("");
   irA("s-evaluar");
@@ -555,8 +630,9 @@ function irA(id){
   document.querySelectorAll("main section").forEach(s=>s.classList.toggle("activa",s.id===id));
   document.querySelector(".barra-guardar").style.display = id==="s-evaluar" ? "" : "none";
   if(id==="s-registros") refrescarRegistros();
-  if(id==="s-usuarios") cargarUsuarios();
+  if(id==="s-usuarios"){ renderAccesos(); cargarUsuarios(); }
   if(id==="s-maestra") renderMaestra();
+  if(id==="s-umbrales") renderUmbrales();
   if(id==="s-plantilla") renderPlantillas();
   if(id==="s-ajustes") renderAjustes();
   window.scrollTo(0,0);
@@ -576,19 +652,7 @@ async function cargarConfig(forzar, silencioso){
     const j=await srv("config_obtener",{version:CFG.version},30000);
     cfgUlt=Date.now();
     if(j.cambio){
-      CFG={
-  version:j.version,
-  maestra:j.maestra || [],
-  plantillas:j.plantillas || [],
-  catalogos:j.catalogos || {
-    sedes:[],
-    cultivos:[],
-    subfundos:[],
-    variedades:[],
-    etapas:[],
-    cartillas:[]
-  }
-};
+      CFG={version:j.version,esquema:ESQUEMA,maestra:j.maestra||[],plantillas:j.plantillas||[],umbrales:j.umbrales||[]};
       saveCfgSrv(); aplicarConfig(false);
       if(!silencioso) toast("Configuración actualizada");
     } else if(!silencioso) toast("Ya tienes la última configuración");
@@ -608,14 +672,15 @@ function aplicarConfig(inicial){
   onValvulaCambio(true);
   renderForm(prev);
   actualizarAviso();
-  renderMaestra(); renderPlantillas(); renderAjustes();
+  renderMaestra(); renderUmbrales(); renderPlantillas(); renderAjustes();
+  if(SES.rol==="admin") renderAccesos();
 }
 
 function actualizarAviso(){
   const a=$("aviso-cfg"); let m="";
   if(!CFG.version) m="Aún no se descargó la configuración (maestra y plantilla). Conéctate a internet una vez.";
-  else if(!CFG.plantillas.some(p=>p.activa)) m = SES.rol==="admin" ? "No hay una plantilla activa. Créala en la pestaña Plantilla." : "No hay una plantilla activa. Avisa al administrador.";
-  else if(!abiertas().length) m = SES.rol==="admin" ? "No hay válvulas abiertas. Carga la maestra en la pestaña Maestra." : "No hay lotes abiertos. Avisa al administrador.";
+  else if(!CFG.plantillas.some(p=>p.activa)) m = SES.rol==="admin" ? "No hay una plantilla activa. Créala en la pestaña Plantilla." : "No tienes carillas de evaluación (plantillas) asignadas. Avisa al administrador.";
+  else if(!abiertas().length) m = SES.rol==="admin" ? "No hay válvulas activas. Carga la maestra en la pestaña Maestra." : "No tienes sub fundos con lotes activos asignados. Avisa al administrador.";
   a.textContent=m; a.hidden=!m;
 }
 
@@ -663,9 +728,12 @@ NIV.forEach((n,i)=>$("sel-"+n).addEventListener("change",()=>{
 function onValvulaCambio(conservarPlanta){
   const f=filaSel(), box=$("ficha");
   if(f){
-    const hoy=hoyISO(); let h=`<b>Área:</b> ${f.area_ha===""?"—":num(f.area_ha)+" ha"} · <b>Plantas:</b> ${f.plantas===""?"—":num(f.plantas)}`;
-    h+=`<br><b>Poda:</b> ${f.fecha_poda?esc(f.fecha_poda)+" ("+diasEntre(f.fecha_poda,hoy)+" días)":"—"}`;
-    h+=` · <b>Inicio cosecha:</b> ${f.inicio_cosecha?esc(f.inicio_cosecha):"—"}`;
+    const hoy=hoyISO();
+    let h=`<b>PEP:</b> ${esc(f.pep)} · <b>Sede:</b> ${esc(f.sede)} · <b>Cultivo:</b> ${esc(f.cultivo)}`;
+    h+=`<br><b>Variedad:</b> ${esc(f.variedad||"—")} · <b>Etapa:</b> ${esc(f.etapa||"—")}`;
+    h+=`<br><b>Área:</b> ${f.area===""?"—":num(f.area)+" ha"} · <b>Plantas:</b> ${f.plantas===""?"—":num(f.plantas)} · <b>Densidad:</b> ${f.densidad===""?"—":num(f.densidad)}`;
+    h+=`<br><b>Inicio de campaña:</b> ${f.inicio_campana?esc(f.inicio_campana)+" ("+diasEntre(f.inicio_campana,hoy)+" días)":"—"}`;
+    h+=` · <b>Inicio de cosecha:</b> ${f.inicio_cosecha?esc(f.inicio_cosecha):"—"}`;
     box.innerHTML=h; box.hidden=false;
   } else { box.hidden=true; box.innerHTML=""; }
   const id=f?f.id:"";
@@ -777,7 +845,7 @@ $("guardar").onclick = async ()=>{
   const p=plantillaActual();
   if(!p){ toast("No hay una plantilla activa"); return; }
   const fila=filaSel();
-  if(!fila){ toast("Selecciona campaña, fundo, módulo, lote, turno y válvula"); return; }
+  if(!fila){ toast("Selecciona campaña, sub fundo, fundo, módulo, lote, turno y válvula"); return; }
   const planta=parseInt($("planta").value);
   if(!planta||planta<1){ toast("N° de planta no válido"); return; }
 
@@ -801,9 +869,10 @@ $("guardar").onclick = async ()=>{
     ts:ahora.getTime(),
     usuario:SES.usuario, evaluador:SES.nombre,
     plantilla_id:p.id, plantilla_nombre:p.nombre, plantilla_version:p.version,
-    maestra_id:fila.id, campana:fila.campana, fundo:fila.fundo, modulo:fila.modulo, lote:fila.lote,
-    turno:fila.turno, valvula:fila.valvula, planta,
-    dias_poda: fila.fecha_poda ? diasEntre(fila.fecha_poda,hoy) : "",
+    maestra_id:fila.id, campana:fila.campana, sede:fila.sede, cultivo:fila.cultivo, sub_fundo:fila.sub_fundo,
+    fundo:fila.fundo, modulo:fila.modulo, lote:fila.lote, turno:fila.turno, valvula:fila.valvula,
+    pep:fila.pep, variedad:fila.variedad, etapa:fila.etapa, planta,
+    dias_campana: fila.inicio_campana ? diasEntre(fila.inicio_campana,hoy) : "",
     lat:pos?pos.lat:"", lon:pos?pos.lon:"", prec:pos?Math.round(pos.prec):"",
     valores, total_conteos:total, obs:$("obs").value.trim(), exportado:false, enviado:false
   };
@@ -860,14 +929,16 @@ function construirCSV(regs){
   const claves=[];
   CFG.plantillas.forEach(p=>p.campos.forEach(c=>{ if(!claves.includes(c.clave)) claves.push(c.clave); }));
   regs.forEach(r=>Object.keys(r.valores||r.conteos||{}).forEach(k=>{ if(!claves.includes(k)) claves.push(k); }));
-  const cab=["id","fecha","hora","usuario","evaluador","plantilla","version_plantilla","campana","fundo","modulo","lote","turno","valvula","planta",
-             "dias_desde_poda","latitud","longitud","precision_m","total_conteos","observaciones",...claves];
+  const cab=["id","fecha","hora","usuario","evaluador","plantilla","version_plantilla","campana","sede","cultivo","sub_fundo","fundo","modulo",
+             "lote","turno","valvula","pep","variedad","etapa","planta","dias_desde_inicio_campana","latitud","longitud","precision_m",
+             "total_conteos","observaciones",...claves];
   const filas=regs.map(r=>{
     const v=r.valores||r.conteos||{};
     const tot=r.total_conteos!==undefined?r.total_conteos:(r.total===undefined?"":r.total);
-    return [r.id,r.fecha,r.hora,r.usuario,r.evaluador,r.plantilla_nombre||"",r.plantilla_version||"",r.campana||"",r.fundo,r.modulo||"",r.lote,
-            r.turno||"",r.valvula||"",r.planta,r.dias_poda===undefined?"":r.dias_poda,r.lat,r.lon,r.prec,tot,r.obs,
-            ...claves.map(k=>v[k]===undefined?"":v[k])];
+    const dias=r.dias_campana!==undefined?r.dias_campana:(r.dias_poda===undefined?"":r.dias_poda);
+    return [r.id,r.fecha,r.hora,r.usuario,r.evaluador,r.plantilla_nombre||"",r.plantilla_version||"",r.campana||"",r.sede||"",r.cultivo||"",
+            r.sub_fundo||"",r.fundo,r.modulo||"",r.lote,r.turno||"",r.valvula||"",r.pep||"",r.variedad||"",r.etapa||"",r.planta,dias,
+            r.lat,r.lon,r.prec,tot,r.obs,...claves.map(k=>v[k]===undefined?"":v[k])];
   });
   return csvTexto(cab,filas);
 }
@@ -938,48 +1009,78 @@ async function sincronizar(manual){
 $("enviar-ahora").onclick=()=>sincronizar(true);
 
 /* =====================================================================
-   ADMINISTRADOR: MAESTRA
+   ADMINISTRADOR: MAESTRA (PROGRAMA DE PRODUCCIÓN)
    ===================================================================== */
-const MF={campana:"",estado:"ABIERTO",ver:new Set(),editId:""};
+const MF={campana:null,sub:"",estado:"ACTIVO",ver:new Set(),editId:""};
+const MF_CAMPOS=["sede","cultivo","sub_fundo","fundo","modulo","lote","turno","valvula","area","plantas","variedad","etapa",
+                 "inicio_campana","inicio_cosecha","cierre_campana","campana","estado"];
 let LOTES=[];
 
 function claveLoteTxt(r){ return [r.campana,r.fundo,r.modulo,r.lote].join("\u0001"); }
 
+// Densidad y PEP se calculan solos mientras se escribe
+function calcMaestraForm(){
+  const a=parseFloat(String($("mf-area").value).replace(",","."))||0;
+  const p=parseInt(String($("mf-plantas").value).replace(/\s/g,""),10)||0;
+  $("mf-densidad").value=(a>0&&p>0)?num(p/a):"";
+  const t=["mf-fundo","mf-modulo","mf-lote"].map(id=>$(id).value.trim());
+  $("mf-pep").value=t.some(Boolean)?t.join("/"):"";
+}
+["mf-area","mf-plantas","mf-fundo","mf-modulo","mf-lote"].forEach(id=>$(id).addEventListener("input",calcMaestraForm));
+
 function renderMaestra(){
   if(!SES||SES.rol!=="admin") return;
   const camps=[...new Set(CFG.maestra.map(r=>r.campana))].sort(coll).reverse();
-  if(!MF.campana || !camps.includes(MF.campana)) MF.campana = camps[0]||"";
+  if(MF.campana===null || (MF.campana!=="" && !camps.includes(MF.campana))) MF.campana=camps[0]||"";
+  const subs=[...new Set(CFG.maestra.map(r=>r.sub_fundo).filter(Boolean))].sort(coll);
+  if(MF.sub && !subs.includes(MF.sub)) MF.sub="";
   $("m-camp").innerHTML=`<option value="">Todas</option>`+camps.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
-  $("m-camp").value=MF.campana; $("m-est").value=MF.estado;
-  const dl=(id,k)=>{ $(id).innerHTML=[...new Set(CFG.maestra.map(r=>r[k]))].sort(coll).map(v=>`<option value="${esc(v)}">`).join(""); };
-  dl("dl-campana","campana"); dl("dl-fundo","fundo"); dl("dl-modulo","modulo");
+  $("m-camp").value=MF.campana;
+  $("m-sub").innerHTML=`<option value="">Todos</option>`+subs.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  $("m-sub").value=MF.sub; $("m-est").value=MF.estado;
+  const dl=(id,k)=>{ $(id).innerHTML=[...new Set(CFG.maestra.map(r=>r[k]).filter(Boolean))].sort(coll).map(v=>`<option value="${esc(v)}">`).join(""); };
+  dl("dl-cultivo","cultivo"); dl("dl-sub_fundo","sub_fundo"); dl("dl-fundo","fundo"); dl("dl-modulo","modulo");
+  dl("dl-variedad","variedad"); dl("dl-campana","campana");
+
+  // filas que vienen de la versión anterior y todavía no tienen sede, cultivo ni sub fundo
+  const sinSub=CFG.maestra.filter(r=>!r.sub_fundo).length;
+  $("m-aviso").hidden=!sinSub;
+  $("m-aviso").textContent=sinSub ? `${sinSub} válvulas no tienen sede, cultivo ni sub fundo (vienen de la versión anterior). Complétalas con «Válvulas > Editar» o vuelve a importar tu Excel completo. Mientras tanto ningún evaluador las verá.` : "";
 
   const grupos=new Map();
   CFG.maestra.forEach(r=>{
     if(MF.campana && r.campana!==MF.campana) return;
+    if(MF.sub && r.sub_fundo!==MF.sub) return;
     const k=claveLoteTxt(r);
-    if(!grupos.has(k)) grupos.set(k,{campana:r.campana,fundo:r.fundo,modulo:r.modulo,lote:r.lote,filas:[]});
+    if(!grupos.has(k)) grupos.set(k,{campana:r.campana,sede:r.sede,cultivo:r.cultivo,sub_fundo:r.sub_fundo,fundo:r.fundo,modulo:r.modulo,lote:r.lote,pep:r.pep,filas:[]});
     grupos.get(k).filas.push(r);
   });
-  LOTES=[...grupos.values()].map(g=>{ g.cerrado=g.filas.every(f=>f.estado==="CERRADO"); return g; })
+  LOTES=[...grupos.values()].map(g=>{
+      g.cerrado=g.filas.every(f=>f.estado==="CERRADO");
+      g.parcial=!g.cerrado && g.filas.some(f=>f.estado==="CERRADO");
+      return g; })
     .filter(g=> MF.estado==="TODOS" || (MF.estado==="CERRADO")===g.cerrado)
-    .sort((a,b)=>coll(a.campana,b.campana)||coll(a.fundo,b.fundo)||coll(a.modulo,b.modulo)||coll(a.lote,b.lote));
+    .sort((a,b)=>coll(a.campana,b.campana)||coll(a.sub_fundo,b.sub_fundo)||coll(a.fundo,b.fundo)||coll(a.modulo,b.modulo)||coll(a.lote,b.lote));
 
   $("m-lotes").innerHTML = LOTES.map((g,i)=>{
-    const area=g.filas.reduce((s,f)=>s+(Number(f.area_ha)||0),0), pl=g.filas.reduce((s,f)=>s+(Number(f.plantas)||0),0);
+    const area=g.filas.reduce((s,f)=>s+(Number(f.area)||0),0), pl=g.filas.reduce((s,f)=>s+(Number(f.plantas)||0),0);
     const abierto=MF.ver.has(claveLoteTxt(g.filas[0]));
+    const cierre=g.cerrado&&g.filas[0].cierre_campana ? " · cerrado el "+esc(g.filas[0].cierre_campana) : "";
     const val = abierto ? g.filas.slice().sort((a,b)=>coll(a.turno,b.turno)||coll(a.valvula,b.valvula)).map(f=>`
-        <div class="valvula"><div>T ${esc(f.turno)} · Válvula ${esc(f.valvula)}
-          <small>${f.area_ha===""?"—":num(f.area_ha)+" ha"} · ${f.plantas===""?"—":num(f.plantas)} plantas · poda ${esc(f.fecha_poda||"—")} · cosecha ${esc(f.inicio_cosecha||"—")}</small></div>
+        <div class="valvula"><div>T ${esc(f.turno)} · Válvula ${esc(f.valvula)}${f.estado==="CERRADO"?` <span class="tag no">cerrada</span>`:""}
+          <small>${f.area===""?"—":num(f.area)+" ha"} · ${f.plantas===""?"—":num(f.plantas)} plantas · densidad ${f.densidad===""?"—":num(f.densidad)} · ${esc(f.variedad||"sin variedad")} · etapa ${esc(f.etapa||"—")}</small>
+          <small>inicio campaña ${esc(f.inicio_campana||"—")} · inicio cosecha ${esc(f.inicio_cosecha||"—")} · cierre ${esc(f.cierre_campana||"—")}</small></div>
           <div class="acc"><button data-acc="editar" data-id="${esc(f.id)}">Editar</button></div></div>`).join("") : "";
     return `<div class="lote"><div class="reg"><div>
-        <span class="t">${esc(g.fundo)} · ${esc(g.modulo)} · Lote ${esc(g.lote)}</span><span class="tag ${g.cerrado?"no":"ok"}">${g.cerrado?"cerrado":"abierto"}</span>
-        <small>Campaña ${esc(g.campana)} · ${g.filas.length} válvulas · ${num(area)} ha · ${num(pl)} plantas${g.cerrado&&g.filas[0].fecha_cierre?" · cerrado el "+esc(g.filas[0].fecha_cierre):""}</small></div>
+        <span class="t">${esc(g.pep||[g.fundo,g.modulo,g.lote].join("/"))}</span><span class="tag ${g.cerrado?"no":"ok"}">${g.cerrado?"cerrado":(g.parcial?"parcial":"activo")}</span>
+        <small>${esc(g.sede||"sin sede")} · ${esc(g.cultivo||"sin cultivo")} · ${esc(g.sub_fundo||"sin sub fundo")} · campaña ${esc(g.campana)}</small>
+        <small>${g.filas.length} válvulas · ${num(area)} ha · ${num(pl)} plantas${cierre}</small></div>
         <div class="acc"><button data-acc="ver" data-i="${i}">${abierto?"Ocultar":"Válvulas"}</button>
         <button class="${g.cerrado?"":"rojo"}" data-acc="cierre" data-i="${i}">${g.cerrado?"Reabrir":"Cerrar lote"}</button></div></div>${val}</div>`;
   }).join("") || "<p class='ayuda'>No hay lotes con este filtro.</p>";
 }
 $("m-camp").onchange=()=>{ MF.campana=$("m-camp").value; renderMaestra(); };
+$("m-sub").onchange=()=>{ MF.sub=$("m-sub").value; renderMaestra(); };
 $("m-est").onchange=()=>{ MF.estado=$("m-est").value; renderMaestra(); };
 
 $("m-lotes").addEventListener("click", async e=>{
@@ -991,17 +1092,16 @@ $("m-lotes").addEventListener("click", async e=>{
       renderMaestra();
     } else if(b.dataset.acc==="cierre"){
       const g=LOTES[b.dataset.i], cerrar=!g.cerrado;
-      const nom=`${g.fundo} · ${g.modulo} · lote ${g.lote} (campaña ${g.campana})`;
-      if(!confirm(cerrar ? `¿Cerrar el lote ${nom}?\nLos evaluadores ya no podrán seleccionarlo. Podrás reabrirlo.` : `¿Reabrir el lote ${nom}?`)) return;
-      await apiAdmin("lote_estado",{campana:g.campana,fundo:g.fundo,modulo:g.modulo,lote:g.lote,estado:cerrar?"CERRADO":"ABIERTO"});
+      const nom=`${g.pep||[g.fundo,g.modulo,g.lote].join("/")} (campaña ${g.campana})`;
+      if(!confirm(cerrar ? `¿Cerrar el lote ${nom}?\nLos evaluadores ya no podrán seleccionarlo y se registrará la fecha de cierre de campaña. Podrás reabrirlo.` : `¿Reabrir el lote ${nom}?\nSe borrará su fecha de cierre de campaña.`)) return;
+      await apiAdmin("lote_estado",{campana:g.campana,fundo:g.fundo,modulo:g.modulo,lote:g.lote,estado:cerrar?"CERRADO":"ACTIVO"});
       toast(cerrar?"Lote cerrado":"Lote reabierto");
       await cargarConfig(true,true); renderMaestra(); actualizarAviso();
     } else if(b.dataset.acc==="editar"){
       const f=CFG.maestra.find(x=>x.id===b.dataset.id); if(!f) return;
       MF.editId=f.id;
-      $("mf-campana").value=f.campana; $("mf-fundo").value=f.fundo; $("mf-modulo").value=f.modulo; $("mf-lote").value=f.lote;
-      $("mf-turno").value=f.turno; $("mf-valvula").value=f.valvula; $("mf-area").value=f.area_ha; $("mf-plantas").value=f.plantas;
-      $("mf-poda").value=f.fecha_poda; $("mf-cosecha").value=f.inicio_cosecha;
+      MF_CAMPOS.forEach(k=>{ $("mf-"+k).value = (f[k]===undefined||f[k]===null) ? "" : f[k]; });
+      calcMaestraForm();
       $("mf-titulo").textContent="Editando válvula"; $("mf-guardar").textContent="Guardar cambios"; $("mf-cancelar").hidden=false;
       window.scrollTo(0,0);
     }
@@ -1010,40 +1110,34 @@ $("m-lotes").addEventListener("click", async e=>{
 
 function limpiarFormMaestra(){
   MF.editId="";
-  ["mf-fundo","mf-modulo","mf-lote","mf-turno","mf-valvula","mf-area","mf-plantas","mf-poda","mf-cosecha"].forEach(id=>$(id).value="");
-  $("mf-titulo").textContent="Agregar válvula"; $("mf-guardar").textContent="Guardar válvula"; $("mf-cancelar").hidden=true;
+  MF_CAMPOS.forEach(k=>{ $("mf-"+k).value=""; });
+  $("mf-estado").value="ACTIVO"; calcMaestraForm();
+  $("mf-titulo").textContent="Agregar válvula al programa de producción"; $("mf-guardar").textContent="Guardar válvula"; $("mf-cancelar").hidden=true;
 }
 $("mf-cancelar").onclick=limpiarFormMaestra;
 $("mf-guardar").onclick=async ()=>{
-  const fila={
-    id:MF.editId||undefined,
-    campana:$("mf-campana").value, fundo:$("mf-fundo").value, modulo:$("mf-modulo").value, lote:$("mf-lote").value,
-    turno:$("mf-turno").value, valvula:$("mf-valvula").value,
-    area_ha:$("mf-area").value.replace(",","."), plantas:$("mf-plantas").value.replace(/\s/g,""),
-    fecha_poda:$("mf-poda").value, inicio_cosecha:$("mf-cosecha").value
-  };
+  const fila={id:MF.editId||undefined};
+  MF_CAMPOS.forEach(k=>{ fila[k]=$("mf-"+k).value; });
+  fila.area=String(fila.area).replace(",","."); fila.plantas=String(fila.plantas).replace(/\s/g,"");
   $("mf-guardar").disabled=true;
   try{
     await apiAdmin("maestra_guardar",{fila});
     toast(MF.editId?"Cambios guardados":"Válvula agregada");
-    if(MF.estado==="CERRADO") MF.estado="ABIERTO";
-    MF.campana=fila.campana.replace(/\s+/g," ").trim();
-    // al agregar varias válvulas seguidas se conservan campaña, fundo, módulo, lote y fechas
-    if(MF.editId) limpiarFormMaestra(); else ["mf-turno","mf-valvula","mf-area","mf-plantas"].forEach(id=>$(id).value="");
+    // para que lo recién guardado se vea en la lista, se ajustan los filtros
+    MF.campana=fila.campana.replace(/\s+/g," ").trim(); MF.sub="";
+    if(MF.estado!=="TODOS" && MF.estado!==fila.estado) MF.estado="TODOS";
+    if(MF.editId) limpiarFormMaestra();
+    else ["mf-turno","mf-valvula","mf-area","mf-plantas"].forEach(id=>{ $(id).value=""; });   // al agregar varias seguidas se conserva el resto
+    calcMaestraForm();
     await cargarConfig(true,true); renderMaestra(); actualizarAviso();
   }catch(err){ toast(err.message); }
   finally{ $("mf-guardar").disabled=false; }
 };
 
-/* ---------- Importar maestra desde Excel / CSV ---------- */
+/* ---------- Lectura de tablas pegadas desde Excel o subidas en CSV ---------- */
 const norm = s => String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g," ").trim();
-const COLS_IMP = {
-  campana:["campana"], fundo:["fundo"], modulo:["modulo"], lote:["lote"], turno:["turno"],
-  valvula:["valvula","valvulas"], area_ha:["area","area ha","area has"],
-  plantas:["plantas","n plantas","nro plantas","numero de plantas","n de plantas"],
-  fecha_poda:["fecha de poda","fecha poda","poda"],
-  inicio_cosecha:["fecha inicio de cosecha","fecha inicio cosecha","inicio de cosecha","inicio cosecha","fecha de inicio de cosecha","cosecha"]
-};
+const ETIQ = { sede:"Sede", cultivo:"Cultivo", sub_fundo:"Sub fundo", fundo:"Fundo", modulo:"Módulo", lote:"Lote", turno:"Turno",
+  valvula:"Válvula", campana:"Campaña", grupo:"Grupo", variable:"Variable", item:"Ítem", umbral:"Umbral", organo:"Órgano evaluado", semana:"Semana de cultivo" };
 function partirLinea(l,sep){
   const out=[]; let cur="", q=false;
   for(let i=0;i<l.length;i++){
@@ -1068,49 +1162,160 @@ function convNumero(s,entero){
   if(entero){ if(/^\d{1,3}([.,]\d{3})+$/.test(s)) return s.replace(/[.,]/g,""); return s; }
   return s.replace(",",".");
 }
-function parsearMaestra(texto){
+// cols: {campo:[títulos aceptados normalizados]}; req: campos obligatorios
+function leerTabla(texto, cols, req){
   const lineas=String(texto||"").replace(/^﻿/,"").split(/\r?\n/).map((l,i)=>({l,n:i+1})).filter(x=>x.l.trim());
   if(lineas.length<2) return {error:"Pega o sube al menos la fila de títulos y una fila de datos."};
   const c=lineas[0].l;
   const sep = c.includes("\t") ? "\t" : (c.split(";").length>c.split(",").length ? ";" : ",");
   const cab=partirLinea(c,sep).map(norm);
   const idx={};
-  Object.keys(COLS_IMP).forEach(k=>{ const i=cab.findIndex(h=>COLS_IMP[k].includes(h)); if(i>=0) idx[k]=i; });
-  const falta=["campana","fundo","modulo","lote","turno","valvula"].filter(k=>!(k in idx));
-  if(falta.length) return {error:"Faltan columnas: "+falta.map(k=>NIV_TXT[k]).join(", ")+". Revisa los títulos (usa el formato descargable)."};
+  Object.keys(cols).forEach(k=>{ const i=cab.findIndex(h=>cols[k].includes(h)); if(i>=0) idx[k]=i; });
+  const falta=req.filter(k=>!(k in idx));
+  if(falta.length) return {error:"Faltan columnas: "+falta.map(k=>ETIQ[k]||k).join(", ")+". Revisa los títulos (usa el formato descargable)."};
   const filas=lineas.slice(1).map(x=>{
-    const v=partirLinea(x.l,sep), g=k=>(k in idx ? (v[idx[k]]||"") : "");
-    return { _n:x.n, campana:g("campana"), fundo:g("fundo"), modulo:g("modulo"), lote:g("lote"), turno:g("turno"), valvula:g("valvula"),
-      area_ha:convNumero(g("area_ha")), plantas:convNumero(g("plantas"),true),
-      fecha_poda:convFecha(g("fecha_poda")), inicio_cosecha:convFecha(g("inicio_cosecha")) };
+    const v=partirLinea(x.l,sep), o={_n:x.n};
+    Object.keys(idx).forEach(k=>{ o[k]=v[idx[k]]===undefined?"":v[idx[k]]; });
+    return o;
   });
   return {filas};
 }
-$("mi-archivo").onchange=async ()=>{
-  const f=$("mi-archivo").files[0]; if(!f) return;
-  try{ $("mi-texto").value=await f.text(); toast("Archivo cargado: revisa y toca «Revisar e importar»"); }
-  catch(e){ toast("No se pudo leer el archivo"); }
-};
-$("mi-formato").onclick=async ()=>{
-  const cab=["campaña","fundo","módulo","lote","turno","válvula","área (ha)","plantas","fecha de poda","inicio de cosecha"];
-  const ej=[["2026-27","Fundo 1","M1","L-01","T1","V-01","2.5","4500","2026-06-15","2026-12-01"],
-            ["2026-27","Fundo 1","M1","L-01","T1","V-02","2.0","3600","2026-06-15","2026-12-01"]];
-  await entregarArchivo("formato_maestra.csv", csvTexto(cab,ej));
-};
-$("mi-importar").onclick=async ()=>{
-  const r=parsearMaestra($("mi-texto").value), res=$("mi-res");
-  if(r.error){ res.innerHTML=`<span class="mal">${esc(r.error)}</span>`; return; }
-  if(!confirm(`Se importarán ${r.filas.length} filas (las que ya existan en esa campaña se actualizan). ¿Continuar?`)) return;
-  $("mi-importar").disabled=true; res.textContent="Importando…";
+async function ejecutarImport(accion, filas, res, btn, areaTexto, refrescar){
+  if(!confirm(`Se importarán ${filas.length} filas (las que ya existan se actualizan). ¿Continuar?`)) return;
+  btn.disabled=true; res.textContent="Importando…";
   try{
-    const j=await apiAdmin("maestra_importar",{filas:r.filas});
+    const j=await apiAdmin(accion,{filas});
     let h=`Nuevas: <b>${j.nuevos}</b> · Actualizadas: <b>${j.actualizados}</b> · Con error: <b class="${j.errores.length?"mal":""}">${j.errores.length}</b>`;
     if(j.errores.length) h+="<br>"+j.errores.slice(0,15).map(e=>`<span class="mal">Fila ${esc(e.n)}: ${esc(e.error)}</span>`).join("<br>")+(j.errores.length>15?"<br>…":"")+"<br>Corrige esas filas en tu Excel e impórtalas de nuevo.";
     res.innerHTML=h;
-    if(!j.errores.length) $("mi-texto").value="";
-    await cargarConfig(true,true); renderMaestra(); actualizarAviso();
+    if(!j.errores.length) areaTexto.value="";
+    await cargarConfig(true,true); refrescar(); actualizarAviso();
   }catch(err){ res.innerHTML=`<span class="mal">${esc(err.message)}</span>`; }
-  finally{ $("mi-importar").disabled=false; }
+  finally{ btn.disabled=false; }
+}
+async function leerArchivoEn(inputFile, areaTexto){
+  const f=inputFile.files[0]; if(!f) return;
+  try{ areaTexto.value=await f.text(); toast("Archivo cargado: revisa y toca «Revisar e importar»"); }
+  catch(e){ toast("No se pudo leer el archivo"); }
+}
+
+/* ---------- Importar la maestra ---------- */
+const COLS_MAESTRA = {
+  sede:["sede"], cultivo:["cultivo"], sub_fundo:["sub fundo","subfundo"], fundo:["fundo"], modulo:["modulo"], lote:["lote"],
+  turno:["turno"], valvula:["valvula","valvulas"], area:["area","area ha","area has"],
+  plantas:["plantas","n plantas","nro plantas","numero de plantas","n de plantas"],
+  variedad:["variedad"], etapa:["etapa"],
+  inicio_campana:["inicio de campana","inicio campana","fecha inicio de campana","fecha inicio campana"],
+  inicio_cosecha:["inicio de cosecha","inicio cosecha","fecha inicio de cosecha","fecha inicio cosecha","fecha de inicio de cosecha"],
+  cierre_campana:["cierre de campana","cierre campana","fecha cierre de campana","fecha cierre campana"],
+  campana:["campana"], estado:["estado campana","estado de campana","estado"]
+};
+const REQ_MAESTRA=["sede","cultivo","sub_fundo","fundo","modulo","lote","turno","valvula","campana"];
+$("mi-archivo").onchange=()=>leerArchivoEn($("mi-archivo"),$("mi-texto"));
+$("mi-formato").onclick=async ()=>{
+  const cab=["Sede","Cultivo","Sub_Fundo","Fundo","Módulo","Lote","Turno","Válvula","Área","Plantas","Densidad","Variedad","Etapa",
+             "Inicio de campaña","Inicio de cosecha","Cierre de campaña","Campaña","PEP","Estado Campaña"];
+  const ej=[["ICA","Uva","Sub fundo 1","Fundo 1","M1","L-01","T1","V-01","2.5","4500","","Variedad A","M","2026-06-15","2026-12-01","","2026-27","","ACTIVO"],
+            ["ICA","Uva","Sub fundo 1","Fundo 1","M1","L-01","T1","V-02","2","3600","","Variedad A","M","2026-06-15","2026-12-01","","2026-27","","ACTIVO"]];
+  await entregarArchivo("formato_maestra.csv", csvTexto(cab,ej));
+};
+$("mi-importar").onclick=()=>{
+  const r=leerTabla($("mi-texto").value, COLS_MAESTRA, REQ_MAESTRA), res=$("mi-res");
+  if(r.error){ res.innerHTML=`<span class="mal">${esc(r.error)}</span>`; return; }
+  r.filas.forEach(o=>{
+    o.area=convNumero(o.area); o.plantas=convNumero(o.plantas,true);
+    ["inicio_campana","inicio_cosecha","cierre_campana"].forEach(k=>{ o[k]=convFecha(o[k]); });
+  });
+  ejecutarImport("maestra_importar", r.filas, res, $("mi-importar"), $("mi-texto"), renderMaestra);
+};
+
+/* =====================================================================
+   ADMINISTRADOR: UMBRALES
+   ===================================================================== */
+const UF={editId:"",campana:null,grupo:"",q:""};
+const COLS_UMBRAL = {
+  grupo:["grupo"], variable:["variable"], item:["item","items"], umbral:["umbral"],
+  organo:["organo evaluado","organo"], semana:["semana de cultivo","semana"], campana:["campana"]
+};
+const REQ_UMBRAL=["grupo","variable","item","umbral","organo","semana","campana"];
+
+function renderUmbrales(){
+  if(!SES||SES.rol!=="admin") return;
+  const U=CFG.umbrales||[];
+  const camps=[...new Set(U.map(u=>u.campana))].sort(coll).reverse();
+  if(UF.campana===null || (UF.campana!=="" && !camps.includes(UF.campana))) UF.campana=camps[0]||"";
+  $("um-f-camp").innerHTML=`<option value="">Todas</option>`+camps.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  $("um-f-camp").value=UF.campana; $("um-f-grupo").value=UF.grupo;
+  const dl=(id,k)=>{ $(id).innerHTML=[...new Set(U.map(u=>u[k]).filter(Boolean))].sort(coll).map(v=>`<option value="${esc(v)}">`).join(""); };
+  dl("dl-um-variable","variable"); dl("dl-um-item","item"); dl("dl-um-campana","campana");
+  const q=norm(UF.q);
+  const lista=U.filter(u=>(!UF.campana||u.campana===UF.campana)&&(!UF.grupo||u.grupo===UF.grupo)&&(!q||norm(u.variable+" "+u.item).includes(q)))
+    .sort((a,b)=>coll(a.grupo,b.grupo)||coll(a.variable,b.variable)||coll(a.item,b.item)||coll(a.organo,b.organo)||(a.semana-b.semana));
+  const MAX=100;
+  $("um-lista").innerHTML = lista.slice(0,MAX).map(u=>`
+    <div class="reg"><div>
+      <span class="t">${esc(u.grupo)} · ${esc(u.variable)} · ${esc(u.item)}</span>
+      <small>Umbral ${num(u.umbral)} · ${esc(u.organo)} · semana ${esc(u.semana)} · campaña ${esc(u.campana)}</small></div>
+      <div class="acc"><button data-acc="editar" data-id="${esc(u.id)}">Editar</button><button class="rojo" data-acc="borrar" data-id="${esc(u.id)}">Eliminar</button></div></div>`).join("")
+    + (lista.length>MAX ? `<p class="ayuda">Mostrando ${MAX} de ${lista.length}: usa los filtros para acotar.</p>` : "")
+    || "<p class='ayuda'>No hay umbrales con este filtro.</p>";
+}
+$("um-f-camp").onchange=()=>{ UF.campana=$("um-f-camp").value; renderUmbrales(); };
+$("um-f-grupo").onchange=()=>{ UF.grupo=$("um-f-grupo").value; renderUmbrales(); };
+$("um-f-q").addEventListener("input",()=>{ UF.q=$("um-f-q").value; renderUmbrales(); });
+
+function limpiarFormUmbral(){
+  UF.editId="";
+  ["um-variable","um-item","um-umbral","um-semana"].forEach(id=>{ $(id).value=""; });
+  $("um-titulo").textContent="Agregar umbral"; $("um-guardar").textContent="Guardar umbral"; $("um-cancelar").hidden=true;
+}
+$("um-cancelar").onclick=()=>{ limpiarFormUmbral(); $("um-campana").value=""; };
+$("um-guardar").onclick=async ()=>{
+  const u={id:UF.editId||undefined, grupo:$("um-grupo").value, variable:$("um-variable").value, item:$("um-item").value,
+    umbral:$("um-umbral").value.replace(",","."), organo:$("um-organo").value, semana:$("um-semana").value, campana:$("um-campana").value};
+  $("um-guardar").disabled=true;
+  try{
+    await apiAdmin("umbral_guardar",{umbral:u});
+    toast(UF.editId?"Cambios guardados":"Umbral agregado");
+    UF.campana=u.campana.replace(/\s+/g," ").trim(); UF.grupo=""; UF.q=""; $("um-f-q").value="";
+    const editando=!!UF.editId;
+    limpiarFormUmbral();
+    if(editando) $("um-campana").value="";          // al agregar varios seguidos se conservan grupo, órgano y campaña
+    await cargarConfig(true,true); renderUmbrales();
+  }catch(err){ toast(err.message); }
+  finally{ $("um-guardar").disabled=false; }
+};
+$("um-lista").addEventListener("click", async e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  const u=(CFG.umbrales||[]).find(x=>x.id===b.dataset.id); if(!u) return;
+  try{
+    if(b.dataset.acc==="editar"){
+      UF.editId=u.id;
+      $("um-grupo").value=u.grupo; $("um-variable").value=u.variable; $("um-item").value=u.item; $("um-umbral").value=u.umbral;
+      $("um-organo").value=u.organo; $("um-semana").value=u.semana; $("um-campana").value=u.campana;
+      $("um-titulo").textContent="Editando umbral"; $("um-guardar").textContent="Guardar cambios"; $("um-cancelar").hidden=false;
+      window.scrollTo(0,0);
+    } else if(b.dataset.acc==="borrar"){
+      if(!confirm(`¿Eliminar el umbral ${u.variable} · ${u.item} (${u.organo}, semana ${u.semana}, campaña ${u.campana})?`)) return;
+      await apiAdmin("umbral_eliminar",{id:u.id});
+      toast("Umbral eliminado");
+      await cargarConfig(true,true); renderUmbrales();
+    }
+  }catch(err){ toast(err.message); }
+});
+$("um-archivo").onchange=()=>leerArchivoEn($("um-archivo"),$("um-texto"));
+$("um-formato").onclick=async ()=>{
+  const cab=["Grupo","Variable","Ítem","Umbral","Órgano evaluado","Semana de cultivo","Campaña"];
+  const ej=[["Plagas","EJEMPLO variable 1","EJEMPLO ítem","5","Brote","10","2026-27"],
+            ["Benéficos","EJEMPLO variable 2","EJEMPLO ítem","2","Planta","12","2026-27"],
+            ["Enfermedades","EJEMPLO variable 3","EJEMPLO ítem","10","Baya","14","2026-27"]];
+  await entregarArchivo("formato_umbrales.csv", csvTexto(cab,ej));
+};
+$("um-importar").onclick=()=>{
+  const r=leerTabla($("um-texto").value, COLS_UMBRAL, REQ_UMBRAL), res=$("um-res");
+  if(r.error){ res.innerHTML=`<span class="mal">${esc(r.error)}</span>`; return; }
+  r.filas.forEach(o=>{ o.umbral=convNumero(o.umbral); o.semana=convNumero(o.semana); });
+  ejecutarImport("umbral_importar", r.filas, res, $("um-importar"), $("um-texto"), renderUmbrales);
 };
 
 /* =====================================================================
@@ -1261,23 +1466,80 @@ $("ed-guardar").onclick=async ()=>{
 };
 
 /* =====================================================================
-   ADMINISTRADOR: USUARIOS
+   ADMINISTRADOR: USUARIOS (DNI, estatus y accesos)
    ===================================================================== */
+const NU={editando:""};
+let USUARIOS=[];
+
+function leerAccesos(){
+  return {
+    sub:[...document.querySelectorAll("#acc-sub input:checked")].map(x=>x.dataset.v),
+    pla:[...document.querySelectorAll("#acc-pla input:checked")].map(x=>x.dataset.v)
+  };
+}
+// Dibuja las listas de sub fundos y plantillas. Sin argumento, conserva lo que ya estaba marcado.
+function renderAccesos(sel){
+  sel=sel||leerAccesos();
+  const subs=[...new Set(CFG.maestra.map(r=>r.sub_fundo).filter(Boolean).concat(sel.sub))].sort(coll);
+  $("acc-sub").innerHTML = subs.length
+    ? subs.map(s=>`<label><input type="checkbox" data-v="${esc(s)}"${sel.sub.includes(s)?" checked":""}> ${esc(s)}</label>`).join("")
+    : "<p class='ayuda'>Aún no hay sub fundos: carga primero la Maestra.</p>";
+  const pls=CFG.plantillas.map(p=>({id:p.id,nombre:p.nombre+(p.activa?"":" (inactiva)")}));
+  sel.pla.forEach(id=>{ if(!pls.some(p=>p.id===id)) pls.push({id,nombre:id+" (ya no existe)"}); });
+  $("acc-pla").innerHTML = pls.length
+    ? pls.map(p=>`<label><input type="checkbox" data-v="${esc(p.id)}"${sel.pla.includes(p.id)?" checked":""}> ${esc(p.nombre)}</label>`).join("")
+    : "<p class='ayuda'>Aún no hay plantillas: créalas en la pestaña Plantilla.</p>";
+}
+function ajustarRolForm(){
+  const adm=$("nu-rol").value==="admin";
+  $("acc-wrap").hidden=adm; $("acc-admin").hidden=!adm;
+}
+$("nu-rol").onchange=ajustarRolForm;
+$("acc-wrap").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  const quien=b.dataset.todos||b.dataset.ninguno;
+  document.querySelectorAll(`#acc-${quien} input`).forEach(x=>{ x.checked=!!b.dataset.todos; });
+});
+
+function limpiarFormUsuario(){
+  NU.editando="";
+  ["nu-dni","nu-nombre","nu-usuario","nu-clave"].forEach(id=>{ $(id).value=""; });
+  $("nu-usuario").readOnly=false; $("nu-rol").value="evaluador"; $("nu-estatus").value="ACTIVO";
+  $("nu-clave").placeholder="Mínimo 6 caracteres"; $("nu-clave-lbl").textContent="Clave";
+  $("nu-titulo").textContent="Nuevo usuario"; $("nu-crear").textContent="Crear usuario"; $("nu-cancelar").hidden=true;
+  ajustarRolForm(); renderAccesos({sub:[],pla:[]});
+}
+function editarUsuario(u){
+  NU.editando=u.usuario;
+  $("nu-dni").value=u.dni||""; $("nu-nombre").value=u.nombre; $("nu-usuario").value=u.usuario; $("nu-usuario").readOnly=true;
+  $("nu-rol").value=u.rol; $("nu-estatus").value=u.estatus; $("nu-clave").value="";
+  $("nu-clave").placeholder="Déjala en blanco para no cambiarla"; $("nu-clave-lbl").textContent="Clave nueva (opcional)";
+  $("nu-titulo").textContent="Editando a "+u.usuario; $("nu-crear").textContent="Guardar cambios"; $("nu-cancelar").hidden=false;
+  ajustarRolForm(); renderAccesos({sub:u.subfundos||[],pla:u.plantillas||[]});
+  window.scrollTo(0,0);
+}
+$("nu-cancelar").onclick=limpiarFormUsuario;
+
 async function cargarUsuarios(){
   if(!SES||SES.rol!=="admin") return;
   const cont=$("lista-usr");
   try{
     const j=await apiAdmin("usuario_listar",{});
-    cont.innerHTML=j.usuarios.map(u=>`
+    USUARIOS=j.usuarios;
+    const nomPla=id=>(CFG.plantillas.find(p=>p.id===id)||{nombre:id}).nombre;
+    cont.innerHTML=USUARIOS.map((u,i)=>`
       <div class="reg">
         <div>
           <span class="t">${esc(u.nombre)}</span>
-          <span class="tag ${u.activo?"ok":"no"}">${u.activo?"activo":"desactivado"}</span>
-          <small>${esc(u.usuario)} · ${esc(ROLES[u.rol]||u.rol)}</small>
+          <span class="tag ${u.estatus==="ACTIVO"?"ok":"no"}">${esc(u.estatus)}</span>
+          <span class="tag">${esc(ROLES[u.rol]||u.rol)}</span>
+          <small>${esc(u.usuario)} · DNI ${u.dni?esc(u.dni):"<b>falta</b>"}</small>
+          <small>${u.rol==="admin" ? "Todos los permisos"
+            : "Sub fundos: "+(u.subfundos.length?u.subfundos.map(esc).join(", "):"<b>ninguno</b>")+" · Plantillas: "+(u.plantillas.length?u.plantillas.map(id=>esc(nomPla(id))).join(", "):"<b>ninguna</b>")}</small>
         </div>
         <div class="acc">
-          <button data-acc="clave" data-u="${esc(u.usuario)}">Clave</button>
-          <button class="rojo" data-acc="estado" data-u="${esc(u.usuario)}" data-act="${u.activo?"0":"1"}">${u.activo?"Desactivar":"Activar"}</button>
+          <button data-acc="editar" data-i="${i}">Editar</button>
+          <button class="${u.estatus==="ACTIVO"?"rojo":""}" data-acc="estado" data-i="${i}">${u.estatus==="ACTIVO"?"Cerrar":"Activar"}</button>
         </div>
       </div>`).join("") || "<p class='ayuda'>No hay usuarios.</p>";
   }catch(e){ cont.innerHTML=`<p class="ayuda" style="color:var(--rojo)">${esc(e.message)}</p>`; }
@@ -1285,34 +1547,33 @@ async function cargarUsuarios(){
 $("u-recargar").onclick=cargarUsuarios;
 $("lista-usr").addEventListener("click", async e=>{
   const b=e.target.closest("button"); if(!b) return;
-  const u=b.dataset.u;
+  const u=USUARIOS[b.dataset.i]; if(!u) return;
   try{
-    if(b.dataset.acc==="estado"){
-      const activar=b.dataset.act==="1";
-      if(!confirm(`¿${activar?"Activar":"Desactivar"} al usuario ${u}?`)) return;
-      await apiAdmin("usuario_estado",{usuario:u,activo:activar});
-      toast(activar?"Usuario activado":"Usuario desactivado");
-    } else if(b.dataset.acc==="clave"){
-      const nueva=prompt(`Nueva clave para ${u} (mínimo 6 caracteres):`);
-      if(!nueva) return;
-      await apiAdmin("usuario_clave",{usuario:u,clave:nueva});
-      toast("Clave cambiada");
+    if(b.dataset.acc==="editar") editarUsuario(u);
+    else if(b.dataset.acc==="estado"){
+      const nuevo=u.estatus==="ACTIVO"?"CERRADO":"ACTIVO";
+      if(!confirm(nuevo==="CERRADO" ? `¿Cerrar la cuenta de ${u.usuario}? Ya no podrá ingresar ni enviar datos.` : `¿Activar la cuenta de ${u.usuario}?`)) return;
+      await apiAdmin("usuario_estado",{usuario:u.usuario,estatus:nuevo});
+      toast(nuevo==="CERRADO"?"Cuenta cerrada":"Cuenta activada");
+      cargarUsuarios();
     }
-    cargarUsuarios();
   }catch(err){ toast(err.message); }
 });
 $("nu-crear").onclick=async ()=>{
+  const ac=leerAccesos();
   const datos={
-    usuario:$("nu-usuario").value.trim().toLowerCase(), nombre:$("nu-nombre").value.trim(),
-    rol:$("nu-rol").value, clave:$("nu-clave").value
+    dni:$("nu-dni").value.replace(/\s/g,""), nombre:$("nu-nombre").value.trim(), rol:$("nu-rol").value,
+    usuario:$("nu-usuario").value.trim().toLowerCase(), clave:$("nu-clave").value, estatus:$("nu-estatus").value,
+    subfundos:ac.sub, plantillas:ac.pla
   };
-  if(!datos.usuario||!datos.nombre||!datos.clave){ toast("Completa usuario, nombre y clave"); return; }
+  if(!/^\d{8}$/.test(datos.dni)){ toast("El DNI debe tener 8 dígitos"); return; }
+  if(!datos.nombre||!datos.usuario){ toast("Completa el nombre completo y el usuario"); return; }
+  if(!NU.editando && !datos.clave){ toast("Escribe una clave para el usuario nuevo"); return; }
   $("nu-crear").disabled=true;
   try{
-    await apiAdmin("usuario_crear",datos);
-    toast(`Usuario ${datos.usuario} creado`);
-    ["nu-usuario","nu-nombre","nu-clave"].forEach(id=>$(id).value="");
-    cargarUsuarios();
+    await apiAdmin("usuario_guardar",{usuario_datos:datos});
+    toast(NU.editando?`Cambios de ${datos.usuario} guardados`:`Usuario ${datos.usuario} creado`);
+    limpiarFormUsuario(); cargarUsuarios();
   }catch(err){ toast(err.message); }
   finally{ $("nu-crear").disabled=false; }
 };
@@ -1322,7 +1583,7 @@ function renderAjustes(){
   if(!SES) return;
   const ab=CFG.maestra.filter(r=>r.estado!=="CERRADO").length;
   $("aj-info").textContent = CFG.version
-    ? `Versión ${CFG.version} · ${ab} válvulas abiertas · ${CFG.plantillas.filter(p=>p.activa).length} plantillas activas`
+    ? `Versión ${CFG.version} · ${ab} válvulas activas ·${SES.rol==="admin"?` ${(CFG.umbrales||[]).length} umbrales ·`:""} ${CFG.plantillas.filter(p=>p.activa).length} plantillas activas`
     : "Aún no se ha descargado. Conéctate a internet.";
 }
 $("aj-actualizar").onclick=()=>cargarConfig(true,false);
@@ -1340,7 +1601,14 @@ addEventListener("offline",actualizarRed);
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ sincronizar(false); cargarConfig(false,true); } });
 
 /* ---------- Inicio ---------- */
+function poblarListas(){
+  const op=(l,vacio)=>(vacio?`<option value="">${vacio}</option>`:"")+l.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");
+  $("mf-sede").innerHTML=op(SEDES,"Selecciona…");
+  $("um-grupo").innerHTML=op(GRUPOS); $("um-organo").innerHTML=op(ORGANOS);
+  $("um-f-grupo").innerHTML=op(GRUPOS,"Todos");
+}
 (function init(){
+  poblarListas();
   actualizarRed();
   if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
   let u=null;
