@@ -3,16 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#2e7d32">
+<meta name="theme-color" content="#1e3a8a">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
-<title>Evaluación Fitosanitaria</title>
+<title>Evaluaciones de campo</title>
 <style>
-:root{--verde:#2e7d32;--verde-osc:#1b5e20;--fondo:#f4f6f3;--borde:#cfd8cc;--texto:#1c2a1c;--rojo:#c62828;--ambar:#f9a825}
+:root{--pri:#1e3a8a;--pri-osc:#172a5c;--hdr:#1e3a8a;--fondo:#f1f4fa;--card:#fff;--borde:#c9d3e6;--texto:#131b2e;--tenue:#4f5d78;--suave:#e9eef8;--grisbtn:#7f8da6;--tag-ok:#d6e3ff;--aviso-bg:#fff8e1;--aviso-bd:#f0d98a;--aviso-tx:#6b5200;--rojo:#c62828;--ambar:#f9a825;color-scheme:light}
+:root[data-tema=oscuro]{--pri:#3f6fd8;--pri-osc:#a8c3ff;--hdr:#121a30;--fondo:#0d1322;--card:#161e34;--borde:#2b3757;--texto:#e6ebf7;--tenue:#9aa8c6;--suave:#1d2845;--grisbtn:#4b5878;--tag-ok:#25376b;--aviso-bg:#352c10;--aviso-bd:#6a5519;--aviso-tx:#f1dc9d;--rojo:#ff7b7b;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
 body{margin:0;font-family:system-ui,-apple-system,Roboto,Arial,sans-serif;background:var(--fondo);color:var(--texto);font-size:17px;padding-bottom:84px}
-header{background:var(--verde);color:#fff;padding:10px 16px;position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:8px}
+header{background:var(--hdr);color:#fff;padding:10px 16px;position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:8px}
 header h1{font-size:18px;margin:0}
 #quien{font-size:12px;opacity:.9;margin-top:2px}
 .der{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
@@ -21,89 +22,99 @@ header h1{font-size:18px;margin:0}
 main{padding:12px;max-width:680px;margin:0 auto}
 section{display:none}
 section.activa{display:block}
-.card{background:#fff;border:1px solid var(--borde);border-radius:12px;padding:12px;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--borde);border-radius:12px;padding:12px;margin-bottom:12px}
 label{display:block;font-size:14px;font-weight:600;margin:10px 0 4px}
 label:first-child{margin-top:0}
-input,select,textarea{width:100%;font-size:18px;padding:12px;border:1.5px solid var(--borde);border-radius:10px;background:#fff;color:var(--texto);font-family:inherit}
-input:focus,select:focus,textarea:focus{outline:2px solid var(--verde);border-color:var(--verde)}
-input[readonly],select:disabled{background:#eef1ec;color:#445}
+input,select,textarea{width:100%;font-size:18px;padding:12px;border:1.5px solid var(--borde);border-radius:10px;background:var(--card);color:var(--texto);font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--pri);border-color:var(--pri)}
+input[readonly],select:disabled{background:var(--suave);color:var(--tenue)}
 input[type=checkbox]{width:auto;margin-right:8px;transform:scale(1.3)}
 .fila{display:flex;gap:10px}
 .fila>*{flex:1}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
 .grid2>div{min-width:0}
-.plaga{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #eef1ec}
+.plaga{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--suave)}
 .plaga:last-child{border-bottom:0}
 .plaga .nombre{flex:1;font-weight:600}
 .contador{display:flex;align-items:center;gap:6px}
-.contador button{width:52px;height:52px;border-radius:12px;border:0;font-size:28px;font-weight:700;background:var(--verde);color:#fff}
-.contador button.menos{background:#8d9a8b}
+.contador button{width:52px;height:52px;border-radius:12px;border:0;font-size:28px;font-weight:700;background:var(--pri);color:#fff}
+.contador button.menos{background:var(--grisbtn)}
 .contador button:active{transform:scale(.94)}
 .contador input{width:66px;text-align:center;font-size:22px;font-weight:700;padding:10px 4px}
-.btn{display:block;width:100%;padding:15px;font-size:18px;font-weight:700;border:0;border-radius:12px;background:var(--verde);color:#fff;margin-top:10px}
-.btn.sec{background:#fff;color:var(--verde-osc);border:2px solid var(--verde)}
-.btn.peligro{background:#fff;color:var(--rojo);border:2px solid var(--rojo)}
+.btn{display:block;width:100%;padding:15px;font-size:18px;font-weight:700;border:0;border-radius:12px;background:var(--pri);color:#fff;margin-top:10px}
+.btn.sec{background:var(--card);color:var(--pri-osc);border:2px solid var(--pri)}
+.btn.peligro{background:var(--card);color:var(--rojo);border:2px solid var(--rojo)}
 .btn:disabled{opacity:.5}
 .barra-guardar{position:fixed;left:0;right:0;bottom:56px;padding:8px 12px;background:linear-gradient(transparent,var(--fondo) 30%);z-index:4}
 .barra-guardar .btn{max-width:656px;margin:0 auto;box-shadow:0 2px 8px rgba(0,0,0,.25)}
-nav{position:fixed;left:0;right:0;bottom:0;height:56px;background:#fff;border-top:1px solid var(--borde);display:flex;z-index:6;overflow-x:auto}
-nav button{flex:1 0 auto;min-width:66px;border:0;background:none;font-size:11px;font-weight:600;color:#667;padding:4px 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+nav{position:fixed;left:0;right:0;bottom:0;height:56px;background:var(--card);border-top:1px solid var(--borde);display:flex;z-index:6;overflow-x:auto}
+nav button{flex:1 0 auto;min-width:66px;border:0;background:none;font-size:11px;font-weight:600;color:var(--tenue);padding:4px 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
 nav button span{font-size:19px;line-height:1}
-nav button.activa{color:var(--verde-osc);border-top:3px solid var(--verde)}
+nav button.activa{color:var(--pri-osc);border-top:3px solid var(--pri)}
 .planta-n{display:flex;align-items:center;gap:8px}
 .planta-n input{text-align:center;font-weight:700;font-size:24px}
-.planta-n button{width:52px;height:52px;border-radius:12px;border:2px solid var(--verde);background:#fff;font-size:26px;color:var(--verde-osc);flex:none}
-.gps{font-size:13px;color:#556;margin-top:6px}
-.gps.ok{color:var(--verde-osc)}
+.planta-n button{width:52px;height:52px;border-radius:12px;border:2px solid var(--pri);background:var(--card);font-size:26px;color:var(--pri-osc);flex:none}
+.gps{font-size:13px;color:var(--tenue);margin-top:6px}
+.gps.ok{color:var(--pri-osc)}
 .gps.mal{color:var(--rojo)}
-.ficha{background:#eef6ee;border:1px solid #cfe3cf;border-radius:10px;padding:8px 10px;margin-top:10px;font-size:14px;line-height:1.5}
-.grupo-t{font-size:15px;font-weight:700;color:var(--verde-osc);margin:0 0 6px}
+.ficha{background:var(--suave);border:1px solid var(--borde);border-radius:10px;padding:8px 10px;margin-top:10px;font-size:14px;line-height:1.5}
+.grupo-t{font-size:15px;font-weight:700;color:var(--pri-osc);margin:0 0 6px}
 .req{color:var(--rojo)}
 .resumen{display:flex;gap:8px;margin-bottom:12px}
-.resumen div{flex:1;background:#fff;border:1px solid var(--borde);border-radius:12px;padding:10px;text-align:center}
+.resumen div{flex:1;background:var(--card);border:1px solid var(--borde);border-radius:12px;padding:10px;text-align:center}
 .resumen b{display:block;font-size:26px}
-.resumen small{color:#556}
-.reg{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #eef1ec;font-size:15px}
+.resumen small{color:var(--tenue)}
+.reg{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--suave);font-size:15px}
 .reg>div:first-child{min-width:0}
 .reg .t{font-weight:700}
-.reg small{color:#556;display:block}
+.reg small{color:var(--tenue);display:block}
 .reg button.x{border:0;background:none;color:var(--rojo);font-size:22px;padding:8px}
 .acc{display:flex;gap:6px;flex:none;flex-wrap:wrap;justify-content:flex-end}
-.acc button{border:1.5px solid var(--verde);background:#fff;color:var(--verde-osc);border-radius:10px;padding:8px 10px;font-size:13px;font-weight:600}
+.acc button{border:1.5px solid var(--pri);background:var(--card);color:var(--pri-osc);border-radius:10px;padding:8px 10px;font-size:13px;font-weight:600}
 .acc button.rojo{border-color:var(--rojo);color:var(--rojo)}
-.valvula{padding:6px 0 6px 12px;font-size:14px;display:flex;justify-content:space-between;gap:8px;align-items:center;border-top:1px dashed #e3e9e1}
-.valvula small{color:#556;display:block}
-.tag{font-size:11px;padding:2px 7px;border-radius:10px;background:#fff3cd;color:#7a5b00;margin-left:6px;white-space:nowrap}
-.tag.ok{background:#d8f0d9;color:var(--verde-osc)}
+.valvula{padding:6px 0 6px 12px;font-size:14px;display:flex;justify-content:space-between;gap:8px;align-items:center;border-top:1px dashed var(--borde)}
+.valvula small{color:var(--tenue);display:block}
+.tag{font-size:11px;padding:2px 7px;border-radius:10px;background:var(--card)3cd;color:#7a5b00;margin-left:6px;white-space:nowrap}
+.tag.ok{background:var(--tag-ok);color:var(--pri-osc)}
 .tag.no{background:#fde0e0;color:var(--rojo)}
 #toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 18px;border-radius:20px;font-size:15px;opacity:0;transition:opacity .25s;z-index:20;pointer-events:none;max-width:90%;text-align:center}
 #toast.ver{opacity:.95}
-.ayuda{font-size:13px;color:#556;margin:4px 0 0}
-.aviso{background:#fff8e1;border:1px solid #f0d98a;color:#6b5200;font-size:14px}
+.ayuda{font-size:13px;color:var(--tenue);margin:4px 0 0}
+.aviso{background:var(--card)8e1;border:1px solid #f0d98a;color:#6b5200;font-size:14px}
 textarea{min-height:110px}
 .login{max-width:420px;margin:0 auto;padding:24px 12px}
 .login h2{margin:0 0 4px}
 #l-msg{color:var(--rojo);font-size:14px;min-height:20px;font-weight:600}
 .verclave{display:flex;align-items:center;font-weight:400;font-size:14px;margin-top:10px}
-.campo-ed{border:1.5px solid var(--borde);border-radius:12px;padding:10px;margin-bottom:10px;background:#fafcfa}
+.campo-ed{border:1.5px solid var(--borde);border-radius:12px;padding:10px;margin-bottom:10px;background:var(--suave)}
 .campo-ed.oculto{opacity:.6}
 .mini{display:flex;flex-wrap:wrap;margin-top:4px}
 .mini label{display:flex;align-items:center;font-weight:400;font-size:14px;margin:6px 14px 0 0}
 .res-imp{font-size:14px;margin-top:8px;line-height:1.5}
 .res-imp .mal{color:var(--rojo)}
-.chk-list{max-height:210px;overflow:auto;border:1.5px solid var(--borde);border-radius:10px;padding:2px 10px;margin-top:4px;background:#fff}
+.chk-list{max-height:210px;overflow:auto;border:1.5px solid var(--borde);border-radius:10px;padding:2px 10px;margin-top:4px;background:var(--card)}
 .chk-list label{display:flex;align-items:center;font-weight:400;font-size:15px;margin:8px 0}
+#tema{border:1.5px solid rgba(255,255,255,.7);background:none;color:#fff;border-radius:10px;padding:5px 9px;font-size:16px;line-height:1}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+.tile{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:16px 14px;border:1.5px solid var(--borde);border-radius:14px;background:var(--card);color:var(--texto);text-align:left;font-family:inherit;min-height:112px}
+.tile:active{transform:scale(.97)}
+.tile .ic{font-size:30px;line-height:1}
+.tile b{font-size:17px;color:var(--pri-osc)}
+.tile small{font-size:12.5px;color:var(--tenue);line-height:1.3}
+.tile.adm{border-style:dashed}
+.tile .pend{background:var(--pri);color:#fff;border-radius:10px;padding:1px 8px;font-size:12px;font-weight:700}
 </style>
 </head>
 <body>
 
 <header>
   <div>
-    <h1>🌿 Evaluación de plagas</h1>
+    <h1 id="h-titulo">🌿 Evaluaciones</h1>
     <div id="quien"></div>
   </div>
   <div class="der">
     <span id="estado">…</span>
+    <button id="tema" aria-label="Cambiar entre modo claro y oscuro">🌙</button>
     <button id="salir" hidden>Salir</button>
   </div>
 </header>
@@ -127,8 +138,15 @@ textarea{min-height:110px}
 <div id="app" hidden>
 <main>
 
+<!-- ================= INICIO (módulos) ================= -->
+<section id="s-inicio" class="activa">
+  <div class="card aviso" id="ini-aviso" hidden></div>
+  <p class="ayuda" style="margin:2px 2px 0">Elige un módulo</p>
+  <div class="tiles" id="tiles"></div>
+</section>
+
 <!-- ================= EVALUAR ================= -->
-<section id="s-evaluar" class="activa">
+<section id="s-evaluar">
   <div class="card aviso" id="aviso-cfg" hidden></div>
   <div class="card">
     <div id="wrap-plantilla"><label for="plantilla">Plantilla</label><select id="plantilla"></select></div>
@@ -291,6 +309,45 @@ textarea{min-height:110px}
   </div>
 </section>
 
+<!-- ================= FUNDOS (módulo Agrícola) ================= -->
+<section id="s-fundos">
+  <div class="card">
+    <label id="fu-titulo" style="margin-bottom:0">Agregar fundo</label>
+    <p class="ayuda">Maestra de fundos: a qué unidad de negocio, sede y sub fundo pertenece cada fundo.</p>
+    <div class="grid2">
+      <div><label for="fu-unidad">Unidad de negocio</label><select id="fu-unidad"></select></div>
+      <div><label for="fu-sede">Sede</label><select id="fu-sede"></select></div>
+      <div><label for="fu-sub_fundo">Sub fundo</label><input id="fu-sub_fundo" autocomplete="off"></div>
+      <div><label for="fu-fundo">Fundo</label><input id="fu-fundo" autocomplete="off"></div>
+      <div><label for="fu-estado">Estado</label><select id="fu-estado"><option>ACTIVO</option><option>CERRADO</option></select></div>
+    </div>
+    <button class="btn" id="fu-guardar">Guardar fundo</button>
+    <button class="btn sec" id="fu-cancelar" hidden>Cancelar edición</button>
+  </div>
+  <div class="card">
+    <label style="margin-bottom:0">Fundos</label>
+    <input id="fu-q" placeholder="Buscar por fundo, sub fundo, sede o unidad" autocomplete="off" style="margin-top:6px">
+    <div id="fu-lista" style="margin-top:8px"></div>
+  </div>
+</section>
+
+<!-- ================= UNIDADES DE NEGOCIO (módulo Agrícola) ================= -->
+<section id="s-unidades">
+  <div class="card">
+    <label id="un-titulo" style="margin-bottom:0">Agregar unidad de negocio</label>
+    <div class="grid2">
+      <div><label for="un-nombre">Unidad de negocio</label><input id="un-nombre" autocomplete="off"></div>
+      <div><label for="un-estado">Estado</label><select id="un-estado"><option>ACTIVO</option><option>CERRADO</option></select></div>
+    </div>
+    <button class="btn" id="un-guardar">Guardar unidad</button>
+    <button class="btn sec" id="un-cancelar" hidden>Cancelar edición</button>
+  </div>
+  <div class="card">
+    <label style="margin-bottom:6px">Unidades de negocio</label>
+    <div id="un-lista"></div>
+  </div>
+</section>
+
 <!-- ================= PLANTILLA (administrador) ================= -->
 <section id="s-plantilla">
   <div class="card" id="pl-listado">
@@ -301,6 +358,9 @@ textarea{min-height:110px}
   </div>
   <div id="pl-editor" hidden>
     <div class="card">
+      <label for="ed-mod">Módulo de evaluación</label>
+      <select id="ed-mod"></select>
+      <p class="ayuda">El módulo no se puede cambiar después de guardar la plantilla.</p>
       <label for="ed-nombre">Nombre de la plantilla</label>
       <input id="ed-nombre" data-ed="nombre" autocomplete="off" placeholder="Ej. Evaluación fitosanitaria - Plagas">
       <div class="mini"><label><input type="checkbox" id="ed-activa" data-ed="activa"> Activa (visible para los evaluadores)</label></div>
@@ -377,8 +437,14 @@ textarea{min-height:110px}
       <option value=";">Punto y coma ( ; )</option>
     </select>
     <p class="ayuda">Si al abrir el CSV en Excel todo queda en una sola columna, cambia el separador.</p>
+    <label for="cfg-tema">Apariencia</label>
+    <select id="cfg-tema">
+      <option value="auto">Automática (según el celular)</option>
+      <option value="claro">Clara</option>
+      <option value="oscura">Oscura</option>
+    </select>
   </div>
-  <p class="ayuda" style="text-align:center">Versión 5.0 · Los datos quedan en este celular hasta que se envían a la hoja central.</p>
+  <p class="ayuda" style="text-align:center">Versión 6.0 · Los datos quedan en este celular hasta que se envían a la hoja central.</p>
 </section>
 
 </main>
@@ -398,7 +464,7 @@ textarea{min-height:110px}
    Pega aquí la URL que te da Apps Script (termina en /exec).
    Sin esta URL nadie puede ingresar a la app. */
 const SYNC = {
-  url: "https://script.google.com/macros/s/AKfycbwww3I9xUCzQB6H5EODxcDwl-9NZbZzlCoVULoBgzoXq6dSm1jNym100zLT19RXE3EZ/exec"
+  url: ""
 };
 
 const ROLES = { admin:"Administrador", evaluador:"Evaluador" };
@@ -407,7 +473,7 @@ const NIV_TXT = { campana:"Campaña", sub_fundo:"Sub fundo", fundo:"Fundo", modu
 const SEDES = ["CARAZ","ICA","NEPEÑA","NAZCA","CASCAS"];
 const GRUPOS = ["Benéficos","Plagas","Enfermedades"];
 const ORGANOS = ["Brote","Planta","Flores","Baya","Cobertura"];
-const ESQUEMA = 5;      // cambia cuando cambia la forma de la configuración descargada
+const ESQUEMA = 6;      // cambia cuando cambia la forma de la configuración descargada
 const TIPOS = {
   conteo:"Conteo: número entero desde 0, con botones + y −. Se suma en «total_conteos».",
   entero:"Número entero (se puede limitar con mínimo y máximo).",
@@ -428,6 +494,32 @@ const esc = s => String(s===undefined||s===null?"":s).replace(/[&<>"']/g, c => (
 const coll = (a,b) => String(a).localeCompare(String(b),"es",{numeric:true,sensitivity:"base"});
 const num = n => (Math.round(Number(n)*100)/100).toLocaleString("es-PE");
 
+/* ---------- Apariencia: claro / oscuro ---------- */
+function temaGuardado(){ try{ return localStorage.getItem("tema")||"auto"; }catch(e){ return "auto"; } }
+function aplicarTema(){
+  const t=temaGuardado();
+  const sistema = !!(window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
+  const osc = t==="oscura" || (t==="auto" && sistema);
+  document.documentElement.dataset.tema = osc ? "oscuro" : "claro";
+  $("tema").textContent = osc ? "☀️" : "🌙";
+  const m=document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute("content", osc ? "#121a30" : "#1e3a8a");
+  if($("cfg-tema")) $("cfg-tema").value=t;
+}
+function guardarTema(v){ try{ localStorage.setItem("tema",v); }catch(e){} aplicarTema(); }
+$("tema").onclick=()=>guardarTema(document.documentElement.dataset.tema==="oscuro" ? "claro" : "oscura");
+$("cfg-tema").onchange=()=>guardarTema($("cfg-tema").value);
+aplicarTema();
+if(window.matchMedia){ try{ matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{ if(temaGuardado()==="auto") aplicarTema(); }); }catch(e){} }
+
+/* ---------- Módulos ---------- */
+// Módulos de evaluación: cada plantilla pertenece a uno. "Agrícola" y "Administración" son solo del administrador.
+const MODS=[{id:"fitosanidad",n:"Fitosanidad",i:"🐛"},{id:"riego",n:"Riego",i:"💧"},{id:"fenologia",n:"Fenología",i:"🌱"},{id:"calidad",n:"Calidad",i:"🍇"}];
+const esEval = id => MODS.some(m=>m.id===id);
+const modNombre = id => (MODS.find(m=>m.id===id)||MODS[0]).n;
+const modPl  = p => p.mod_eval||"fitosanidad";     // las plantillas y registros de la versión 5 son de Fitosanidad
+const modReg = r => r.mod_eval||"fitosanidad";
+let MODACT="";                                      // módulo abierto; "" = pantalla de inicio
+
 function toast(msg){
   const t=$("toast"); t.textContent=msg; t.classList.add("ver");
   clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("ver"),2800);
@@ -445,7 +537,7 @@ function diasEntre(a,b){
 
 /* ---------- Estado global ---------- */
 let SES=null;                                   // {usuario, nombre, rol}
-let CFG={version:0,esquema:ESQUEMA,maestra:[],plantillas:[],umbrales:[]};   // configuración descargada del servidor
+let CFG={version:0,esquema:ESQUEMA,maestra:[],plantillas:[],umbrales:[],fundos:[],unidades:[]};   // configuración descargada del servidor
 let TRAB={plantilla:"",sel:{},plantas:{},rec:{}};
 let sesionVencida=false, nPend=0, filaPrevId="";
 
@@ -454,8 +546,8 @@ function getSep(){ try{ return localStorage.getItem("sep")||","; }catch(e){ retu
 function credLoad(){ try{ return JSON.parse(localStorage.getItem("cred")||"{}"); }catch(e){ return {}; } }
 function credSave(m){ try{ localStorage.setItem("cred",JSON.stringify(m)); }catch(e){} }
 function loadCfgSrv(u){
-  try{ const c=JSON.parse(localStorage.getItem("cfgsrv_"+u)||"null"); if(c&&c.esquema===ESQUEMA&&Array.isArray(c.maestra)&&Array.isArray(c.plantillas)){ c.umbrales=c.umbrales||[]; return c; } }catch(e){}
-  return {version:0,esquema:ESQUEMA,maestra:[],plantillas:[],umbrales:[]};   // una configuración guardada por una versión anterior se descarta
+  try{ const c=JSON.parse(localStorage.getItem("cfgsrv_"+u)||"null"); if(c&&c.esquema===ESQUEMA&&Array.isArray(c.maestra)&&Array.isArray(c.plantillas)){ c.umbrales=c.umbrales||[]; c.fundos=c.fundos||[]; c.unidades=c.unidades||[]; return c; } }catch(e){}
+  return {version:0,esquema:ESQUEMA,maestra:[],plantillas:[],umbrales:[],fundos:[],unidades:[]};   // una configuración guardada por una versión anterior se descarta
 }
 function saveCfgSrv(){ try{ localStorage.setItem("cfgsrv_"+SES.usuario, JSON.stringify(CFG)); }catch(e){ toast("No se pudo guardar la configuración en el celular"); } }
 function loadTrab(){
@@ -572,7 +664,7 @@ $("l-entrar").onclick = async ()=>{
 };
 
 function mostrarLogin(){
-  SES=null; nPend=0;
+  SES=null; nPend=0; MODACT=""; setTitulo();
   $("app").hidden=true; $("login").hidden=false; $("salir").hidden=true;
   $("quien").textContent=""; $("l-clave").value=""; $("l-clave").type="password"; $("l-ver").checked=false;
   actualizarRed();
@@ -588,7 +680,9 @@ function iniciarSesion(u){
   $("evaluador").value=SES.nombre;
   $("cfg-sep").value=getSep();
   $("mi-res").innerHTML=""; $("mi-texto").value="";
+  MODACT=""; setTitulo();
   construirNav(); aplicarConfig(true); iniciarGPS();
+  if(SES.rol!=="admin"){ const d=MODS.filter(m=>CFG.plantillas.some(p=>p.activa&&modPl(p)===m.id)); if(d.length===1) entrarModulo(d[0].id); }
   refrescarRegistros().then(()=>sincronizar(false));
   cargarConfig(true, true);
   if(navigator.storage && navigator.storage.persist) navigator.storage.persist();
@@ -617,26 +711,69 @@ function iniciarGPS(){
   }, {enableHighAccuracy:true, maximumAge:15000, timeout:20000});
 }
 
-/* ---------- Navegación por rol ---------- */
+/* ---------- Navegación por módulo ---------- */
+function setTitulo(){
+  const m=MODS.find(x=>x.id===MODACT);
+  $("h-titulo").textContent = MODACT==="agricola" ? "🗺️ Agrícola" : MODACT==="admin" ? "👥 Administración" : m ? `${m.i} ${m.n}` : "🌿 Evaluaciones";
+}
+function pestanasMod(){
+  if(MODACT==="agricola") return [["s-maestra","🗺️","Programa"],["s-fundos","🏞️","Fundos"],["s-unidades","🏢","Unidades"],["s-umbrales","🎯","Umbrales"]];
+  if(MODACT==="admin") return [["s-plantilla","🧩","Plantillas"],["s-usuarios","👥","Usuarios"]];
+  if(esEval(MODACT)) return [["s-evaluar","📝","Evaluar"],["s-registros","📋","Registros"]];
+  return [];
+}
 function construirNav(){
-  const items=[["s-evaluar","📝","Evaluar"],["s-registros","📋","Registros"]];
-  if(SES.rol==="admin") items.push(["s-maestra","🗺️","Maestra"],["s-umbrales","🎯","Umbrales"],["s-plantilla","🧩","Plantilla"],["s-usuarios","👥","Usuarios"]);
-  items.push(["s-ajustes","⚙️","Ajustes"]);
+  const p=pestanasMod();
+  const items=[["s-inicio","🏠","Inicio"],...p,["s-ajustes","⚙️","Ajustes"]];
   $("nav").innerHTML=items.map(([s,i,t])=>`<button data-s="${s}"><span>${i}</span>${t}</button>`).join("");
-  irA("s-evaluar");
+  irA(p.length?p[0][0]:"s-inicio");
+}
+function entrarModulo(id){
+  if(SES.rol!=="admin" && !esEval(id)) return;
+  MODACT=id; setTitulo();
+  aplicarConfig(true);
+  construirNav();
 }
 function irA(id){
+  if(id==="s-inicio" && MODACT){ MODACT=""; setTitulo(); aplicarConfig(true); construirNav(); return; }
   document.querySelectorAll("#nav button").forEach(x=>x.classList.toggle("activa",x.dataset.s===id));
   document.querySelectorAll("main section").forEach(s=>s.classList.toggle("activa",s.id===id));
   document.querySelector(".barra-guardar").style.display = id==="s-evaluar" ? "" : "none";
+  if(id==="s-inicio") renderInicio();
   if(id==="s-registros") refrescarRegistros();
   if(id==="s-usuarios"){ renderAccesos(); cargarUsuarios(); }
   if(id==="s-maestra") renderMaestra();
+  if(id==="s-fundos") renderFundos();
+  if(id==="s-unidades") renderUnidades();
   if(id==="s-umbrales") renderUmbrales();
   if(id==="s-plantilla") renderPlantillas();
   if(id==="s-ajustes") renderAjustes();
   window.scrollTo(0,0);
 }
+async function renderInicio(){
+  if(!SES) return;
+  const adm=SES.rol==="admin";
+  const pend={};
+  try{ visibles(await dbAll()||[]).filter(r=>!resuelto(r)).forEach(r=>{ const m=modReg(r); pend[m]=(pend[m]||0)+1; }); }catch(e){}
+  if(!SES || MODACT) return;
+  const t=[];
+  MODS.forEach(m=>{
+    const n=CFG.plantillas.filter(p=>p.activa&&modPl(p)===m.id).length;
+    if(!adm && !n) return;
+    const pe=pend[m.id]||0;
+    t.push(`<button class="tile" data-mod="${m.id}"><span class="ic">${m.i}</span><b>${m.n}</b><small>${n?`${n} ${n===1?"carilla":"carillas"}`:"Sin carillas aún"}${pe?` <span class="pend">${pe} sin enviar</span>`:""}</small></button>`);
+  });
+  if(adm){
+    t.push(`<button class="tile adm" data-mod="agricola"><span class="ic">🗺️</span><b>Agrícola</b><small>${abiertas().length} válvulas activas · ${(CFG.umbrales||[]).length} umbrales · ${(CFG.fundos||[]).length} fundos</small></button>`);
+    t.push(`<button class="tile adm" data-mod="admin"><span class="ic">👥</span><b>Administración</b><small>Usuarios y plantillas</small></button>`);
+  }
+  $("tiles").innerHTML=t.join("");
+  const av=$("ini-aviso");
+  const m = !CFG.version ? "Aún no se descargó la configuración. Conéctate a internet una vez."
+    : (!adm && !t.length) ? "No tienes carillas de evaluación asignadas. Avisa al administrador." : "";
+  av.textContent=m; av.hidden=!m;
+}
+$("tiles").addEventListener("click",e=>{ const b=e.target.closest("button"); if(b) entrarModulo(b.dataset.mod); });
 $("nav").addEventListener("click",e=>{ const b=e.target.closest("button"); if(b) irA(b.dataset.s); });
 
 /* =====================================================================
@@ -652,8 +789,13 @@ async function cargarConfig(forzar, silencioso){
     const j=await srv("config_obtener",{version:CFG.version},30000);
     cfgUlt=Date.now();
     if(j.cambio){
-      CFG={version:j.version,esquema:ESQUEMA,maestra:j.maestra||[],plantillas:j.plantillas||[],umbrales:j.umbrales||[]};
+      const primera=!CFG.version;
+      CFG={version:j.version,esquema:ESQUEMA,maestra:j.maestra||[],plantillas:j.plantillas||[],umbrales:j.umbrales||[],fundos:j.fundos||[],unidades:j.unidades||[]};
       saveCfgSrv(); aplicarConfig(false);
+      if(primera && SES.rol!=="admin" && !MODACT){      // primera descarga: si solo tiene un módulo, se abre directo
+        const d=MODS.filter(m=>CFG.plantillas.some(p=>p.activa&&modPl(p)===m.id));
+        if(d.length===1) entrarModulo(d[0].id);
+      }
       if(!silencioso) toast("Configuración actualizada");
     } else if(!silencioso) toast("Ya tienes la última configuración");
     return true;
@@ -672,14 +814,16 @@ function aplicarConfig(inicial){
   onValvulaCambio(true);
   renderForm(prev);
   actualizarAviso();
-  renderMaestra(); renderUmbrales(); renderPlantillas(); renderAjustes();
+  renderMaestra(); renderUmbrales(); renderPlantillas(); renderFundos(); renderUnidades(); renderAjustes();
+  if(!MODACT) renderInicio();
   if(SES.rol==="admin") renderAccesos();
 }
 
 function actualizarAviso(){
   const a=$("aviso-cfg"); let m="";
+  if(!esEval(MODACT)){ a.hidden=true; return; }
   if(!CFG.version) m="Aún no se descargó la configuración (maestra y plantilla). Conéctate a internet una vez.";
-  else if(!CFG.plantillas.some(p=>p.activa)) m = SES.rol==="admin" ? "No hay una plantilla activa. Créala en la pestaña Plantilla." : "No tienes carillas de evaluación (plantillas) asignadas. Avisa al administrador.";
+  else if(!CFG.plantillas.some(p=>p.activa&&modPl(p)===MODACT)) m = SES.rol==="admin" ? "No hay una plantilla activa en este módulo. Créala en Administración > Plantillas." : "No tienes carillas de este módulo asignadas. Avisa al administrador.";
   else if(!abiertas().length) m = SES.rol==="admin" ? "No hay válvulas activas. Carga la maestra en la pestaña Maestra." : "No tienes sub fundos con lotes activos asignados. Avisa al administrador.";
   a.textContent=m; a.hidden=!m;
 }
@@ -745,7 +889,7 @@ function onValvulaCambio(conservarPlanta){
 }
 
 function renderPlantillaSelect(sel){
-  const act=CFG.plantillas.filter(p=>p.activa);
+  const act=CFG.plantillas.filter(p=>p.activa&&modPl(p)===MODACT);
   $("plantilla").innerHTML=act.map(p=>`<option value="${esc(p.id)}">${esc(p.nombre)}</option>`).join("");
   if(sel && act.some(p=>p.id===sel)) $("plantilla").value=sel;
   $("wrap-plantilla").hidden = act.length<=1;
@@ -868,7 +1012,7 @@ $("guardar").onclick = async ()=>{
     hora:`${pad(ahora.getHours())}:${pad(ahora.getMinutes())}:${pad(ahora.getSeconds())}`,
     ts:ahora.getTime(),
     usuario:SES.usuario, evaluador:SES.nombre,
-    plantilla_id:p.id, plantilla_nombre:p.nombre, plantilla_version:p.version,
+    plantilla_id:p.id, plantilla_nombre:p.nombre, plantilla_version:p.version, mod_eval:modPl(p),
     maestra_id:fila.id, campana:fila.campana, sede:fila.sede, cultivo:fila.cultivo, sub_fundo:fila.sub_fundo,
     fundo:fila.fundo, modulo:fila.modulo, lote:fila.lote, turno:fila.turno, valvula:fila.valvula,
     pep:fila.pep, variedad:fila.variedad, etapa:fila.etapa, planta,
@@ -897,11 +1041,13 @@ async function refrescarRegistros(){
   if(!SES) return;
   const todos=visibles(await dbAll()||[]).sort((a,b)=>b.ts-a.ts);
   nPend=todos.filter(r=>!resuelto(r)).length;
-  $("r-total").textContent=todos.length;
-  $("r-pend").textContent=nPend;
+  const vm = esEval(MODACT) ? todos.filter(r=>modReg(r)===MODACT) : todos;      // en un módulo solo se ven sus registros
+  $("r-total").textContent=vm.length;
+  $("r-pend").textContent=vm.filter(r=>!resuelto(r)).length;
   $("r-pend-lbl").textContent=SYNC.url?"Sin enviar":"Sin exportar";
   actualizarRed();
-  $("lista-reg").innerHTML = todos.slice(0,50).map(r=>`
+  if(!MODACT) renderInicio();
+  $("lista-reg").innerHTML = vm.slice(0,50).map(r=>`
     <div class="reg">
       <div>
         <span class="t">${esc(r.fundo)} · ${esc(r.modulo||"")} · ${esc(r.lote)} · V${esc(r.valvula||"")} · Pl. ${esc(r.planta)}</span>
@@ -927,7 +1073,7 @@ function csvTexto(cab, filas){
 }
 function construirCSV(regs){
   const claves=[];
-  CFG.plantillas.forEach(p=>p.campos.forEach(c=>{ if(!claves.includes(c.clave)) claves.push(c.clave); }));
+  CFG.plantillas.filter(p=>!esEval(MODACT)||modPl(p)===MODACT).forEach(p=>p.campos.forEach(c=>{ if(!claves.includes(c.clave)) claves.push(c.clave); }));
   regs.forEach(r=>Object.keys(r.valores||r.conteos||{}).forEach(k=>{ if(!claves.includes(k)) claves.push(k); }));
   const cab=["id","fecha","hora","usuario","evaluador","plantilla","version_plantilla","campana","sede","cultivo","sub_fundo","fundo","modulo",
              "lote","turno","valvula","pep","variedad","etapa","planta","dias_desde_inicio_campana","latitud","longitud","precision_m",
@@ -957,10 +1103,11 @@ async function entregarArchivo(nombre, texto){
 }
 async function exportar(soloPend){
   let regs=visibles(await dbAll()||[]).sort((a,b)=>a.ts-b.ts);
+  if(esEval(MODACT)) regs=regs.filter(r=>modReg(r)===MODACT);
   if(soloPend) regs=regs.filter(r=>!r.exportado);
   if(!regs.length){ toast("No hay registros para exportar"); return; }
   const ahora=new Date();
-  const nombre=`plagas_${SES.usuario}_${ahora.getFullYear()}${pad(ahora.getMonth()+1)}${pad(ahora.getDate())}_${pad(ahora.getHours())}${pad(ahora.getMinutes())}.csv`;
+  const nombre=`${MODACT||"registros"}_${SES.usuario}_${ahora.getFullYear()}${pad(ahora.getMonth()+1)}${pad(ahora.getDate())}_${pad(ahora.getHours())}${pad(ahora.getMinutes())}.csv`;
   if(!(await entregarArchivo(nombre, construirCSV(regs)))){ toast("Exportación cancelada"); return; }
   for(const r of regs){ r.exportado=true; await dbPut(r); }
   toast(`${regs.length} registros exportados`);
@@ -1039,7 +1186,9 @@ function renderMaestra(){
   $("m-sub").innerHTML=`<option value="">Todos</option>`+subs.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
   $("m-sub").value=MF.sub; $("m-est").value=MF.estado;
   const dl=(id,k)=>{ $(id).innerHTML=[...new Set(CFG.maestra.map(r=>r[k]).filter(Boolean))].sort(coll).map(v=>`<option value="${esc(v)}">`).join(""); };
-  dl("dl-cultivo","cultivo"); dl("dl-sub_fundo","sub_fundo"); dl("dl-fundo","fundo"); dl("dl-modulo","modulo");
+  dl("dl-cultivo","cultivo");
+  const dl2=(id,k)=>{ $(id).innerHTML=[...new Set(CFG.maestra.map(r=>r[k]).concat((CFG.fundos||[]).map(r=>r[k])).filter(Boolean))].sort(coll).map(v=>`<option value="${esc(v)}">`).join(""); };
+  dl2("dl-sub_fundo","sub_fundo"); dl2("dl-fundo","fundo"); dl("dl-modulo","modulo");
   dl("dl-variedad","variedad"); dl("dl-campana","campana");
 
   // filas que vienen de la versión anterior y todavía no tienen sede, cultivo ni sub fundo
@@ -1329,19 +1478,20 @@ function renderPlantillas(){
   if(!SES||SES.rol!=="admin") return;
   $("pl-lista").innerHTML=CFG.plantillas.map(p=>`
     <div class="reg"><div><span class="t">${esc(p.nombre)}</span><span class="tag ${p.activa?"ok":"no"}">${p.activa?"activa":"inactiva"}</span>
-      <small>Versión ${esc(p.version)} · ${p.campos.length} campos</small></div>
+      <small>${esc(modNombre(modPl(p)))} · Versión ${esc(p.version)} · ${p.campos.length} campos</small></div>
       <div class="acc"><button data-id="${esc(p.id)}">Editar</button></div></div>`).join("") || "<p class='ayuda'>Aún no hay plantillas.</p>";
 }
 $("pl-lista").addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
   const p=CFG.plantillas.find(x=>x.id===b.dataset.id); if(!p) return;
-  abrirEditor({id:p.id,nombre:p.nombre,activa:p.activa,version:p.version,
+  abrirEditor({id:p.id,nombre:p.nombre,activa:p.activa,version:p.version,mod_eval:modPl(p),
     campos:JSON.parse(JSON.stringify(p.campos)).map(c=>Object.assign(c,{_nuevo:false}))});
 });
-$("pl-nueva").onclick=()=>abrirEditor({id:"",nombre:"",activa:true,version:0,campos:[nuevoCampo("")]});
+$("pl-nueva").onclick=()=>abrirEditor({id:"",nombre:"",activa:true,version:0,mod_eval:"fitosanidad",campos:[nuevoCampo("")]});
 
 function abrirEditor(p){
   ED=p; $("pl-listado").hidden=true; $("pl-editor").hidden=false;
+  $("ed-mod").innerHTML=MODS.map(m=>`<option value="${m.id}">${m.n}</option>`).join(""); $("ed-mod").value=p.mod_eval||"fitosanidad"; $("ed-mod").disabled=!!p.id;
   $("ed-nombre").value=p.nombre; $("ed-activa").checked=p.activa;
   $("ed-info").textContent = p.id ? `Versión actual: ${p.version}. Al guardar pasará a la ${p.version+1}.` : "Plantilla nueva.";
   renderEditor(); window.scrollTo(0,0);
@@ -1431,7 +1581,7 @@ function slug(t){
 function numOVacio(v){ if(v===""||v===undefined||v===null) return ""; const n=Number(String(v).replace(",",".")); return isNaN(n)?NaN:n; }
 $("ed-guardar").onclick=async ()=>{
   if(!ED) return;
-  ED.nombre=$("ed-nombre").value; ED.activa=$("ed-activa").checked;
+  ED.nombre=$("ed-nombre").value; ED.activa=$("ed-activa").checked; ED.mod_eval=$("ed-mod").value;
   if(!ED.nombre.trim()){ toast("Falta el nombre de la plantilla"); return; }
   const usadas=new Set(RESERVADAS.concat(ED.campos.filter(c=>c.clave).map(c=>c.clave)));
   const nuevasClaves=[];
@@ -1452,8 +1602,8 @@ $("ed-guardar").onclick=async ()=>{
   }
   $("ed-guardar").disabled=true;
   try{
-    const j=await apiAdmin("plantilla_guardar",{plantilla:{id:ED.id||undefined,nombre:ED.nombre,activa:ED.activa,campos}});
-    ED.id=j.id; ED.version=j.plantilla_version;
+    const j=await apiAdmin("plantilla_guardar",{plantilla:{id:ED.id||undefined,nombre:ED.nombre,activa:ED.activa,mod_eval:ED.mod_eval,campos}});
+    ED.id=j.id; ED.version=j.plantilla_version; $("ed-mod").disabled=true;
     ED.campos.forEach(c=>{ c._nuevo=false; });
     toast(`Plantilla guardada (versión ${j.plantilla_version})`);
     $("ed-info").textContent=`Versión actual: ${ED.version}. Al guardar pasará a la ${ED.version+1}.`;
@@ -1484,7 +1634,7 @@ function renderAccesos(sel){
   $("acc-sub").innerHTML = subs.length
     ? subs.map(s=>`<label><input type="checkbox" data-v="${esc(s)}"${sel.sub.includes(s)?" checked":""}> ${esc(s)}</label>`).join("")
     : "<p class='ayuda'>Aún no hay sub fundos: carga primero la Maestra.</p>";
-  const pls=CFG.plantillas.map(p=>({id:p.id,nombre:p.nombre+(p.activa?"":" (inactiva)")}));
+  const pls=CFG.plantillas.map(p=>({id:p.id,nombre:modNombre(modPl(p))+" · "+p.nombre+(p.activa?"":" (inactiva)")})).sort((a,b)=>coll(a.nombre,b.nombre));
   sel.pla.forEach(id=>{ if(!pls.some(p=>p.id===id)) pls.push({id,nombre:id+" (ya no existe)"}); });
   $("acc-pla").innerHTML = pls.length
     ? pls.map(p=>`<label><input type="checkbox" data-v="${esc(p.id)}"${sel.pla.includes(p.id)?" checked":""}> ${esc(p.nombre)}</label>`).join("")
@@ -1578,12 +1728,106 @@ $("nu-crear").onclick=async ()=>{
   finally{ $("nu-crear").disabled=false; }
 };
 
+
+/* =====================================================================
+   ADMINISTRADOR: MÓDULO AGRÍCOLA — FUNDOS Y UNIDADES DE NEGOCIO
+   ===================================================================== */
+const FU={editId:"",q:""}, UN={editId:""};
+function renderUnidades(){
+  if(!SES||SES.rol!=="admin") return;
+  const U=(CFG.unidades||[]).slice().sort((a,b)=>coll(a.nombre,b.nombre));
+  const usados={}; (CFG.fundos||[]).forEach(f=>usados[f.unidad]=(usados[f.unidad]||0)+1);
+  $("un-lista").innerHTML = U.map(u=>`
+    <div class="reg"><div><span class="t">${esc(u.nombre)}</span><span class="tag ${u.estado==="ACTIVO"?"ok":"no"}">${esc(u.estado.toLowerCase())}</span>
+      <small>${usados[u.nombre]||0} fundos</small></div>
+      <div class="acc"><button data-acc="editar" data-id="${esc(u.id)}">Editar</button><button class="rojo" data-acc="borrar" data-id="${esc(u.id)}">Eliminar</button></div></div>`).join("")
+    || "<p class='ayuda'>Aún no hay unidades de negocio.</p>";
+}
+function limpiarFormUnidad(){ UN.editId=""; $("un-nombre").value=""; $("un-estado").value="ACTIVO";
+  $("un-titulo").textContent="Agregar unidad de negocio"; $("un-guardar").textContent="Guardar unidad"; $("un-cancelar").hidden=true; }
+$("un-cancelar").onclick=limpiarFormUnidad;
+$("un-guardar").onclick=async ()=>{
+  $("un-guardar").disabled=true;
+  try{
+    await apiAdmin("unidad_guardar",{fila:{id:UN.editId||undefined,nombre:$("un-nombre").value,estado:$("un-estado").value}});
+    toast(UN.editId?"Cambios guardados":"Unidad de negocio agregada");
+    limpiarFormUnidad(); await cargarConfig(true,true); renderUnidades(); renderFundos();
+  }catch(err){ toast(err.message); }
+  finally{ $("un-guardar").disabled=false; }
+};
+$("un-lista").addEventListener("click",async e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  const u=(CFG.unidades||[]).find(x=>x.id===b.dataset.id); if(!u) return;
+  try{
+    if(b.dataset.acc==="editar"){
+      UN.editId=u.id; $("un-nombre").value=u.nombre; $("un-estado").value=u.estado;
+      $("un-titulo").textContent="Editando unidad de negocio"; $("un-guardar").textContent="Guardar cambios"; $("un-cancelar").hidden=false;
+      window.scrollTo(0,0);
+    } else if(b.dataset.acc==="borrar"){
+      if(!confirm(`¿Eliminar la unidad de negocio ${u.nombre}?`)) return;
+      await apiAdmin("unidad_eliminar",{id:u.id});
+      toast("Unidad de negocio eliminada");
+      await cargarConfig(true,true); renderUnidades();
+    }
+  }catch(err){ toast(err.message); }
+});
+
+function renderFundos(){
+  if(!SES||SES.rol!=="admin") return;
+  const cur=$("fu-unidad").value;
+  $("fu-unidad").innerHTML=`<option value="">Selecciona…</option>`+(CFG.unidades||[]).slice().sort((a,b)=>coll(a.nombre,b.nombre)).map(u=>`<option value="${esc(u.nombre)}">${esc(u.nombre)}${u.estado==="ACTIVO"?"":" (cerrada)"}</option>`).join("");
+  $("fu-unidad").value=cur;
+  const q=norm(FU.q);
+  const lista=(CFG.fundos||[]).filter(f=>!q||norm([f.fundo,f.sub_fundo,f.sede,f.unidad].join(" ")).includes(q))
+    .sort((a,b)=>coll(a.unidad,b.unidad)||coll(a.sede,b.sede)||coll(a.sub_fundo,b.sub_fundo)||coll(a.fundo,b.fundo));
+  const MAX=100;
+  $("fu-lista").innerHTML = lista.slice(0,MAX).map(f=>`
+    <div class="reg"><div><span class="t">${esc(f.fundo)}</span><span class="tag ${f.estado==="ACTIVO"?"ok":"no"}">${esc(f.estado.toLowerCase())}</span>
+      <small>${esc(f.unidad)} · ${esc(f.sede)} · ${esc(f.sub_fundo)}</small></div>
+      <div class="acc"><button data-acc="editar" data-id="${esc(f.id)}">Editar</button><button class="rojo" data-acc="borrar" data-id="${esc(f.id)}">Eliminar</button></div></div>`).join("")
+    + (lista.length>MAX ? `<p class="ayuda">Mostrando ${MAX} de ${lista.length}: usa el buscador.</p>` : "")
+    || "<p class='ayuda'>No hay fundos para mostrar.</p>";
+}
+$("fu-q").addEventListener("input",()=>{ FU.q=$("fu-q").value; renderFundos(); });
+function limpiarFormFundo(){ FU.editId=""; $("fu-fundo").value=""; $("fu-estado").value="ACTIVO";
+  $("fu-titulo").textContent="Agregar fundo"; $("fu-guardar").textContent="Guardar fundo"; $("fu-cancelar").hidden=true; }
+$("fu-cancelar").onclick=()=>{ limpiarFormFundo(); $("fu-sub_fundo").value=""; };
+$("fu-guardar").onclick=async ()=>{
+  $("fu-guardar").disabled=true;
+  try{
+    await apiAdmin("fundo_guardar",{fila:{id:FU.editId||undefined,unidad:$("fu-unidad").value,sede:$("fu-sede").value,
+      sub_fundo:$("fu-sub_fundo").value,fundo:$("fu-fundo").value,estado:$("fu-estado").value}});
+    toast(FU.editId?"Cambios guardados":"Fundo agregado");
+    const editando=!!FU.editId;
+    limpiarFormFundo(); if(editando) $("fu-sub_fundo").value="";     // al agregar varios seguidos se conservan unidad, sede y sub fundo
+    await cargarConfig(true,true); renderFundos();
+  }catch(err){ toast(err.message); }
+  finally{ $("fu-guardar").disabled=false; }
+};
+$("fu-lista").addEventListener("click",async e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  const f=(CFG.fundos||[]).find(x=>x.id===b.dataset.id); if(!f) return;
+  try{
+    if(b.dataset.acc==="editar"){
+      FU.editId=f.id; $("fu-unidad").value=f.unidad; $("fu-sede").value=f.sede; $("fu-sub_fundo").value=f.sub_fundo;
+      $("fu-fundo").value=f.fundo; $("fu-estado").value=f.estado;
+      $("fu-titulo").textContent="Editando fundo"; $("fu-guardar").textContent="Guardar cambios"; $("fu-cancelar").hidden=false;
+      window.scrollTo(0,0);
+    } else if(b.dataset.acc==="borrar"){
+      if(!confirm(`¿Eliminar el fundo ${f.fundo} (${f.sub_fundo})?`)) return;
+      await apiAdmin("fundo_eliminar",{id:f.id});
+      toast("Fundo eliminado");
+      await cargarConfig(true,true); renderFundos();
+    }
+  }catch(err){ toast(err.message); }
+});
+
 /* ---------- Ajustes ---------- */
 function renderAjustes(){
   if(!SES) return;
   const ab=CFG.maestra.filter(r=>r.estado!=="CERRADO").length;
   $("aj-info").textContent = CFG.version
-    ? `Versión ${CFG.version} · ${ab} válvulas activas ·${SES.rol==="admin"?` ${(CFG.umbrales||[]).length} umbrales ·`:""} ${CFG.plantillas.filter(p=>p.activa).length} plantillas activas`
+    ? `Versión ${CFG.version} · ${ab} válvulas activas ·${SES.rol==="admin"?` ${(CFG.umbrales||[]).length} umbrales · ${(CFG.fundos||[]).length} fundos · ${(CFG.unidades||[]).length} unidades de negocio ·`:""} ${CFG.plantillas.filter(p=>p.activa).length} plantillas activas`
     : "Aún no se ha descargado. Conéctate a internet.";
 }
 $("aj-actualizar").onclick=()=>cargarConfig(true,false);
@@ -1606,6 +1850,7 @@ function poblarListas(){
   $("mf-sede").innerHTML=op(SEDES,"Selecciona…");
   $("um-grupo").innerHTML=op(GRUPOS); $("um-organo").innerHTML=op(ORGANOS);
   $("um-f-grupo").innerHTML=op(GRUPOS,"Todos");
+  $("fu-sede").innerHTML=op(SEDES,"Selecciona…");
 }
 (function init(){
   poblarListas();

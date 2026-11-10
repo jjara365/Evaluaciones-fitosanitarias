@@ -1,13 +1,15 @@
 /**
- * RECEPTOR CENTRAL de evaluaciones de campo (versión 5).
+ * RECEPTOR CENTRAL de evaluaciones de campo (versión 6: módulos).
  * Se pega en Google Sheets: Extensiones > Apps Script.
  *
  * Hojas que maneja (se crean solas):
  *   - "Usuarios":   DNI, nombre, rol, usuario, clave cifrada, estatus y accesos (sub fundos y plantillas)
  *   - "Maestra":    programa de producción (sede, cultivo, sub fundo, fundo, módulo, lote, turno, válvula...)
  *   - "Umbrales":   maestra de umbrales (grupo, variable, ítem, umbral, órgano, semana de cultivo, campaña)
- *   - "Plantillas": formularios de evaluación definidos por el administrador
- *   - "Registros":  evaluaciones enviadas desde los celulares
+ *   - "Plantillas": formularios de evaluación definidos por el administrador (cada uno pertenece a un módulo)
+ *   - "Fundos" y "Unidades de negocio": catálogos del módulo Agrícola
+ *   - "Registros_Fitosanidad", "Registros_Riego", "Registros_Fenología", "Registros_Calidad":
+ *     evaluaciones enviadas desde los celulares, una hoja por módulo de evaluación
  *
  * Roles: "admin" (todos los permisos) y "evaluador" (solo los sub fundos y plantillas que se le asignen).
  * IMPORTANTE: administra Usuarios, Maestra, Umbrales y Plantillas desde la app, no editando las hojas a mano.
@@ -16,11 +18,30 @@
  * la primera vez que se usa esta versión (queda una copia de respaldo de cada una).
  */
 
-const HOJA      = "Registros";
+const HOJA_VIEJA = "Registros";   // hasta la versión 5 todo iba aquí; pasa a ser la hoja de Fitosanidad
 const HOJA_USR  = "Usuarios";
 const HOJA_MAE  = "Maestra";
 const HOJA_PLA  = "Plantillas";
 const HOJA_UMB  = "Umbrales";
+const HOJA_UNI  = "Unidades de negocio";
+const HOJA_FUN  = "Fundos";
+
+// Módulos de evaluación (el módulo "Agrícola" es de administración y no recibe registros)
+const MODULOS = [
+  { id: "fitosanidad", nombre: "Fitosanidad", hoja: "Registros_Fitosanidad" },
+  { id: "riego",       nombre: "Riego",       hoja: "Registros_Riego" },
+  { id: "fenologia",   nombre: "Fenología",   hoja: "Registros_Fenología" },
+  { id: "calidad",     nombre: "Calidad",     hoja: "Registros_Calidad" }
+];
+function modulo_(id) {
+  const n = normTxt_(id);
+  for (let i = 0; i < MODULOS.length; i++) if (normTxt_(MODULOS[i].id) === n || normTxt_(MODULOS[i].nombre) === n) return MODULOS[i];
+  return null;
+}
+
+// Catálogos del módulo Agrícola
+const UNI_HEAD = ["Unidad de negocio","Estado","id"];
+const FUN_HEAD = ["Unidad de negocio","Sede","Sub_Fundo","Fundo","Estado","id"];
 
 // Columnas fijas de Registros. Los campos de la plantilla se agregan solos a la derecha.
 const BASE = ["id","fecha","hora","usuario","evaluador","plantilla","version_plantilla","campana",
@@ -50,7 +71,7 @@ const GRUPOS   = ["Benéficos","Plagas","Enfermedades"];
 const ORGANOS  = ["Brote","Planta","Flores","Baya","Cobertura"];
 
 // Plantillas
-const PLA_COLS = ["id","nombre","version","activa","campos","actualizado"];
+const PLA_COLS = ["id","nombre","version","activa","campos","actualizado","Módulo de evaluación"];
 const TIPOS = ["conteo","entero","decimal","texto","lista","si_no","fecha"];
 
 const DIAS_TOKEN  = 30;     // la sesión se renueva sola cada vez que el celular envía datos
@@ -126,6 +147,10 @@ function doPost(e) {
       case "umbral_guardar":
       case "umbral_importar":
       case "umbral_eliminar":
+      case "unidad_guardar":
+      case "unidad_eliminar":
+      case "fundo_guardar":
+      case "fundo_eliminar":
         if (us.rol !== "admin") return salida({ ok: false, error: "No tienes permiso para esta acción" });
         return salida(accionAdmin_(d, us));
       default:
@@ -688,6 +713,115 @@ function umbralEliminar_(id) {
   return { ok: true, version: subirVersion_() };
 }
 
+
+/* ============================ CATÁLOGOS DEL MÓDULO AGRÍCOLA ============================ */
+
+function hojaCat_(nombre, head) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(nombre);
+  if (!sh) {
+    sh = ss.insertSheet(nombre);
+    sh.getRange("A:" + String.fromCharCode(64 + head.length)).setNumberFormat("@");
+    sh.getRange(1, 1, 1, head.length).setValues([head]).setFontWeight("bold");
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+function catLeer_(nombre, head) {
+  const sh = hojaCat_(nombre, head);
+  const n = sh.getLastRow();
+  if (n < 2) return [];
+  return sh.getRange(2, 1, n - 1, head.length).getValues().filter(f => String(f[head.length - 1]) !== "");
+}
+function catEscribir_(nombre, head, matriz) {
+  const sh = hojaCat_(nombre, head);
+  const previas = Math.max(sh.getLastRow() - 1, 0);
+  asegurarTamano_(sh, Math.max(matriz.length, previas) + 1, head.length);
+  const vacia = head.map(() => "");
+  const m = matriz.slice();
+  for (let i = matriz.length; i < previas; i++) m.push(vacia);
+  if (m.length) sh.getRange(2, 1, m.length, head.length).setValues(m);
+}
+
+function unidades_() {
+  return catLeer_(HOJA_UNI, UNI_HEAD).map(f => ({
+    nombre: limpiar_(f[0]), estado: String(f[1]).trim().toUpperCase() === "CERRADO" ? "CERRADO" : "ACTIVO", id: String(f[2]) }));
+}
+function unidadesEscribir_(l) { catEscribir_(HOJA_UNI, UNI_HEAD, l.map(x => [x.nombre, x.estado, x.id])); }
+function fundos_() {
+  return catLeer_(HOJA_FUN, FUN_HEAD).map(f => ({
+    unidad: limpiar_(f[0]), sede: limpiar_(f[1]), sub_fundo: limpiar_(f[2]), fundo: limpiar_(f[3]),
+    estado: String(f[4]).trim().toUpperCase() === "CERRADO" ? "CERRADO" : "ACTIVO", id: String(f[5]) }));
+}
+function fundosEscribir_(l) { catEscribir_(HOJA_FUN, FUN_HEAD, l.map(x => [x.unidad, x.sede, x.sub_fundo, x.fundo, x.estado, x.id])); }
+
+function unidadGuardar_(f) {
+  f = f || {};
+  const lista = unidades_();
+  const previa = f.id ? (lista.find(x => x.id === String(f.id)) || null) : null;
+  if (f.id && !previa) return fallo_("La unidad de negocio ya no existe");
+  const nombre = limpiar_(f.nombre);
+  if (!nombre) return fallo_("Falta: unidad de negocio");
+  const estado = canon_(f.estado || "ACTIVO", ESTADOS);
+  if (!estado) return fallo_("Estado no válido (usa ACTIVO o CERRADO)");
+  if (lista.some(x => (!previa || x.id !== previa.id) && normTxt_(x.nombre) === normTxt_(nombre)))
+    return fallo_("Ya existe esa unidad de negocio");
+  if (previa) {
+    lista[lista.findIndex(x => x.id === previa.id)] = { nombre: nombre, estado: estado, id: previa.id };
+    if (previa.nombre !== nombre) {          // los fundos siguen a su unidad si se le cambia el nombre
+      const fl = fundos_();
+      let cambio = false;
+      fl.forEach(x => { if (x.unidad === previa.nombre) { x.unidad = nombre; cambio = true; } });
+      if (cambio) fundosEscribir_(fl);
+    }
+  } else lista.push({ nombre: nombre, estado: estado, id: Utilities.getUuid() });
+  unidadesEscribir_(lista);
+  return { ok: true, version: subirVersion_() };
+}
+function unidadEliminar_(id) {
+  const lista = unidades_();
+  const i = lista.findIndex(x => x.id === String(id || ""));
+  if (i < 0) return fallo_("La unidad de negocio ya no existe");
+  if (fundos_().some(x => x.unidad === lista[i].nombre)) return fallo_("Hay fundos con esta unidad de negocio: cámbialos o elimínalos primero");
+  lista.splice(i, 1);
+  unidadesEscribir_(lista);
+  return { ok: true, version: subirVersion_() };
+}
+
+function fundoGuardar_(f) {
+  f = f || {};
+  const lista = fundos_();
+  const previo = f.id ? (lista.find(x => x.id === String(f.id)) || null) : null;
+  if (f.id && !previo) return fallo_("El fundo ya no existe");
+  const u = unidades_().find(x => normTxt_(x.nombre) === normTxt_(f.unidad));
+  if (!limpiar_(f.unidad)) return fallo_("Falta: unidad de negocio");
+  if (!u) return fallo_("La unidad de negocio no existe: créala primero");
+  const sede = canon_(f.sede, SEDES);
+  if (sede === null) return fallo_("Sede no válida (usa: " + SEDES.join(", ") + ")");
+  const estado = canon_(f.estado || "ACTIVO", ESTADOS);
+  if (!estado) return fallo_("Estado no válido (usa ACTIVO o CERRADO)");
+  const o = { unidad: u.nombre, sede: sede, sub_fundo: limpiar_(f.sub_fundo), fundo: limpiar_(f.fundo), estado: estado };
+  const falta = [];
+  if (!o.sede) falta.push("sede");
+  if (!o.sub_fundo) falta.push("sub fundo");
+  if (!o.fundo) falta.push("fundo");
+  if (falta.length) return fallo_("Falta: " + falta.join(", "));
+  const k = x => [x.sede, x.sub_fundo, x.fundo].map(normTxt_).join("|");
+  if (lista.some(x => (!previo || x.id !== previo.id) && k(x) === k(o))) return fallo_("Ya existe ese fundo en esa sede y sub fundo");
+  if (previo) { o.id = previo.id; lista[lista.findIndex(x => x.id === previo.id)] = o; }
+  else { o.id = Utilities.getUuid(); lista.push(o); }
+  fundosEscribir_(lista);
+  return { ok: true, version: subirVersion_() };
+}
+function fundoEliminar_(id) {
+  const lista = fundos_();
+  const i = lista.findIndex(x => x.id === String(id || ""));
+  if (i < 0) return fallo_("El fundo ya no existe");
+  lista.splice(i, 1);
+  fundosEscribir_(lista);
+  return { ok: true, version: subirVersion_() };
+}
+
 /* ============================ PLANTILLAS ============================ */
 
 function campoInicial_(clave, nombre, tipo, grupo, extra) {
@@ -718,7 +852,17 @@ function hojaPlantillas_() {
     sh.setFrozenRows(1);
     sh.getRange("A:E").setNumberFormat("@");
     sh.appendRow(["fitosanidad", "Evaluación fitosanitaria - Plagas", 1, "SI",
-                  JSON.stringify(plantillaInicial_()), new Date()]);
+                  JSON.stringify(plantillaInicial_()), new Date(), "fitosanidad"]);
+  } else if (String(sh.getRange(1, PLA_COLS.length, 1, 1).getValues()[0][0]) === "") {
+    // Hoja de la versión 5: se agrega la columna del módulo y todo lo existente es de Fitosanidad
+    const n = sh.getLastRow();
+    sh.getRange(1, PLA_COLS.length, 1, 1).setValues([[PLA_COLS[PLA_COLS.length - 1]]]).setFontWeight("bold");
+    if (n > 1) {
+      const col = [];
+      for (let i = 2; i <= n; i++) col.push(["fitosanidad"]);
+      sh.getRange(2, PLA_COLS.length, n - 1, 1).setValues(col);
+    }
+    subirVersion_();
   }
   return sh;
 }
@@ -732,8 +876,10 @@ function plantillas_() {
     .map((f, i) => {
       let campos = [];
       try { campos = JSON.parse(String(f[4])); } catch (e) { campos = []; }
+      const m = modulo_(f[6]);
       return { fila: i + 2, id: String(f[0]), nombre: String(f[1]), version: Number(f[2]) || 1,
-               activa: String(f[3]).trim().toUpperCase() === "SI", campos: campos };
+               activa: String(f[3]).trim().toUpperCase() === "SI", campos: campos,
+               mod_eval: m ? m.id : "fitosanidad" };
     });
 }
 
@@ -792,6 +938,9 @@ function plantillaGuardar_(p) {
   }
   const v = validarPlantilla_(p, previa);
   if (v.error) return fallo_(v.error);
+  // El módulo no se cambia después de crear la plantilla: los registros ya guardados están en la hoja de ese módulo
+  const mo = previa ? modulo_(previa.mod_eval) : modulo_(p.mod_eval);
+  if (!mo) return fallo_("Elige el módulo de la plantilla (" + MODULOS.map(x => x.nombre).join(", ") + ")");
   if (lista.some(x => (!previa || x.id !== previa.id) && x.nombre.toLowerCase() === v.nombre.toLowerCase()))
     return fallo_("Ya existe una plantilla con ese nombre");
 
@@ -800,12 +949,12 @@ function plantillaGuardar_(p) {
   const json = JSON.stringify(v.campos);
   if (previa) {
     sh.getRange(previa.fila, 1, 1, PLA_COLS.length)
-      .setValues([[previa.id, v.nombre, previa.version + 1, activa, json, new Date()]]);
+      .setValues([[previa.id, v.nombre, previa.version + 1, activa, json, new Date(), mo.id]]);
     return { ok: true, id: previa.id, plantilla_version: previa.version + 1, version: subirVersion_() };
   }
   const id = Utilities.getUuid();
   asegurarTamano_(sh, sh.getLastRow() + 1, PLA_COLS.length);
-  sh.appendRow([id, v.nombre, 1, activa, json, new Date()]);
+  sh.appendRow([id, v.nombre, 1, activa, json, new Date(), mo.id]);
   return { ok: true, id: id, plantilla_version: 1, version: subirVersion_() };
 }
 
@@ -817,10 +966,12 @@ function configObtener_(d, us) {
   const v = versionCfg_();
   if (Number(d.version) === v) return { ok: true, cambio: false, version: v };
   let maestra = maestra_();
-  let pl = plantillas_().map(p => ({ id: p.id, nombre: p.nombre, version: p.version, activa: p.activa, campos: p.campos }));
-  let umb = [];
+  let pl = plantillas_().map(p => ({ id: p.id, nombre: p.nombre, version: p.version, activa: p.activa, campos: p.campos, mod_eval: p.mod_eval }));
+  let umb = [], fun = [], uni = [];
   if (us.rol === "admin") {
     umb = umbrales_();
+    fun = fundos_();
+    uni = unidades_();
   } else {
     maestra = maestra.filter(x => x.estado === "ACTIVO" && us.subfundos.indexOf(x.sub_fundo) >= 0);
     pl = pl.filter(p => p.activa && us.plantillas.indexOf(p.id) >= 0).map(p => {
@@ -828,7 +979,7 @@ function configObtener_(d, us) {
       return p;
     });
   }
-  return { ok: true, cambio: true, version: v, maestra: maestra, plantillas: pl, umbrales: umb };
+  return { ok: true, cambio: true, version: v, maestra: maestra, plantillas: pl, umbrales: umb, fundos: fun, unidades: uni };
 }
 
 function accionAdmin_(d, admin) {
@@ -858,26 +1009,55 @@ function accionAdmin_(d, admin) {
     case "umbral_guardar":    return umbralGuardar_(d.umbral);
     case "umbral_importar":   return umbralImportar_(d.filas);
     case "umbral_eliminar":   return umbralEliminar_(d.id);
+    case "unidad_guardar":    return unidadGuardar_(d.fila);
+    case "unidad_eliminar":   return unidadEliminar_(d.id);
+    case "fundo_guardar":     return fundoGuardar_(d.fila);
+    case "fundo_eliminar":    return fundoEliminar_(d.id);
   }
   return fallo_("acción desconocida");
 }
 
 /* ============================ REGISTROS ============================ */
 
+// Hoja de registros de un módulo de evaluación. La hoja "Registros" de la versión 5 pasa a ser la de Fitosanidad.
+function hojaRegistros_(mod) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(mod.hoja);
+  if (sh) return sh;
+  const vieja = ss.getSheetByName(HOJA_VIEJA);
+  if (vieja && mod.id === "fitosanidad") { vieja.setName(mod.hoja); return vieja; }
+  sh = ss.insertSheet(mod.hoja);
+  asegurarTamano_(sh, 2, BASE.length);   // una hoja nueva trae 26 columnas y aquí hay más
+  sh.getRange(1, 1, 1, BASE.length).setValues([BASE]).setFontWeight("bold");
+  sh.setFrozenRows(1);
+  // Texto en id/fecha/hora y en campaña…etapa: así "01" o "1-2" no se convierten en número o fecha
+  sh.getRange("A:C").setNumberFormat("@");
+  sh.getRange("H:S").setNumberFormat("@");
+  return sh;
+}
+
+// Cada registro va a la hoja del módulo de su plantilla (el servidor decide, no el celular).
 function sync_(d, us) {
   const regs = Array.isArray(d.registros) ? d.registros : [];
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sh = ss.getSheetByName(HOJA);
-  if (!sh) {
-    sh = ss.insertSheet(HOJA);
-    asegurarTamano_(sh, 2, BASE.length);   // una hoja nueva trae 26 columnas y aquí hay más
-    sh.getRange(1, 1, 1, BASE.length).setValues([BASE]).setFontWeight("bold");
-    sh.setFrozenRows(1);
-    // Texto en id/fecha/hora y en campaña…etapa: así "01" o "1-2" no se convierten en número o fecha
-    sh.getRange("A:C").setNumberFormat("@");
-    sh.getRange("H:S").setNumberFormat("@");
-  }
+  const pls = {};
+  plantillas_().forEach(p => pls[p.id] = p.mod_eval);
+  const grupos = {};
+  regs.forEach(r => {
+    const m = modulo_(pls[String(r.plantilla_id || "")] || r.mod_eval) || MODULOS[0];
+    (grupos[m.id] = grupos[m.id] || { mod: m, regs: [] }).regs.push(r);
+  });
+  const ids = [];
+  let nuevos = 0;
+  Object.keys(grupos).forEach(k => {
+    const g = syncHoja_(hojaRegistros_(grupos[k].mod), grupos[k].regs, us);
+    g.ids.forEach(x => ids.push(x));
+    nuevos += g.nuevos;
+  });
+  // Token renovado: mientras el celular envíe datos, la sesión no vence
+  return { ok: true, ids: ids, nuevos: nuevos, token: crearToken_(us.usuario, us.rol) };
+}
 
+function syncHoja_(sh, regs, us) {
   // IDs ya recibidos (para no duplicar si la app reintenta)
   const ultima = sh.getLastRow();
   const existentes = new Set();
@@ -931,6 +1111,5 @@ function sync_(d, us) {
     asegurarTamano_(sh, desde + filas.length - 1, cab.length);
     sh.getRange(desde, 1, filas.length, cab.length).setValues(filas);
   }
-  // Token renovado: mientras el celular envíe datos, la sesión no vence
-  return { ok: true, ids: ids, nuevos: filas.length, token: crearToken_(us.usuario, us.rol) };
+  return { ids: ids, nuevos: filas.length };
 }
