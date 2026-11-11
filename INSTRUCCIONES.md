@@ -1,11 +1,32 @@
-# Puesta en marcha — versión 6 (módulos, Agrícola y apariencia azul)
+# Puesta en marcha — versión 7 (Soporte: reserva de combustible, placas y variedades)
 
-## Qué cambió respecto a la versión 5
+## Qué trae la versión 7 (novedades sobre la 6)
 
-- **Pantalla de inicio con módulos.** Fitosanidad, Riego, Fenología y Calidad (evaluación en campo) y, solo para el administrador,
+- **Módulo Soporte — Reserva de combustible.** El usuario elige la **placa** y se completan el conductor (se puede cambiar) y el tipo de unidad.
+  Luego indica kilometraje, fecha de abastecimiento y cantidad en galones. Funciona sin señal y se envía solo al volver internet.
+  Avisa si el kilometraje es menor al último registrado de esa placa en ese celular, y si la reserva parece repetida.
+- **Maestra de placas** (Soporte > Placas, solo administrador): placa, chofer, tipo de unidad y estado.
+- **Maestra de variedades por cultivo** (Agrícola > Variedades): si un cultivo tiene variedades registradas, el programa de producción
+  (formulario e importación) solo acepta esas, sin importar mayúsculas o tildes. Un cultivo sin variedades registradas acepta lo escrito.
+- Hoja nueva **`Reservas_Combustible`** con sus propias columnas, y hojas `Placas` y `Variedades`.
+
+### Cómo se da acceso a Soporte
+La reserva de combustible aparece como una carilla más ("Soporte · Reserva de combustible") en **Administración > Usuarios**.
+Márcala a quien deba reservar combustible. No necesita Sub fundos. El administrador ve Soporte siempre.
+
+### Para actualizar (versión 7)
+1. Pega el nuevo `Code.gs` en Apps Script y publica **Nueva versión** (la URL no cambia).
+2. Sube a GitHub `index.html`, `sw.js`, `manifest.webmanifest` e íconos, y revisa tu URL `/exec` en `const SYNC` (el archivo viene con la URL vacía).
+3. Primero crea las placas (Soporte > Placas) y luego asigna la carilla a los usuarios.
+
+---
+
+## Qué cambió en la versión 6 (respecto a la 5)
+
+- **Pantalla de inicio con módulos.** Fitosanidad, Riego, Fenología y Calidad (evaluación en campo), **Soporte** y, solo para el administrador,
   **Agrícola** y **Administración**. Cada evaluador ve únicamente los módulos en los que tiene carillas asignadas.
   Si solo tiene un módulo, la app lo abre directo.
-- **Módulo Agrícola (administrador):** Programa de producción (lotes y válvulas), **Fundos**, **Unidades de negocio** y **Umbrales**.
+- **Módulo Agrícola (administrador):** Programa de producción (lotes y válvulas), **Fundos**, **Unidades de negocio**, **Variedades** y **Umbrales**.
 - **Administración (administrador):** Usuarios y Plantillas. Cada plantilla pertenece a un módulo (se elige al crearla y ya no cambia).
 - **Una hoja de registros por módulo** en tu Google Sheet: `Registros_Fitosanidad`, `Registros_Riego`, `Registros_Fenología`, `Registros_Calidad`.
   Cada una tiene sus propias columnas, listas para descargar como Excel/CSV.
@@ -45,3 +66,5 @@ El ícono de la app cambió de color; en un celular donde ya está instalada pue
 - Una unidad de negocio con fundos no se puede eliminar; si la renombras, sus fundos la siguen.
 - Los registros hechos con la versión 5 y aún sin enviar llegan a Fitosanidad.
 - Los umbrales siguen sin generar alertas en las evaluaciones.
+- Las placas son un catálogo: si cambias el chofer de una placa, las reservas ya enviadas conservan el chofer de ese momento.
+- La reserva de combustible no pasa por aprobación: queda registrada y se descarga como cualquier otro módulo.

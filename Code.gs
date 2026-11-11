@@ -1,5 +1,5 @@
 /**
- * RECEPTOR CENTRAL de evaluaciones de campo (versión 6: módulos).
+ * RECEPTOR CENTRAL de evaluaciones de campo (versión 7: módulos, Soporte, placas y variedades).
  * Se pega en Google Sheets: Extensiones > Apps Script.
  *
  * Hojas que maneja (se crean solas):
@@ -7,7 +7,9 @@
  *   - "Maestra":    programa de producción (sede, cultivo, sub fundo, fundo, módulo, lote, turno, válvula...)
  *   - "Umbrales":   maestra de umbrales (grupo, variable, ítem, umbral, órgano, semana de cultivo, campaña)
  *   - "Plantillas": formularios de evaluación definidos por el administrador (cada uno pertenece a un módulo)
- *   - "Fundos" y "Unidades de negocio": catálogos del módulo Agrícola
+ *   - "Fundos", "Unidades de negocio" y "Variedades": catálogos del módulo Agrícola
+ *   - "Placas": catálogo del módulo Soporte (placa, chofer, tipo de unidad)
+ *   - "Reservas_Combustible": reservas de combustible enviadas desde los celulares
  *   - "Registros_Fitosanidad", "Registros_Riego", "Registros_Fenología", "Registros_Calidad":
  *     evaluaciones enviadas desde los celulares, una hoja por módulo de evaluación
  *
@@ -25,13 +27,23 @@ const HOJA_PLA  = "Plantillas";
 const HOJA_UMB  = "Umbrales";
 const HOJA_UNI  = "Unidades de negocio";
 const HOJA_FUN  = "Fundos";
+const HOJA_VAR  = "Variedades";
+const HOJA_PLC  = "Placas";
+
+// Módulo Soporte: la "Reserva de combustible" es una carilla fija del sistema (no se edita en Plantillas).
+// El administrador la asigna a los usuarios igual que cualquier plantilla.
+const COMB_ID = "combustible";
+const COMB_BASE = ["id","fecha_registro","hora","usuario","registrado_por","placa","conductor","tipo_unidad","km",
+                   "fecha_abastecimiento","galones","observaciones","alerta_permiso","enviado_por","recibido"];
+const PLA_COMBUSTIBLE = { id: COMB_ID, nombre: "Reserva de combustible", version: 1, activa: true, campos: [], mod_eval: "soporte", fija: true };
 
 // Módulos de evaluación (el módulo "Agrícola" es de administración y no recibe registros)
 const MODULOS = [
   { id: "fitosanidad", nombre: "Fitosanidad", hoja: "Registros_Fitosanidad" },
   { id: "riego",       nombre: "Riego",       hoja: "Registros_Riego" },
   { id: "fenologia",   nombre: "Fenología",   hoja: "Registros_Fenología" },
-  { id: "calidad",     nombre: "Calidad",     hoja: "Registros_Calidad" }
+  { id: "calidad",     nombre: "Calidad",     hoja: "Registros_Calidad" },
+  { id: "soporte",     nombre: "Soporte",     hoja: "Reservas_Combustible", base: COMB_BASE, texto: ["A:C", "F:H"], fija: true }
 ];
 function modulo_(id) {
   const n = normTxt_(id);
@@ -42,6 +54,9 @@ function modulo_(id) {
 // Catálogos del módulo Agrícola
 const UNI_HEAD = ["Unidad de negocio","Estado","id"];
 const FUN_HEAD = ["Unidad de negocio","Sede","Sub_Fundo","Fundo","Estado","id"];
+const VAR_HEAD = ["Cultivo","Variedad","Estado","id"];
+const PLC_HEAD = ["Placa","Chofer","Tipo de unidad","Estado","id"];
+
 
 // Columnas fijas de Registros. Los campos de la plantilla se agregan solos a la derecha.
 const BASE = ["id","fecha","hora","usuario","evaluador","plantilla","version_plantilla","campana",
@@ -71,6 +86,7 @@ const GRUPOS   = ["Benéficos","Plagas","Enfermedades"];
 const ORGANOS  = ["Brote","Planta","Flores","Baya","Cobertura"];
 
 // Plantillas
+let _VAR = null;   // variedades leídas en esta ejecución
 const PLA_COLS = ["id","nombre","version","activa","campos","actualizado","Módulo de evaluación"];
 const TIPOS = ["conteo","entero","decimal","texto","lista","si_no","fecha"];
 
@@ -126,6 +142,7 @@ function doPost(e) {
   lock.waitLock(30000);                       // evita choques si varios envían a la vez
   try {
     const d = JSON.parse(e.postData.contents);
+    _VAR = null;
 
     if (d.accion === "login") return salida(login_(d));
 
@@ -151,6 +168,10 @@ function doPost(e) {
       case "unidad_eliminar":
       case "fundo_guardar":
       case "fundo_eliminar":
+      case "variedad_guardar":
+      case "variedad_eliminar":
+      case "placa_guardar":
+      case "placa_eliminar":
         if (us.rol !== "admin") return salida({ ok: false, error: "No tienes permiso para esta acción" });
         return salida(accionAdmin_(d, us));
       default:
@@ -515,6 +536,10 @@ function validarFila_(o, previo) {
   f.plantas = pl === "" ? "" : Number(pl);
   if (f.plantas !== "" && (isNaN(f.plantas) || f.plantas < 0 || Math.floor(f.plantas) !== f.plantas)) return { error: "Plantas debe ser un número entero" };
 
+  const vc = variedadCanon_(f.cultivo, f.variedad);
+  if (!vc.ok) return { error: vc.error };
+  f.variedad = vc.valor;
+
   const etapa = canon_(o.etapa, ETAPAS);
   if (etapa === null) return { error: "Etapa no válida (usa M o I)" };
   f.etapa = etapa;
@@ -822,6 +847,91 @@ function fundoEliminar_(id) {
   return { ok: true, version: subirVersion_() };
 }
 
+
+/* ---------- Variedades por cultivo (módulo Agrícola) ---------- */
+function variedades_() {
+  if (_VAR) return _VAR;
+  _VAR = catLeer_(HOJA_VAR, VAR_HEAD).map(f => ({
+    cultivo: limpiar_(f[0]), variedad: limpiar_(f[1]),
+    estado: String(f[2]).trim().toUpperCase() === "CERRADO" ? "CERRADO" : "ACTIVO", id: String(f[3]) }));
+  return _VAR;
+}
+function variedadesEscribir_(l) { _VAR = null; catEscribir_(HOJA_VAR, VAR_HEAD, l.map(x => [x.cultivo, x.variedad, x.estado, x.id])); }
+function variedadGuardar_(f) {
+  f = f || {};
+  const lista = variedades_().slice();
+  const previa = f.id ? (lista.find(x => x.id === String(f.id)) || null) : null;
+  if (f.id && !previa) return fallo_("La variedad ya no existe");
+  const o = { cultivo: limpiar_(f.cultivo), variedad: limpiar_(f.variedad), estado: canon_(f.estado || "ACTIVO", ESTADOS) };
+  if (!o.cultivo) return fallo_("Falta: cultivo");
+  if (!o.variedad) return fallo_("Falta: variedad");
+  if (!o.estado) return fallo_("Estado no válido (usa ACTIVO o CERRADO)");
+  const k = x => normTxt_(x.cultivo) + "|" + normTxt_(x.variedad);
+  if (lista.some(x => (!previa || x.id !== previa.id) && k(x) === k(o))) return fallo_("Ya existe esa variedad en ese cultivo");
+  // un mismo cultivo se escribe siempre igual: se toma la escritura de la variedad ya registrada
+  const mismo = lista.find(x => normTxt_(x.cultivo) === normTxt_(o.cultivo) && (!previa || x.id !== previa.id));
+  if (mismo) o.cultivo = mismo.cultivo;
+  if (previa) { o.id = previa.id; lista[lista.findIndex(x => x.id === previa.id)] = o; }
+  else { o.id = Utilities.getUuid(); lista.push(o); }
+  variedadesEscribir_(lista);
+  return { ok: true, version: subirVersion_() };
+}
+function variedadEliminar_(id) {
+  const lista = variedades_().slice();
+  const i = lista.findIndex(x => x.id === String(id || ""));
+  if (i < 0) return fallo_("La variedad ya no existe");
+  lista.splice(i, 1);
+  variedadesEscribir_(lista);
+  return { ok: true, version: subirVersion_() };
+}
+// Si el cultivo tiene variedades en la maestra, la variedad del programa debe ser una de ellas (sin importar tildes ni mayúsculas).
+// Si el cultivo no tiene variedades registradas, se acepta lo escrito.
+function variedadCanon_(cultivo, variedad) {
+  const v = limpiar_(variedad);
+  if (!v) return { ok: true, valor: "" };
+  const del = variedades_().filter(x => x.estado === "ACTIVO" && normTxt_(x.cultivo) === normTxt_(cultivo));
+  if (!del.length) return { ok: true, valor: v };
+  const h = del.find(x => normTxt_(x.variedad) === normTxt_(v));
+  return h ? { ok: true, valor: h.variedad }
+           : { ok: false, error: "Variedad no válida para " + cultivo + " (usa: " + del.map(x => x.variedad).join(", ") + ")" };
+}
+
+/* ---------- Placas (módulo Soporte) ---------- */
+const normPlaca_ = s => String(s === undefined || s === null ? "" : s).toUpperCase().replace(/[^A-Z0-9]/g, "");
+function placas_() {
+  return catLeer_(HOJA_PLC, PLC_HEAD).map(f => ({
+    placa: limpiar_(f[0]).toUpperCase(), chofer: limpiar_(f[1]), tipo_unidad: limpiar_(f[2]),
+    estado: String(f[3]).trim().toUpperCase() === "CERRADO" ? "CERRADO" : "ACTIVO", id: String(f[4]) }));
+}
+function placasEscribir_(l) { catEscribir_(HOJA_PLC, PLC_HEAD, l.map(x => [x.placa, x.chofer, x.tipo_unidad, x.estado, x.id])); }
+function placaGuardar_(f) {
+  f = f || {};
+  const lista = placas_();
+  const previa = f.id ? (lista.find(x => x.id === String(f.id)) || null) : null;
+  if (f.id && !previa) return fallo_("La placa ya no existe");
+  const o = { placa: limpiar_(f.placa).toUpperCase(), chofer: limpiar_(f.chofer), tipo_unidad: limpiar_(f.tipo_unidad), estado: canon_(f.estado || "ACTIVO", ESTADOS) };
+  const falta = [];
+  if (!o.placa) falta.push("placa");
+  if (!o.chofer) falta.push("chofer");
+  if (!o.tipo_unidad) falta.push("tipo de unidad");
+  if (falta.length) return fallo_("Falta: " + falta.join(", "));
+  if (normPlaca_(o.placa).length < 5) return fallo_("Placa no válida");
+  if (!o.estado) return fallo_("Estado no válido (usa ACTIVO o CERRADO)");
+  if (lista.some(x => (!previa || x.id !== previa.id) && normPlaca_(x.placa) === normPlaca_(o.placa))) return fallo_("Ya existe esa placa");
+  if (previa) { o.id = previa.id; lista[lista.findIndex(x => x.id === previa.id)] = o; }
+  else { o.id = Utilities.getUuid(); lista.push(o); }
+  placasEscribir_(lista);
+  return { ok: true, version: subirVersion_() };
+}
+function placaEliminar_(id) {
+  const lista = placas_();
+  const i = lista.findIndex(x => x.id === String(id || ""));
+  if (i < 0) return fallo_("La placa ya no existe");
+  lista.splice(i, 1);
+  placasEscribir_(lista);
+  return { ok: true, version: subirVersion_() };
+}
+
 /* ============================ PLANTILLAS ============================ */
 
 function campoInicial_(clave, nombre, tipo, grupo, extra) {
@@ -940,7 +1050,7 @@ function plantillaGuardar_(p) {
   if (v.error) return fallo_(v.error);
   // El módulo no se cambia después de crear la plantilla: los registros ya guardados están en la hoja de ese módulo
   const mo = previa ? modulo_(previa.mod_eval) : modulo_(p.mod_eval);
-  if (!mo) return fallo_("Elige el módulo de la plantilla (" + MODULOS.map(x => x.nombre).join(", ") + ")");
+  if (!mo || mo.fija) return fallo_("Elige el módulo de la plantilla (" + MODULOS.filter(x => !x.fija).map(x => x.nombre).join(", ") + ")");
   if (lista.some(x => (!previa || x.id !== previa.id) && x.nombre.toLowerCase() === v.nombre.toLowerCase()))
     return fallo_("Ya existe una plantilla con ese nombre");
 
@@ -966,20 +1076,23 @@ function configObtener_(d, us) {
   const v = versionCfg_();
   if (Number(d.version) === v) return { ok: true, cambio: false, version: v };
   let maestra = maestra_();
-  let pl = plantillas_().map(p => ({ id: p.id, nombre: p.nombre, version: p.version, activa: p.activa, campos: p.campos, mod_eval: p.mod_eval }));
-  let umb = [], fun = [], uni = [];
+  let pl = plantillas_().concat([PLA_COMBUSTIBLE]).map(p => ({ id: p.id, nombre: p.nombre, version: p.version, activa: p.activa, campos: p.campos, mod_eval: p.mod_eval, fija: !!p.fija }));
+  let umb = [], fun = [], uni = [], vars = [], plc = [];
   if (us.rol === "admin") {
     umb = umbrales_();
     fun = fundos_();
     uni = unidades_();
+    vars = variedades_();
+    plc = placas_();
   } else {
+    if (us.plantillas.indexOf(COMB_ID) >= 0) plc = placas_().filter(x => x.estado === "ACTIVO");
     maestra = maestra.filter(x => x.estado === "ACTIVO" && us.subfundos.indexOf(x.sub_fundo) >= 0);
     pl = pl.filter(p => p.activa && us.plantillas.indexOf(p.id) >= 0).map(p => {
       p.campos = p.campos.filter(c => c.activo !== false);
       return p;
     });
   }
-  return { ok: true, cambio: true, version: v, maestra: maestra, plantillas: pl, umbrales: umb, fundos: fun, unidades: uni };
+  return { ok: true, cambio: true, version: v, maestra: maestra, plantillas: pl, umbrales: umb, fundos: fun, unidades: uni, variedades: vars, placas: plc };
 }
 
 function accionAdmin_(d, admin) {
@@ -1013,6 +1126,10 @@ function accionAdmin_(d, admin) {
     case "unidad_eliminar":   return unidadEliminar_(d.id);
     case "fundo_guardar":     return fundoGuardar_(d.fila);
     case "fundo_eliminar":    return fundoEliminar_(d.id);
+    case "variedad_guardar":  return variedadGuardar_(d.fila);
+    case "variedad_eliminar": return variedadEliminar_(d.id);
+    case "placa_guardar":     return placaGuardar_(d.fila);
+    case "placa_eliminar":    return placaEliminar_(d.id);
   }
   return fallo_("acción desconocida");
 }
@@ -1026,13 +1143,13 @@ function hojaRegistros_(mod) {
   if (sh) return sh;
   const vieja = ss.getSheetByName(HOJA_VIEJA);
   if (vieja && mod.id === "fitosanidad") { vieja.setName(mod.hoja); return vieja; }
+  const base = mod.base || BASE;
   sh = ss.insertSheet(mod.hoja);
-  asegurarTamano_(sh, 2, BASE.length);   // una hoja nueva trae 26 columnas y aquí hay más
-  sh.getRange(1, 1, 1, BASE.length).setValues([BASE]).setFontWeight("bold");
+  asegurarTamano_(sh, 2, base.length);   // una hoja nueva trae 26 columnas y aquí hay más
+  sh.getRange(1, 1, 1, base.length).setValues([base]).setFontWeight("bold");
   sh.setFrozenRows(1);
-  // Texto en id/fecha/hora y en campaña…etapa: así "01" o "1-2" no se convierten en número o fecha
-  sh.getRange("A:C").setNumberFormat("@");
-  sh.getRange("H:S").setNumberFormat("@");
+  // Texto en id/fecha/hora y en campaña…etapa (o placa/conductor): así "01" o "1-2" no se convierten en número o fecha
+  (mod.texto || ["A:C", "H:S"]).forEach(r => sh.getRange(r).setNumberFormat("@"));
   return sh;
 }
 
@@ -1040,7 +1157,7 @@ function hojaRegistros_(mod) {
 function sync_(d, us) {
   const regs = Array.isArray(d.registros) ? d.registros : [];
   const pls = {};
-  plantillas_().forEach(p => pls[p.id] = p.mod_eval);
+  plantillas_().concat([PLA_COMBUSTIBLE]).forEach(p => pls[p.id] = p.mod_eval);
   const grupos = {};
   regs.forEach(r => {
     const m = modulo_(pls[String(r.plantilla_id || "")] || r.mod_eval) || MODULOS[0];
@@ -1049,7 +1166,7 @@ function sync_(d, us) {
   const ids = [];
   let nuevos = 0;
   Object.keys(grupos).forEach(k => {
-    const g = syncHoja_(hojaRegistros_(grupos[k].mod), grupos[k].regs, us);
+    const g = syncHoja_(hojaRegistros_(grupos[k].mod), grupos[k].regs, us, grupos[k].mod);
     g.ids.forEach(x => ids.push(x));
     nuevos += g.nuevos;
   });
@@ -1057,7 +1174,8 @@ function sync_(d, us) {
   return { ok: true, ids: ids, nuevos: nuevos, token: crearToken_(us.usuario, us.rol) };
 }
 
-function syncHoja_(sh, regs, us) {
+function syncHoja_(sh, regs, us, mod) {
+  const base = (mod && mod.base) || BASE;
   // IDs ya recibidos (para no duplicar si la app reintenta)
   const ultima = sh.getLastRow();
   const existentes = new Set();
@@ -1068,7 +1186,7 @@ function syncHoja_(sh, regs, us) {
   // Encabezados actuales; se agregan las columnas base que falten y los campos nuevos de la plantilla
   let cab = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
   const nuevas = [];
-  BASE.forEach(c => { if (cab.indexOf(c) === -1 && nuevas.indexOf(c) === -1) nuevas.push(c); });
+  base.forEach(c => { if (cab.indexOf(c) === -1 && nuevas.indexOf(c) === -1) nuevas.push(c); });
   regs.forEach(r => Object.keys(r.valores || r.conteos || {}).forEach(p => {
     if (cab.indexOf(p) === -1 && nuevas.indexOf(p) === -1) nuevas.push(p);
   }));
@@ -1085,6 +1203,18 @@ function syncHoja_(sh, regs, us) {
     ids.push(r.id);                              // se confirma siempre, aunque ya existiera
     if (existentes.has(String(r.id))) return;
     existentes.add(String(r.id));
+    if (mod && mod.id === "soporte") {              // reserva de combustible: columnas propias
+      const nm = x => (x === undefined || x === null || x === "" || isNaN(Number(x))) ? (x === undefined ? "" : x) : Number(x);
+      const v = {
+        id: r.id, fecha_registro: r.fecha, hora: r.hora, usuario: r.usuario || "", registrado_por: r.evaluador || "",
+        placa: r.placa || "", conductor: r.conductor || "", tipo_unidad: r.tipo_unidad || "", km: nm(r.km),
+        fecha_abastecimiento: r.fecha_abastecimiento || "", galones: nm(r.galones), observaciones: r.obs || "",
+        alerta_permiso: (us.rol === "admin" || us.plantillas.indexOf(COMB_ID) >= 0) ? "" : "SI",
+        enviado_por: us.usuario, recibido: ahora
+      };
+      filas.push(cab.map(c => v[c] === undefined ? "" : v[c]));
+      return;
+    }
     const vals = r.valores || r.conteos || {};
     // Los datos nunca se pierden: si el registro es de un sub fundo o plantilla sin permiso
     // (por ejemplo, se quitó el acceso mientras el celular estaba sin señal), se guarda y se marca.
