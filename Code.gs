@@ -1,5 +1,5 @@
 /**
- * RECEPTOR CENTRAL de evaluaciones de campo (versión 7: módulos, Soporte, placas y variedades).
+ * RECEPTOR CENTRAL de evaluaciones de campo (versión 8: combustible con fundo, centro de costo y tipo de combustible).
  * Se pega en Google Sheets: Extensiones > Apps Script.
  *
  * Hojas que maneja (se crean solas):
@@ -33,8 +33,9 @@ const HOJA_PLC  = "Placas";
 // Módulo Soporte: la "Reserva de combustible" es una carilla fija del sistema (no se edita en Plantillas).
 // El administrador la asigna a los usuarios igual que cualquier plantilla.
 const COMB_ID = "combustible";
-const COMB_BASE = ["id","fecha_registro","hora","usuario","registrado_por","placa","conductor","tipo_unidad","km",
-                   "fecha_abastecimiento","galones","observaciones","alerta_permiso","enviado_por","recibido"];
+const COMB_BASE = ["id","fecha_registro","hora","usuario","registrado_por","placa","conductor","tipo_unidad","fundo","centro_costo",
+                   "tipo_combustible","cod_sap","km","fecha_abastecimiento","galones","observaciones","alerta_permiso","enviado_por","recibido"];
+const COMB_TEXTO = ["placa","conductor","tipo_unidad","fundo","centro_costo","tipo_combustible","cod_sap"];   // siempre como texto (ceros a la izquierda)
 const PLA_COMBUSTIBLE = { id: COMB_ID, nombre: "Reserva de combustible", version: 1, activa: true, campos: [], mod_eval: "soporte", fija: true };
 
 // Módulos de evaluación (el módulo "Agrícola" es de administración y no recibe registros)
@@ -43,7 +44,7 @@ const MODULOS = [
   { id: "riego",       nombre: "Riego",       hoja: "Registros_Riego" },
   { id: "fenologia",   nombre: "Fenología",   hoja: "Registros_Fenología" },
   { id: "calidad",     nombre: "Calidad",     hoja: "Registros_Calidad" },
-  { id: "soporte",     nombre: "Soporte",     hoja: "Reservas_Combustible", base: COMB_BASE, texto: ["A:C", "F:H"], fija: true }
+  { id: "soporte",     nombre: "Soporte",     hoja: "Reservas_Combustible", base: COMB_BASE, texto: ["A:C", "F:L", "N:N"], fija: true }
 ];
 function modulo_(id) {
   const n = normTxt_(id);
@@ -53,9 +54,10 @@ function modulo_(id) {
 
 // Catálogos del módulo Agrícola
 const UNI_HEAD = ["Unidad de negocio","Estado","id"];
-const FUN_HEAD = ["Unidad de negocio","Sede","Sub_Fundo","Fundo","Estado","id"];
+const FUN_HEAD = ["Unidad de negocio","Sede","Sub_Fundo","Fundo","Centro de costo","Estado","id"];
 const VAR_HEAD = ["Cultivo","Variedad","Estado","id"];
-const PLC_HEAD = ["Placa","Chofer","Tipo de unidad","Estado","id"];
+const PLC_HEAD = ["Placa","Chofer","Tipo de unidad","Tipo de combustible","Cód. SAP combustible","Fundo","Centro de costo","Capacidad máx. (gal)","Estado","id"];
+const COMBUSTIBLES = ["Gasolina regular", "Gasolina 95", "Petróleo diesel 2"];
 
 
 // Columnas fijas de Registros. Los campos de la plantilla se agregan solos a la derecha.
@@ -773,12 +775,23 @@ function unidades_() {
     nombre: limpiar_(f[0]), estado: String(f[1]).trim().toUpperCase() === "CERRADO" ? "CERRADO" : "ACTIVO", id: String(f[2]) }));
 }
 function unidadesEscribir_(l) { catEscribir_(HOJA_UNI, UNI_HEAD, l.map(x => [x.nombre, x.estado, x.id])); }
-function fundos_() {
-  return catLeer_(HOJA_FUN, FUN_HEAD).map(f => ({
-    unidad: limpiar_(f[0]), sede: limpiar_(f[1]), sub_fundo: limpiar_(f[2]), fundo: limpiar_(f[3]),
-    estado: String(f[4]).trim().toUpperCase() === "CERRADO" ? "CERRADO" : "ACTIVO", id: String(f[5]) }));
+function migrarFundos_() {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_FUN);
+  if (!sh || String(sh.getRange(1, 5, 1, 1).getValues()[0][0]) !== "Estado") return;   // formato anterior: sin centro de costo
+  const n = sh.getLastRow();
+  const viejas = n > 1 ? sh.getRange(2, 1, n - 1, 6).getValues().filter(f => String(f[5]) !== "") : [];
+  asegurarTamano_(sh, Math.max(n, 2), FUN_HEAD.length);
+  sh.getRange(1, 1, 1, FUN_HEAD.length).setValues([FUN_HEAD]).setFontWeight("bold");
+  if (n > 1) sh.getRange(2, 1, n - 1, FUN_HEAD.length).setValues(Array.from({ length: n - 1 }, (_, i) => viejas[i] ? [viejas[i][0], viejas[i][1], viejas[i][2], viejas[i][3], "", viejas[i][4], viejas[i][5]] : FUN_HEAD.map(() => "")));
+  subirVersion_();
 }
-function fundosEscribir_(l) { catEscribir_(HOJA_FUN, FUN_HEAD, l.map(x => [x.unidad, x.sede, x.sub_fundo, x.fundo, x.estado, x.id])); }
+function fundos_() {
+  migrarFundos_();
+  return catLeer_(HOJA_FUN, FUN_HEAD).map(f => ({
+    unidad: limpiar_(f[0]), sede: limpiar_(f[1]), sub_fundo: limpiar_(f[2]), fundo: limpiar_(f[3]), centro_costo: limpiar_(f[4]),
+    estado: String(f[5]).trim().toUpperCase() === "CERRADO" ? "CERRADO" : "ACTIVO", id: String(f[6]) }));
+}
+function fundosEscribir_(l) { catEscribir_(HOJA_FUN, FUN_HEAD, l.map(x => [x.unidad, x.sede, x.sub_fundo, x.fundo, x.centro_costo || "", x.estado, x.id])); }
 
 function unidadGuardar_(f) {
   f = f || {};
@@ -825,23 +838,33 @@ function fundoGuardar_(f) {
   if (sede === null) return fallo_("Sede no válida (usa: " + SEDES.join(", ") + ")");
   const estado = canon_(f.estado || "ACTIVO", ESTADOS);
   if (!estado) return fallo_("Estado no válido (usa ACTIVO o CERRADO)");
-  const o = { unidad: u.nombre, sede: sede, sub_fundo: limpiar_(f.sub_fundo), fundo: limpiar_(f.fundo), estado: estado };
+  const o = { unidad: u.nombre, sede: sede, sub_fundo: limpiar_(f.sub_fundo), fundo: limpiar_(f.fundo), centro_costo: limpiar_(f.centro_costo), estado: estado };
   const falta = [];
   if (!o.sede) falta.push("sede");
   if (!o.sub_fundo) falta.push("sub fundo");
   if (!o.fundo) falta.push("fundo");
   if (falta.length) return fallo_("Falta: " + falta.join(", "));
+  if (o.centro_costo && !/^[A-Za-z0-9._\-\/]{1,20}$/.test(o.centro_costo)) return fallo_("Centro de costo no válido (letras, números, guion o punto; máximo 20)");
   const k = x => [x.sede, x.sub_fundo, x.fundo].map(normTxt_).join("|");
   if (lista.some(x => (!previo || x.id !== previo.id) && k(x) === k(o))) return fallo_("Ya existe ese fundo en esa sede y sub fundo");
   if (previo) { o.id = previo.id; lista[lista.findIndex(x => x.id === previo.id)] = o; }
   else { o.id = Utilities.getUuid(); lista.push(o); }
   fundosEscribir_(lista);
+  // las placas asignadas a este fundo siguen su nombre y su centro de costo
+  if (previo && (previo.fundo !== o.fundo || previo.centro_costo !== o.centro_costo)) {
+    const pl = placas_(true);
+    let cambio = false;
+    pl.forEach(x => { if (x.fundo === previo.fundo) { x.fundo = o.fundo; x.centro_costo = o.centro_costo; cambio = true; } });
+    if (cambio) placasEscribir_(pl);
+  }
   return { ok: true, version: subirVersion_() };
 }
 function fundoEliminar_(id) {
   const lista = fundos_();
   const i = lista.findIndex(x => x.id === String(id || ""));
   if (i < 0) return fallo_("El fundo ya no existe");
+  if (lista.filter(x => x.fundo === lista[i].fundo).length === 1 && placas_(true).some(p => p.fundo === lista[i].fundo))
+    return fallo_("Hay placas asignadas a este fundo: cámbialas primero");
   lista.splice(i, 1);
   fundosEscribir_(lista);
   return { ok: true, version: subirVersion_() };
@@ -898,33 +921,84 @@ function variedadCanon_(cultivo, variedad) {
 
 /* ---------- Placas (módulo Soporte) ---------- */
 const normPlaca_ = s => String(s === undefined || s === null ? "" : s).toUpperCase().replace(/[^A-Z0-9]/g, "");
-function placas_() {
-  return catLeer_(HOJA_PLC, PLC_HEAD).map(f => ({
-    placa: limpiar_(f[0]).toUpperCase(), chofer: limpiar_(f[1]), tipo_unidad: limpiar_(f[2]),
-    estado: String(f[3]).trim().toUpperCase() === "CERRADO" ? "CERRADO" : "ACTIVO", id: String(f[4]) }));
+function migrarPlacas_() {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_PLC);
+  if (!sh || String(sh.getRange(1, 4, 1, 1).getValues()[0][0]) !== "Estado") return;   // formato anterior: sin combustible, fundo ni capacidad
+  const n = sh.getLastRow();
+  const viejas = n > 1 ? sh.getRange(2, 1, n - 1, 5).getValues().filter(f => String(f[4]) !== "") : [];
+  asegurarTamano_(sh, Math.max(n, 2), PLC_HEAD.length);
+  sh.getRange(1, 1, 1, PLC_HEAD.length).setValues([PLC_HEAD]).setFontWeight("bold");
+  if (n > 1) sh.getRange(2, 1, n - 1, PLC_HEAD.length).setValues(Array.from({ length: n - 1 }, (_, i) => viejas[i] ? [viejas[i][0], viejas[i][1], viejas[i][2], "", "", "", "", "", viejas[i][3], viejas[i][4]] : PLC_HEAD.map(() => "")));
+  sh.getRange("A:H").setNumberFormat("@");
+  subirVersion_();
 }
-function placasEscribir_(l) { catEscribir_(HOJA_PLC, PLC_HEAD, l.map(x => [x.placa, x.chofer, x.tipo_unidad, x.estado, x.id])); }
+// El centro de costo siempre es el actual del fundo (salvo que se pida solo lo guardado, para reescribir la hoja)
+function placas_(crudo) {
+  migrarPlacas_();
+  const cc = {};
+  if (!crudo) fundos_().forEach(f => { if (!(f.fundo in cc) || (!cc[f.fundo] && f.centro_costo)) cc[f.fundo] = f.centro_costo; });
+  return catLeer_(HOJA_PLC, PLC_HEAD).map(f => {
+    const fundo = limpiar_(f[5]);
+    const cap = Number(f[7]);
+    return { placa: limpiar_(f[0]).toUpperCase(), chofer: limpiar_(f[1]), tipo_unidad: limpiar_(f[2]), tipo_combustible: limpiar_(f[3]),
+      cod_sap: limpiar_(f[4]), fundo: fundo, centro_costo: crudo ? limpiar_(f[6]) : (cc[fundo] !== undefined ? cc[fundo] : limpiar_(f[6])),
+      capacidad: (f[7] === "" || isNaN(cap)) ? "" : cap,
+      estado: String(f[8]).trim().toUpperCase() === "CERRADO" ? "CERRADO" : "ACTIVO", id: String(f[9]) };
+  });
+}
+function placasEscribir_(l) {
+  const sh = hojaCat_(HOJA_PLC, PLC_HEAD);
+  catEscribir_(HOJA_PLC, PLC_HEAD, l.map(x => [x.placa, x.chofer, x.tipo_unidad, x.tipo_combustible || "", x.cod_sap || "", x.fundo || "", x.centro_costo || "", x.capacidad === undefined ? "" : x.capacidad, x.estado, x.id]));
+  sh.getRange("A:H").setNumberFormat("@");
+}
 function placaGuardar_(f) {
   f = f || {};
-  const lista = placas_();
+  const lista = placas_(true);
   const previa = f.id ? (lista.find(x => x.id === String(f.id)) || null) : null;
   if (f.id && !previa) return fallo_("La placa ya no existe");
-  const o = { placa: limpiar_(f.placa).toUpperCase(), chofer: limpiar_(f.chofer), tipo_unidad: limpiar_(f.tipo_unidad), estado: canon_(f.estado || "ACTIVO", ESTADOS) };
+  const comb = canon_(f.tipo_combustible, COMBUSTIBLES);
+  if (comb === null) return fallo_("Tipo de combustible no válido (usa: " + COMBUSTIBLES.join(", ") + ")");
+  const capT = numTxt_(f.capacidad);
+  const o = { placa: limpiar_(f.placa).toUpperCase(), chofer: limpiar_(f.chofer), tipo_unidad: limpiar_(f.tipo_unidad), tipo_combustible: comb,
+              cod_sap: limpiar_(f.cod_sap), fundo: limpiar_(f.fundo), capacidad: capT === "" ? "" : Number(capT), estado: canon_(f.estado || "ACTIVO", ESTADOS) };
   const falta = [];
   if (!o.placa) falta.push("placa");
   if (!o.chofer) falta.push("chofer");
   if (!o.tipo_unidad) falta.push("tipo de unidad");
+  if (!o.tipo_combustible) falta.push("tipo de combustible");
+  if (!o.cod_sap) falta.push("código SAP del combustible");
+  if (!o.fundo) falta.push("fundo");
+  if (o.capacidad === "") falta.push("capacidad máxima");
   if (falta.length) return fallo_("Falta: " + falta.join(", "));
   if (normPlaca_(o.placa).length < 5) return fallo_("Placa no válida");
+  if (!/^[A-Za-z0-9._\-\/]{1,20}$/.test(o.cod_sap)) return fallo_("Código SAP no válido (letras, números, guion o punto; máximo 20)");
+  if (isNaN(o.capacidad) || o.capacidad <= 0 || o.capacidad > 2000) return fallo_("Capacidad máxima no válida (galones, mayor que 0)");
   if (!o.estado) return fallo_("Estado no válido (usa ACTIVO o CERRADO)");
+  const fu = fundos_().filter(x => x.fundo === o.fundo);
+  if (!fu.length) return fallo_("El fundo no existe: agrégalo primero en Agrícola > Fundos");
+  const cc = (fu.find(x => x.centro_costo) || {}).centro_costo || "";
+  if (!cc) return fallo_("El fundo " + o.fundo + " no tiene centro de costo: agrégalo en Agrícola > Fundos");
+  o.centro_costo = cc;
   if (lista.some(x => (!previa || x.id !== previa.id) && normPlaca_(x.placa) === normPlaca_(o.placa))) return fallo_("Ya existe esa placa");
+  // Un mismo tipo de combustible tiene un único código SAP: al crear una placa o cambiar su combustible debe coincidir;
+  // al cambiar el código sin cambiar el combustible, se actualiza en todas las placas de ese combustible.
+  const otras = lista.filter(x => (!previa || x.id !== previa.id) && x.tipo_combustible === o.tipo_combustible && x.cod_sap);
+  const distinto = otras.filter(x => x.cod_sap !== o.cod_sap);
+  let actualizadas = 0;
+  if (distinto.length) {
+    if (previa && previa.tipo_combustible === o.tipo_combustible && previa.cod_sap !== o.cod_sap) {
+      lista.forEach(x => { if (x.tipo_combustible === o.tipo_combustible && x.id !== previa.id && x.cod_sap !== o.cod_sap) { x.cod_sap = o.cod_sap; actualizadas++; } });
+    } else {
+      return fallo_(o.tipo_combustible + " ya usa el código SAP " + distinto[0].cod_sap + " en otras placas. Para cambiarlo, edita una de esas placas.");
+    }
+  }
   if (previa) { o.id = previa.id; lista[lista.findIndex(x => x.id === previa.id)] = o; }
   else { o.id = Utilities.getUuid(); lista.push(o); }
   placasEscribir_(lista);
-  return { ok: true, version: subirVersion_() };
+  return { ok: true, version: subirVersion_(), actualizadas: actualizadas };
 }
 function placaEliminar_(id) {
-  const lista = placas_();
+  const lista = placas_(true);
   const i = lista.findIndex(x => x.id === String(id || ""));
   if (i < 0) return fallo_("La placa ya no existe");
   lista.splice(i, 1);
@@ -1085,7 +1159,10 @@ function configObtener_(d, us) {
     vars = variedades_();
     plc = placas_();
   } else {
-    if (us.plantillas.indexOf(COMB_ID) >= 0) plc = placas_().filter(x => x.estado === "ACTIVO");
+    if (us.plantillas.indexOf(COMB_ID) >= 0) {       // Soporte necesita las placas y los fundos con centro de costo
+      plc = placas_().filter(x => x.estado === "ACTIVO");
+      fun = fundos_().filter(x => x.estado === "ACTIVO" && x.centro_costo).map(x => ({ fundo: x.fundo, sub_fundo: x.sub_fundo, sede: x.sede, centro_costo: x.centro_costo, id: x.id }));
+    }
     maestra = maestra.filter(x => x.estado === "ACTIVO" && us.subfundos.indexOf(x.sub_fundo) >= 0);
     pl = pl.filter(p => p.activa && us.plantillas.indexOf(p.id) >= 0).map(p => {
       p.campos = p.campos.filter(c => c.activo !== false);
@@ -1163,15 +1240,16 @@ function sync_(d, us) {
     const m = modulo_(pls[String(r.plantilla_id || "")] || r.mod_eval) || MODULOS[0];
     (grupos[m.id] = grupos[m.id] || { mod: m, regs: [] }).regs.push(r);
   });
-  const ids = [];
+  const ids = [], rechazados = [];
   let nuevos = 0;
   Object.keys(grupos).forEach(k => {
     const g = syncHoja_(hojaRegistros_(grupos[k].mod), grupos[k].regs, us, grupos[k].mod);
     g.ids.forEach(x => ids.push(x));
+    g.rechazados.forEach(x => rechazados.push(x));
     nuevos += g.nuevos;
   });
   // Token renovado: mientras el celular envíe datos, la sesión no vence
-  return { ok: true, ids: ids, nuevos: nuevos, token: crearToken_(us.usuario, us.rol) };
+  return { ok: true, ids: ids, nuevos: nuevos, rechazados: rechazados, token: crearToken_(us.usuario, us.rol) };
 }
 
 function syncHoja_(sh, regs, us, mod) {
@@ -1199,15 +1277,37 @@ function syncHoja_(sh, regs, us, mod) {
   const ahora = new Date();
   const filas = [];
   const ids = [];
+  const rechazados = [];
+  // Reservas ya registradas (placa + fecha de abastecimiento), solo para el módulo Soporte
+  const reservadas = new Set();
+  if (mod && mod.id === "soporte" && ultima > 1) {
+    const ip = cab.indexOf("placa"), ifa = cab.indexOf("fecha_abastecimiento");
+    if (ip >= 0 && ifa >= 0) {
+      const tz = Session.getScriptTimeZone();
+      const fx = v => v instanceof Date ? Utilities.formatDate(v, tz, "yyyy-MM-dd") : String(v);
+      sh.getRange(2, 1, ultima - 1, cab.length).getValues().forEach(f => reservadas.add(normPlaca_(f[ip]) + "|" + fx(f[ifa])));
+    }
+  }
   regs.forEach(r => {
     ids.push(r.id);                              // se confirma siempre, aunque ya existiera
     if (existentes.has(String(r.id))) return;
     existentes.add(String(r.id));
     if (mod && mod.id === "soporte") {              // reserva de combustible: columnas propias
       const nm = x => (x === undefined || x === null || x === "" || isNaN(Number(x))) ? (x === undefined ? "" : x) : Number(x);
+      // Una misma placa no puede tener dos reservas el mismo día (sin importar quién la registre ni desde qué celular)
+      const clave = normPlaca_(r.placa) + "|" + String(r.fecha_abastecimiento || "");
+      if (reservadas.has(clave)) {
+        existentes.delete(String(r.id));
+        ids.pop();                                  // no se confirma como guardada
+        rechazados.push({ id: r.id, motivo: "La placa " + r.placa + " ya tiene una reserva para el " + r.fecha_abastecimiento });
+        return;
+      }
+      reservadas.add(clave);
       const v = {
         id: r.id, fecha_registro: r.fecha, hora: r.hora, usuario: r.usuario || "", registrado_por: r.evaluador || "",
-        placa: r.placa || "", conductor: r.conductor || "", tipo_unidad: r.tipo_unidad || "", km: nm(r.km),
+        placa: r.placa || "", conductor: r.conductor || "", tipo_unidad: r.tipo_unidad || "",
+        fundo: r.fundo || "", centro_costo: r.centro_costo || "", tipo_combustible: r.tipo_combustible || "", cod_sap: r.cod_sap || "",
+        km: nm(r.km),
         fecha_abastecimiento: r.fecha_abastecimiento || "", galones: nm(r.galones), observaciones: r.obs || "",
         alerta_permiso: (us.rol === "admin" || us.plantillas.indexOf(COMB_ID) >= 0) ? "" : "SI",
         enviado_por: us.usuario, recibido: ahora
@@ -1239,7 +1339,10 @@ function syncHoja_(sh, regs, us, mod) {
   if (filas.length) {
     const desde = sh.getLastRow() + 1;
     asegurarTamano_(sh, desde + filas.length - 1, cab.length);
+    if (mod && mod.id === "soporte") {      // placa, fundo, centro de costo, código SAP…: texto, para no perder ceros ni convertir fechas
+      COMB_TEXTO.concat(["fecha_abastecimiento"]).forEach(c => { const k = cab.indexOf(c); if (k >= 0) sh.getRange(desde, k + 1, filas.length, 1).setNumberFormat("@"); });
+    }
     sh.getRange(desde, 1, filas.length, cab.length).setValues(filas);
   }
-  return { ids: ids, nuevos: filas.length };
+  return { ids: ids, nuevos: filas.length, rechazados: rechazados };
 }

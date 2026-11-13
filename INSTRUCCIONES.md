@@ -1,3 +1,26 @@
+# Puesta en marcha — versión 8 (combustible con fundo, centro de costo y tipo de combustible)
+
+## Qué trae la versión 8 (novedades sobre la 7)
+
+- **Fundos con Centro de costo** (Agrícola > Fundos): campo nuevo. Si cambias el nombre o el centro de costo de un fundo, las placas de ese fundo se actualizan solas.
+- **Maestra de placas ampliada** (Soporte > Placas): tipo de combustible (Gasolina regular / Gasolina 95 / Petróleo diesel 2), código SAP del combustible,
+  fundo, centro de costo (se muestra según el fundo, no se escribe) y capacidad máxima en galones. Todos son obligatorios.
+  Un mismo combustible tiene **un solo código SAP**: si cambias el código en una placa, se actualiza en todas las de ese combustible.
+- **Reserva de combustible:** el kilometraje ahora es **opcional** (vehículos averiados); se elige el **fundo** (por defecto el de la placa) y se jala el **centro de costo**;
+  se indica el **tipo de combustible** a abastecer (por defecto el de la placa); no se puede pedir más galones que la capacidad máxima de la placa.
+- **Una placa no puede tener 2 reservas el mismo día de abastecimiento.** Se valida en el celular y también en el servidor (por si dos celulares la registran).
+  Si el servidor rechaza una reserva, queda marcada como "rechazado" con el motivo, no cuenta como pendiente y no sale en el CSV; se elimina y se registra de nuevo si corresponde.
+- Hoja `Reservas_Combustible` con columnas nuevas: fundo, centro_costo, tipo_combustible, cod_sap. Ícono de **arándano** para Calidad.
+
+### Para actualizar (versión 8)
+1. Pega el nuevo `Code.gs` en Apps Script y publica **Nueva versión** (la URL no cambia). Las hojas `Fundos` y `Placas` se convierten solas al primer uso (columnas nuevas vacías).
+2. Sube a GitHub `index.html` y `sw.js` (y el resto), y revisa tu URL `/exec` en `const SYNC` (el archivo viene con la URL vacía).
+3. **Completa los datos:** primero el centro de costo de cada fundo (Agrícola > Fundos) y luego, en cada placa existente, combustible, código SAP, fundo y capacidad (Soporte > Placas).
+   Hasta entonces no se pueden guardar cambios en esas placas, y los fundos sin centro de costo no aparecen para reservar.
+4. Si cambias el encabezado de `Reservas_Combustible` en una hoja ya existente, Apps Script agrega las columnas nuevas al final; si prefieres el orden nuevo, renombra la hoja vieja y deja que se cree otra.
+
+---
+
 # Puesta en marcha — versión 7 (Soporte: reserva de combustible, placas y variedades)
 
 ## Qué trae la versión 7 (novedades sobre la 6)

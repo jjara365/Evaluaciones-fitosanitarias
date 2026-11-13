@@ -1,6 +1,6 @@
 // Service worker: guarda la app en el celular para que abra sin internet.
 // Cuando cambies index.html, sube el número de versión (v1 -> v2) para que los celulares se actualicen.
-const CACHE = "evalcampo-v7";
+const CACHE = "evalcampo-v8";
 const ARCHIVOS = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", e => {

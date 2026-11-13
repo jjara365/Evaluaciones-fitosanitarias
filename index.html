@@ -99,6 +99,8 @@ textarea{min-height:110px}
 .tile{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:16px 14px;border:1.5px solid var(--borde);border-radius:14px;background:var(--card);color:var(--texto);text-align:left;font-family:inherit;min-height:112px}
 .tile:active{transform:scale(.97)}
 .tile .ic{font-size:30px;line-height:1}
+.ic svg{width:30px;height:30px;display:block;margin:0 auto}
+#h-titulo svg{width:1.15em;height:1.15em;vertical-align:-.2em}
 .tile b{font-size:17px;color:var(--pri-osc)}
 .tile small{font-size:12.5px;color:var(--tenue);line-height:1.3}
 .tile.adm{border-style:dashed}
@@ -190,8 +192,12 @@ textarea{min-height:110px}
     <label for="rv-placa">Placa</label><select id="rv-placa"></select>
     <label for="rv-conductor">Conductor</label><input id="rv-conductor" autocomplete="off">
     <label for="rv-tipo">Tipo de unidad</label><input id="rv-tipo" readonly placeholder="Se completa al elegir la placa">
+    <label for="rv-fundo">Fundo</label><select id="rv-fundo"></select>
+    <label for="rv-cc">Centro de costo</label><input id="rv-cc" readonly placeholder="Se completa al elegir el fundo">
+    <label for="rv-comb">Tipo de combustible a abastecer</label><select id="rv-comb"></select>
+    <p class="ayuda" id="rv-cap"></p>
     <div class="grid2">
-      <div><label for="rv-km">Kilometraje (km)</label><input id="rv-km" inputmode="numeric" autocomplete="off"></div>
+      <div><label for="rv-km">Kilometraje (km) <small>opcional</small></label><input id="rv-km" inputmode="numeric" autocomplete="off" placeholder="Vacío si está averiado"></div>
       <div><label for="rv-gal">Cantidad (galones)</label><input id="rv-gal" inputmode="decimal" autocomplete="off"></div>
     </div>
     <label for="rv-fecha">Fecha de abastecimiento</label><input id="rv-fecha" type="date">
@@ -337,6 +343,7 @@ textarea{min-height:110px}
       <div><label for="fu-sede">Sede</label><select id="fu-sede"></select></div>
       <div><label for="fu-sub_fundo">Sub fundo</label><input id="fu-sub_fundo" autocomplete="off"></div>
       <div><label for="fu-fundo">Fundo</label><input id="fu-fundo" autocomplete="off"></div>
+      <div><label for="fu-cc">Centro de costo</label><input id="fu-cc" autocomplete="off"></div>
       <div><label for="fu-estado">Estado</label><select id="fu-estado"><option>ACTIVO</option><option>CERRADO</option></select></div>
     </div>
     <button class="btn" id="fu-guardar">Guardar fundo</button>
@@ -375,6 +382,11 @@ textarea{min-height:110px}
       <div><label for="pc-placa">Placa</label><input id="pc-placa" autocomplete="off" autocapitalize="characters"></div>
       <div><label for="pc-chofer">Chofer</label><input id="pc-chofer" autocomplete="off"></div>
       <div><label for="pc-tipo">Tipo de unidad</label><input id="pc-tipo" list="dl-tipo" autocomplete="off"></div>
+      <div><label for="pc-comb">Tipo de combustible</label><select id="pc-comb"><option value="">Selecciona…</option><option>Gasolina regular</option><option>Gasolina 95</option><option>Petróleo diesel 2</option></select></div>
+      <div><label for="pc-sap">Cód. SAP del combustible</label><input id="pc-sap" autocomplete="off"></div>
+      <div><label for="pc-fundo">Fundo</label><select id="pc-fundo"></select></div>
+      <div><label for="pc-cc">Centro de costo</label><input id="pc-cc" readonly placeholder="Según el fundo"></div>
+      <div><label for="pc-cap">Capacidad máx. (galones)</label><input id="pc-cap" inputmode="decimal" autocomplete="off"></div>
       <div><label for="pc-estado">Estado</label><select id="pc-estado"><option>ACTIVO</option><option>CERRADO</option></select></div>
     </div>
     <datalist id="dl-tipo"></datalist>
@@ -505,7 +517,7 @@ textarea{min-height:110px}
       <option value="oscura">Oscura</option>
     </select>
   </div>
-  <p class="ayuda" style="text-align:center">Versión 7.0 · Los datos quedan en este celular hasta que se envían a la hoja central.</p>
+  <p class="ayuda" style="text-align:center">Versión 8.0 · Los datos quedan en este celular hasta que se envían a la hoja central.</p>
 </section>
 
 </main>
@@ -525,7 +537,7 @@ textarea{min-height:110px}
    Pega aquí la URL que te da Apps Script (termina en /exec).
    Sin esta URL nadie puede ingresar a la app. */
 const SYNC = {
-  url: "https://script.google.com/macros/s/AKfycbwww3I9xUCzQB6H5EODxcDwl-9NZbZzlCoVULoBgzoXq6dSm1jNym100zLT19RXE3EZ/exec"
+  url: ""
 };
 
 const ROLES = { admin:"Administrador", evaluador:"Evaluador" };
@@ -534,7 +546,7 @@ const NIV_TXT = { campana:"Campaña", sub_fundo:"Sub fundo", fundo:"Fundo", modu
 const SEDES = ["CARAZ","ICA","NEPEÑA","NAZCA","CASCAS"];
 const GRUPOS = ["Benéficos","Plagas","Enfermedades"];
 const ORGANOS = ["Brote","Planta","Flores","Baya","Cobertura"];
-const ESQUEMA = 7;      // cambia cuando cambia la forma de la configuración descargada
+const ESQUEMA = 8;      // cambia cuando cambia la forma de la configuración descargada
 const TIPOS = {
   conteo:"Conteo: número entero desde 0, con botones + y −. Se suma en «total_conteos».",
   entero:"Número entero (se puede limitar con mínimo y máximo).",
@@ -574,7 +586,8 @@ if(window.matchMedia){ try{ matchMedia("(prefers-color-scheme: dark)").addEventL
 
 /* ---------- Módulos ---------- */
 // Módulos de evaluación: cada plantilla pertenece a uno. "Agrícola" y "Administración" son solo del administrador.
-const MODS=[{id:"fitosanidad",n:"Fitosanidad",i:"🐛"},{id:"riego",n:"Riego",i:"💧"},{id:"fenologia",n:"Fenología",i:"🌱"},{id:"calidad",n:"Calidad",i:"🍇"}];
+const ARANDANO='<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="18" r="11" fill="#3b4fa3"/><ellipse cx="12" cy="13.5" rx="4" ry="2.6" fill="#8fa3e8" opacity=".55" transform="rotate(-30 12 13.5)"/><path d="M16 10.2l1.5 2.3 2.6-.7-1 2.5 2.2 1.5-2.7.3-.6 2.6-2-1.8-2 1.8-.6-2.6-2.7-.3 2.2-1.5-1-2.5 2.6.7z" fill="#1e2a63"/><path d="M16 7.5c0-2 1.2-3.5 3.2-3.8" stroke="#3f8f4a" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>';
+const MODS=[{id:"fitosanidad",n:"Fitosanidad",i:"🐛"},{id:"riego",n:"Riego",i:"💧"},{id:"fenologia",n:"Fenología",i:"🌱"},{id:"calidad",n:"Calidad",i:ARANDANO}];
 const esEval = id => MODS.some(m=>m.id===id);
 const SOP = {id:"soporte",n:"Soporte",i:"⛽"};                 // reserva de combustible; su carilla es fija ("combustible")
 const modNombre = id => id==="soporte" ? SOP.n : (MODS.find(m=>m.id===id)||MODS[0]).n;
@@ -783,7 +796,7 @@ function iniciarGPS(){
 /* ---------- Navegación por módulo ---------- */
 function setTitulo(){
   const m=MODACT==="soporte" ? SOP : MODS.find(x=>x.id===MODACT);
-  $("h-titulo").textContent = MODACT==="agricola" ? "🗺️ Agrícola" : MODACT==="admin" ? "👥 Administración" : m ? `${m.i} ${m.n}` : "🌿 Evaluaciones";
+  $("h-titulo").innerHTML = MODACT==="agricola" ? "🗺️ Agrícola" : MODACT==="admin" ? "👥 Administración" : m ? `${m.i} ${esc(m.n)}` : "🌿 Evaluaciones";
 }
 function pestanasMod(){
   if(MODACT==="agricola") return [["s-maestra","🗺️","Programa"],["s-fundos","🏞️","Fundos"],["s-unidades","🏢","Unidades"],["s-variedades","🍇","Variedades"],["s-umbrales","🎯","Umbrales"]];
@@ -1112,7 +1125,7 @@ $("guardar").onclick = async ()=>{
 
 /* ---------- Registros ---------- */
 const visibles = todos => (SES && SES.rol==="admin") ? todos : todos.filter(r=>SES && r.usuario===SES.usuario);
-const resuelto = r => SYNC.url ? !!r.enviado : !!r.exportado;
+const resuelto = r => !!r.rechazado || (SYNC.url ? !!r.enviado : !!r.exportado);
 
 async function refrescarRegistros(){
   if(!SES) return;
@@ -1128,8 +1141,8 @@ async function refrescarRegistros(){
     <div class="reg">
       <div>
         <span class="t">${modReg(r)==="soporte" ? `${esc(r.placa)} · ${esc(r.galones)} gal` : `${esc(r.fundo)} · ${esc(r.modulo||"")} · ${esc(r.lote)} · V${esc(r.valvula||"")} · Pl. ${esc(r.planta)}`}</span>
-        <span class="tag ${resuelto(r)?"ok":""}">${SYNC.url?(r.enviado?"enviado":"sin enviar"):(r.exportado?"exportado":"pendiente")}</span>
-        <small>${modReg(r)==="soporte" ? `${esc(r.fecha_abastecimiento)} · ${esc(r.km)} km · ${esc(r.conductor)}` : `${esc(r.fecha)} ${esc(String(r.hora||"").slice(0,5))}${r.total_conteos!==undefined?" · total "+esc(r.total_conteos):""}`}${SES.rol==="admin"&&r.evaluador?" · "+esc(r.evaluador):""}</small>
+        <span class="tag ${r.rechazado?"no":resuelto(r)?"ok":""}">${r.rechazado?"rechazado":SYNC.url?(r.enviado?"enviado":"sin enviar"):(r.exportado?"exportado":"pendiente")}</span>
+        <small>${modReg(r)==="soporte" ? `${esc(r.fecha_abastecimiento)} · ${r.km===""||r.km===undefined?"sin km":esc(r.km)+" km"} · ${esc(r.conductor)}` : `${esc(r.fecha)} ${esc(String(r.hora||"").slice(0,5))}${r.total_conteos!==undefined?" · total "+esc(r.total_conteos):""}`}${SES.rol==="admin"&&r.evaluador?" · "+esc(r.evaluador):""}</small>${r.rechazado?`<small style="color:var(--rojo)">${esc(r.motivo_rechazo||"Rechazado por el servidor")}. Elimínalo y regístralo de nuevo si corresponde.</small>`:""}
       </div>
       <button class="x" data-id="${esc(r.id)}" aria-label="Eliminar">🗑</button>
     </div>`).join("") || "<p class='ayuda'>Aún no hay registros.</p>";
@@ -1149,9 +1162,10 @@ function csvTexto(cab, filas){
   return "﻿"+[cab,...filas].map(f=>f.map(c=>csvCell(c,sep)).join(sep)).join("\r\n");   // BOM: Excel respeta tildes y ñ
 }
 function construirCSV(regs){
+  regs=regs.filter(r=>!r.rechazado);
   if(MODACT==="soporte"){
-    const cab=["id","fecha_registro","hora","usuario","registrado_por","placa","conductor","tipo_unidad","km","fecha_abastecimiento","galones","observaciones"];
-    return csvTexto(cab,regs.map(r=>[r.id,r.fecha,r.hora,r.usuario,r.evaluador,r.placa,r.conductor,r.tipo_unidad,r.km,r.fecha_abastecimiento,r.galones,r.obs||""]));
+    const cab=["id","fecha_registro","hora","usuario","registrado_por","placa","conductor","tipo_unidad","fundo","centro_costo","tipo_combustible","cod_sap","km","fecha_abastecimiento","galones","observaciones"];
+    return csvTexto(cab,regs.map(r=>[r.id,r.fecha,r.hora,r.usuario,r.evaluador,r.placa,r.conductor,r.tipo_unidad,r.fundo||"",r.centro_costo||"",r.tipo_combustible||"",r.cod_sap||"",r.km,r.fecha_abastecimiento,r.galones,r.obs||""]));
   }
   const claves=[];
   CFG.plantillas.filter(p=>!esEval(MODACT)||modPl(p)===MODACT).forEach(p=>p.campos.forEach(c=>{ if(!claves.includes(c.clave)) claves.push(c.clave); }));
@@ -1215,17 +1229,22 @@ async function sincronizar(manual){
   if(!navigator.onLine){ if(manual) toast("Sin señal: se enviará solo cuando haya conexión"); return; }
   sincronizando=true;
   try{
-    const pend=(await dbAll()||[]).filter(r=>!r.enviado).sort((a,b)=>a.ts-b.ts);
+    const pend=(await dbAll()||[]).filter(r=>!r.enviado&&!r.rechazado).sort((a,b)=>a.ts-b.ts);
     if(!pend.length){ if(manual) toast("Todo está enviado ✔"); return; }
-    let enviados=0;
+    let enviados=0, rechazadas=0;
     for(let i=0;i<pend.length;i+=50){
       const grupo=pend.slice(i,i+50);
       const j=await srv("sync",{registros:grupo},60000);
       const okIds=new Set(j.ids||[]);
-      for(const r of grupo){ if(okIds.has(r.id)){ r.enviado=true; await dbPut(r); enviados++; } }
+      const rech=new Map((j.rechazados||[]).map(x=>[x.id,x.motivo]));
+      for(const r of grupo){
+        if(rech.has(r.id)){ r.rechazado=true; r.motivo_rechazo=rech.get(r.id); await dbPut(r); rechazadas++; }
+        else if(okIds.has(r.id)){ r.enviado=true; await dbPut(r); enviados++; }
+      }
     }
     sesionVencida=false;
     if(manual||enviados) toast(`${enviados} registros enviados ✔`);
+    if(rechazadas) toast(`${rechazadas} reserva(s) rechazada(s): ya existía una para esa placa y fecha. Revisa Registros.`);
   }catch(e){
     if(e&&e.message==="sesion") toast(MSG_SESION);
     else if(manual) toast("No se pudo enviar: "+(e&&e.message||e)+". Se reintentará solo.");
@@ -1870,20 +1889,20 @@ function renderFundos(){
   const MAX=100;
   $("fu-lista").innerHTML = lista.slice(0,MAX).map(f=>`
     <div class="reg"><div><span class="t">${esc(f.fundo)}</span><span class="tag ${f.estado==="ACTIVO"?"ok":"no"}">${esc(f.estado.toLowerCase())}</span>
-      <small>${esc(f.unidad)} · ${esc(f.sede)} · ${esc(f.sub_fundo)}</small></div>
+      <small>${esc(f.unidad)} · ${esc(f.sede)} · ${esc(f.sub_fundo)} · CC: ${esc(f.centro_costo||"sin definir")}</small></div>
       <div class="acc"><button data-acc="editar" data-id="${esc(f.id)}">Editar</button><button class="rojo" data-acc="borrar" data-id="${esc(f.id)}">Eliminar</button></div></div>`).join("")
     + (lista.length>MAX ? `<p class="ayuda">Mostrando ${MAX} de ${lista.length}: usa el buscador.</p>` : "")
     || "<p class='ayuda'>No hay fundos para mostrar.</p>";
 }
 $("fu-q").addEventListener("input",()=>{ FU.q=$("fu-q").value; renderFundos(); });
-function limpiarFormFundo(){ FU.editId=""; $("fu-fundo").value=""; $("fu-estado").value="ACTIVO";
+function limpiarFormFundo(){ FU.editId=""; $("fu-fundo").value=""; $("fu-cc").value=""; $("fu-estado").value="ACTIVO";
   $("fu-titulo").textContent="Agregar fundo"; $("fu-guardar").textContent="Guardar fundo"; $("fu-cancelar").hidden=true; }
 $("fu-cancelar").onclick=()=>{ limpiarFormFundo(); $("fu-sub_fundo").value=""; };
 $("fu-guardar").onclick=async ()=>{
   $("fu-guardar").disabled=true;
   try{
     await apiAdmin("fundo_guardar",{fila:{id:FU.editId||undefined,unidad:$("fu-unidad").value,sede:$("fu-sede").value,
-      sub_fundo:$("fu-sub_fundo").value,fundo:$("fu-fundo").value,estado:$("fu-estado").value}});
+      sub_fundo:$("fu-sub_fundo").value,fundo:$("fu-fundo").value,centro_costo:$("fu-cc").value,estado:$("fu-estado").value}});
     toast(FU.editId?"Cambios guardados":"Fundo agregado");
     const editando=!!FU.editId;
     limpiarFormFundo(); if(editando) $("fu-sub_fundo").value="";     // al agregar varios seguidos se conservan unidad, sede y sub fundo
@@ -1897,7 +1916,7 @@ $("fu-lista").addEventListener("click",async e=>{
   try{
     if(b.dataset.acc==="editar"){
       FU.editId=f.id; $("fu-unidad").value=f.unidad; $("fu-sede").value=f.sede; $("fu-sub_fundo").value=f.sub_fundo;
-      $("fu-fundo").value=f.fundo; $("fu-estado").value=f.estado;
+      $("fu-fundo").value=f.fundo; $("fu-cc").value=f.centro_costo||""; $("fu-estado").value=f.estado;
       $("fu-titulo").textContent="Editando fundo"; $("fu-guardar").textContent="Guardar cambios"; $("fu-cancelar").hidden=false;
       window.scrollTo(0,0);
     } else if(b.dataset.acc==="borrar"){
@@ -1914,12 +1933,21 @@ $("mf-cultivo").addEventListener("input",varSug);
 /* =====================================================================
    MÓDULO SOPORTE: RESERVA DE COMBUSTIBLE
    ===================================================================== */
+const COMBUSTIBLES=["Gasolina regular","Gasolina 95","Petróleo diesel 2"];
+const fundosCC=()=>{ const m=new Map(); (CFG.fundos||[]).forEach(f=>{ if(f.fundo&&(!m.has(f.fundo)||(!m.get(f.fundo)&&f.centro_costo))) m.set(f.fundo,f.centro_costo||""); }); return m; };
+const sapDe=c=>{ const p=(CFG.placas||[]).find(x=>x.tipo_combustible===c&&x.cod_sap); return p?p.cod_sap:""; };
 function renderReserva(){
   if(!SES) return;
   const pl=(CFG.placas||[]).filter(x=>x.estado==="ACTIVO").sort((a,b)=>coll(a.placa,b.placa));
   const cur=$("rv-placa").value;
   $("rv-placa").innerHTML=`<option value="">Selecciona…</option>`+pl.map(x=>`<option value="${esc(x.placa)}">${esc(x.placa)} · ${esc(x.tipo_unidad)}</option>`).join("");
   $("rv-placa").value=cur;
+  const fcur=$("rv-fundo").value, ccur=$("rv-comb").value;
+  $("rv-fundo").innerHTML=`<option value="">Selecciona…</option>`+[...fundosCC().keys()].sort(coll).map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join("");
+  $("rv-fundo").value=fcur;
+  $("rv-comb").innerHTML=`<option value="">Selecciona…</option>`+COMBUSTIBLES.map(c=>`<option>${esc(c)}</option>`).join("");
+  $("rv-comb").value=ccur;
+  $("rv-cc").value=fundosCC().get($("rv-fundo").value)||"";
   if(!$("rv-fecha").value) $("rv-fecha").value=hoyISO();
   const av=$("rv-aviso");
   const m=!CFG.version ? "Aún no se descargó la configuración. Conéctate a internet una vez."
@@ -1929,7 +1957,11 @@ function renderReserva(){
 $("rv-placa").onchange=()=>{
   const x=(CFG.placas||[]).find(p=>p.placa===$("rv-placa").value);
   $("rv-conductor").value=x?x.chofer:""; $("rv-tipo").value=x?x.tipo_unidad:"";
+  $("rv-fundo").value=x&&fundosCC().has(x.fundo)?x.fundo:""; $("rv-comb").value=x?x.tipo_combustible||"":"";
+  $("rv-cc").value=fundosCC().get($("rv-fundo").value)||"";
+  $("rv-cap").textContent=x&&x.capacidad!==""&&x.capacidad!==undefined?`Capacidad máxima de ${x.placa}: ${num(x.capacidad)} galones`:"";
 };
+$("rv-fundo").onchange=()=>{ $("rv-cc").value=fundosCC().get($("rv-fundo").value)||""; };
 const numReserva = t => { const x=String(t||"").trim().replace(/\s/g,"").replace(",","."); return x!==""&&/^\d+(\.\d+)?$/.test(x) ? Number(x) : NaN; };
 $("rv-guardar").onclick=async ()=>{
   if(!SES) return;
@@ -1937,30 +1969,37 @@ $("rv-guardar").onclick=async ()=>{
   if(!x){ toast("Elige la placa"); $("rv-placa").focus(); return; }
   const conductor=$("rv-conductor").value.trim();
   if(!conductor){ toast("Indica el conductor"); $("rv-conductor").focus(); return; }
+  const fundo=$("rv-fundo").value;
+  if(!fundo){ toast("Elige el fundo"); $("rv-fundo").focus(); return; }
+  const cc=fundosCC().get(fundo)||"";
+  if(!cc){ toast("El fundo no tiene centro de costo. Avisa al administrador."); return; }
+  const comb=$("rv-comb").value;
+  if(!comb){ toast("Elige el tipo de combustible a abastecer"); $("rv-comb").focus(); return; }
   const kmT=$("rv-km").value.trim().replace(/\s/g,"");
-  if(!/^\d+$/.test(kmT)){ toast("Kilometraje no válido: solo números enteros"); $("rv-km").focus(); return; }
-  const km=Number(kmT);
+  if(kmT && !/^\d+$/.test(kmT)){ toast("Kilometraje no válido: solo números enteros (o déjalo vacío)"); $("rv-km").focus(); return; }
+  const km=kmT===""?"":Number(kmT);
   const fecha=$("rv-fecha").value;
   if(!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || isNaN(new Date(fecha+"T00:00:00"))){ toast("Indica la fecha de abastecimiento"); $("rv-fecha").focus(); return; }
   const gal=numReserva($("rv-gal").value);
   if(!(gal>0)){ toast("Cantidad en galones no válida"); $("rv-gal").focus(); return; }
   if(gal>500){ toast("La cantidad parece demasiado alta (máximo 500 galones)"); $("rv-gal").focus(); return; }
-  const previos=(await dbAll()||[]).filter(r=>modReg(r)==="soporte"&&r.placa===x.placa);
+  if(x.capacidad!==""&&x.capacidad!==undefined&&gal>Number(x.capacidad)){ toast(`Supera la capacidad máxima de ${x.placa}: ${num(x.capacidad)} galones`); $("rv-gal").focus(); return; }
+  const previos=(await dbAll()||[]).filter(r=>modReg(r)==="soporte"&&r.placa===x.placa&&!r.rechazado);
+  if(previos.some(r=>r.fecha_abastecimiento===fecha)){ toast(`La placa ${x.placa} ya tiene una reserva para el ${fecha}. Solo se permite una por día.`); return; }
   const mayor=previos.reduce((m,r)=>Math.max(m,Number(r.km)||0),0);
-  if(mayor && km<mayor && !confirm(`El último kilometraje registrado de ${x.placa} en este celular es ${num(mayor)} km y estás ingresando ${num(km)}. ¿Es correcto?`)) return;
-  if(previos.some(r=>r.fecha_abastecimiento===fecha&&Number(r.galones)===gal&&Number(r.km)===km) && !confirm("Ya registraste una reserva igual (misma placa, fecha, km y galones). ¿Guardar otra vez?")) return;
+  if(km!=="" && mayor && km<mayor && !confirm(`El último kilometraje registrado de ${x.placa} en este celular es ${num(mayor)} km y estás ingresando ${num(km)}. ¿Es correcto?`)) return;
   const ahora=new Date();
   const reg={
     id:uuid(), fecha:hoyISO(), hora:`${pad(ahora.getHours())}:${pad(ahora.getMinutes())}:${pad(ahora.getSeconds())}`, ts:ahora.getTime(),
     usuario:SES.usuario, evaluador:SES.nombre,
     plantilla_id:"combustible", plantilla_nombre:"Reserva de combustible", plantilla_version:1, mod_eval:"soporte",
-    placa:x.placa, conductor, tipo_unidad:x.tipo_unidad, km, fecha_abastecimiento:fecha, galones:gal, obs:$("rv-obs").value.trim(),
+    placa:x.placa, conductor, tipo_unidad:x.tipo_unidad, fundo, centro_costo:cc, tipo_combustible:comb, cod_sap:sapDe(comb), km, fecha_abastecimiento:fecha, galones:gal, obs:$("rv-obs").value.trim(),
     exportado:false, enviado:false
   };
   try{
     await dbPut(reg);
     toast(`Reserva guardada: ${x.placa} · ${num(gal)} gal`);
-    $("rv-placa").value=""; $("rv-conductor").value=""; $("rv-tipo").value=""; $("rv-km").value=""; $("rv-gal").value=""; $("rv-obs").value=""; $("rv-fecha").value=hoyISO();
+    $("rv-placa").value=""; $("rv-conductor").value=""; $("rv-tipo").value=""; $("rv-fundo").value=""; $("rv-cc").value=""; $("rv-comb").value=""; $("rv-cap").textContent=""; $("rv-km").value=""; $("rv-gal").value=""; $("rv-obs").value=""; $("rv-fecha").value=hoyISO();
     window.scrollTo({top:0,behavior:"smooth"});
     await refrescarRegistros();
     sincronizar(false);
@@ -1974,23 +2013,28 @@ const PC={editId:"",q:""}, VA={editId:"",q:""};
 function renderPlacas(){
   if(!SES||SES.rol!=="admin") return;
   $("dl-tipo").innerHTML=[...new Set((CFG.placas||[]).map(p=>p.tipo_unidad).filter(Boolean))].sort(coll).map(v=>`<option value="${esc(v)}">`).join("");
+  const fc=$("pc-fundo").value;
+  $("pc-fundo").innerHTML=`<option value="">Selecciona…</option>`+[...fundosCC().keys()].sort(coll).map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join("");
+  $("pc-fundo").value=fc; $("pc-cc").value=fundosCC().get($("pc-fundo").value)||"";
   const q=norm(PC.q);
   const l=(CFG.placas||[]).filter(p=>!q||norm([p.placa,p.chofer,p.tipo_unidad].join(" ")).includes(q)).sort((a,b)=>coll(a.placa,b.placa));
   $("pc-lista").innerHTML = l.slice(0,100).map(p=>`
     <div class="reg"><div><span class="t">${esc(p.placa)}</span><span class="tag ${p.estado==="ACTIVO"?"ok":"no"}">${esc(p.estado.toLowerCase())}</span>
-      <small>${esc(p.tipo_unidad)} · ${esc(p.chofer)}</small></div>
+      <small>${esc(p.tipo_unidad)} · ${esc(p.chofer)}</small><small>${esc(p.tipo_combustible||"sin combustible")}${p.cod_sap?" ("+esc(p.cod_sap)+")":""} · ${esc(p.fundo||"sin fundo")}${p.centro_costo?" · CC "+esc(p.centro_costo):""} · cap. ${p.capacidad===""||p.capacidad===undefined?"—":esc(num(p.capacidad))} gal</small></div>
       <div class="acc"><button data-acc="editar" data-id="${esc(p.id)}">Editar</button><button class="rojo" data-acc="borrar" data-id="${esc(p.id)}">Eliminar</button></div></div>`).join("")
     + (l.length>100 ? `<p class="ayuda">Mostrando 100 de ${l.length}: usa el buscador.</p>` : "")
     || "<p class='ayuda'>No hay placas para mostrar.</p>";
 }
 $("pc-q").addEventListener("input",()=>{ PC.q=$("pc-q").value; renderPlacas(); });
-function limpiarFormPlaca(){ PC.editId=""; ["pc-placa","pc-chofer","pc-tipo"].forEach(i=>$(i).value=""); $("pc-estado").value="ACTIVO";
+function limpiarFormPlaca(){ PC.editId=""; ["pc-placa","pc-chofer","pc-tipo","pc-sap","pc-cap","pc-cc"].forEach(i=>$(i).value=""); $("pc-comb").value=""; $("pc-fundo").value=""; $("pc-estado").value="ACTIVO";
   $("pc-titulo").textContent="Agregar placa"; $("pc-guardar").textContent="Guardar placa"; $("pc-cancelar").hidden=true; }
 $("pc-cancelar").onclick=limpiarFormPlaca;
+$("pc-fundo").onchange=()=>{ $("pc-cc").value=fundosCC().get($("pc-fundo").value)||""; };
+$("pc-comb").onchange=()=>{ if(!$("pc-sap").value.trim()) $("pc-sap").value=sapDe($("pc-comb").value); };
 $("pc-guardar").onclick=async ()=>{
   $("pc-guardar").disabled=true;
   try{
-    await apiAdmin("placa_guardar",{fila:{id:PC.editId||undefined,placa:$("pc-placa").value,chofer:$("pc-chofer").value,tipo_unidad:$("pc-tipo").value,estado:$("pc-estado").value}});
+    await apiAdmin("placa_guardar",{fila:{id:PC.editId||undefined,placa:$("pc-placa").value,chofer:$("pc-chofer").value,tipo_unidad:$("pc-tipo").value,tipo_combustible:$("pc-comb").value,cod_sap:$("pc-sap").value,fundo:$("pc-fundo").value,capacidad:$("pc-cap").value,estado:$("pc-estado").value}});
     toast(PC.editId?"Cambios guardados":"Placa agregada");
     limpiarFormPlaca(); await cargarConfig(true,true); renderPlacas();
   }catch(err){ toast(err.message); }
@@ -2001,7 +2045,7 @@ $("pc-lista").addEventListener("click",async e=>{
   const p=(CFG.placas||[]).find(x=>x.id===b.dataset.id); if(!p) return;
   try{
     if(b.dataset.acc==="editar"){
-      PC.editId=p.id; $("pc-placa").value=p.placa; $("pc-chofer").value=p.chofer; $("pc-tipo").value=p.tipo_unidad; $("pc-estado").value=p.estado;
+      PC.editId=p.id; $("pc-placa").value=p.placa; $("pc-chofer").value=p.chofer; $("pc-tipo").value=p.tipo_unidad; $("pc-comb").value=p.tipo_combustible||""; $("pc-sap").value=p.cod_sap||""; $("pc-fundo").value=p.fundo||""; $("pc-cc").value=fundosCC().get(p.fundo)||p.centro_costo||""; $("pc-cap").value=p.capacidad===undefined?"":p.capacidad; $("pc-estado").value=p.estado;
       $("pc-titulo").textContent="Editando placa"; $("pc-guardar").textContent="Guardar cambios"; $("pc-cancelar").hidden=false; window.scrollTo(0,0);
     } else if(b.dataset.acc==="borrar"){
       if(!confirm(`¿Eliminar la placa ${p.placa}?`)) return;
