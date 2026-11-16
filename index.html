@@ -192,15 +192,16 @@ textarea{min-height:110px}
     <label for="rv-placa">Placa</label><select id="rv-placa"></select>
     <label for="rv-conductor">Conductor</label><input id="rv-conductor" autocomplete="off">
     <label for="rv-tipo">Tipo de unidad</label><input id="rv-tipo" readonly placeholder="Se completa al elegir la placa">
-    <label for="rv-fundo">Fundo</label><select id="rv-fundo"></select>
-    <label for="rv-cc">Centro de costo</label><input id="rv-cc" readonly placeholder="Se completa al elegir el fundo">
+    <label for="rv-sub">Sub fundo</label><select id="rv-sub"></select>
+    <label for="rv-cc">Centro de costo</label><input id="rv-cc" readonly placeholder="Se completa al elegir el sub fundo">
+    <label for="rv-area">Área <small>(puedes cambiarla si el vehículo cambió de área)</small></label><select id="rv-area"></select>
     <label for="rv-comb">Tipo de combustible a abastecer</label><select id="rv-comb"></select>
     <p class="ayuda" id="rv-cap"></p>
     <div class="grid2">
       <div><label for="rv-km">Kilometraje (km) <small>opcional</small></label><input id="rv-km" inputmode="numeric" autocomplete="off" placeholder="Vacío si está averiado"></div>
       <div><label for="rv-gal">Cantidad (galones)</label><input id="rv-gal" inputmode="decimal" autocomplete="off"></div>
     </div>
-    <label for="rv-fecha">Fecha de abastecimiento</label><input id="rv-fecha" type="date">
+    <label for="rv-fecha">Fecha de abastecimiento <small>(hoy o posterior)</small></label><input id="rv-fecha" type="date">
     <label for="rv-obs">Observaciones</label><input id="rv-obs" autocomplete="off">
     <button class="btn" id="rv-guardar" style="margin-top:14px">Guardar reserva</button>
   </div>
@@ -237,9 +238,9 @@ textarea{min-height:110px}
     <p class="ayuda">Cada fila es una válvula. Un lote puede tener varias válvulas y turnos. Densidad y PEP se calculan solos.</p>
     <div class="grid2">
       <div><label for="mf-sede">Sede</label><select id="mf-sede"></select></div>
-      <div><label for="mf-cultivo">Cultivo</label><input id="mf-cultivo" list="dl-cultivo" autocomplete="off"></div>
-      <div><label for="mf-sub_fundo">Sub fundo</label><input id="mf-sub_fundo" list="dl-sub_fundo" autocomplete="off"></div>
-      <div><label for="mf-fundo">Fundo</label><input id="mf-fundo" list="dl-fundo" autocomplete="off"></div>
+      <div><label for="mf-cultivo">Cultivo</label><select id="mf-cultivo"></select></div>
+      <div><label for="mf-fundo">Fundo</label><select id="mf-fundo"></select></div>
+      <div><label for="mf-sub_fundo">Sub fundo</label><select id="mf-sub_fundo"></select></div>
       <div><label for="mf-modulo">Módulo</label><input id="mf-modulo" list="dl-modulo" autocomplete="off"></div>
       <div><label for="mf-lote">Lote</label><input id="mf-lote" autocomplete="off"></div>
       <div><label for="mf-turno">Turno</label><input id="mf-turno" autocomplete="off"></div>
@@ -247,7 +248,7 @@ textarea{min-height:110px}
       <div><label for="mf-area">Área (ha)</label><input id="mf-area" inputmode="decimal" autocomplete="off"></div>
       <div><label for="mf-plantas">Plantas</label><input id="mf-plantas" inputmode="numeric" autocomplete="off"></div>
       <div><label for="mf-densidad">Densidad (plantas ÷ área)</label><input id="mf-densidad" readonly></div>
-      <div><label for="mf-variedad">Variedad</label><input id="mf-variedad" list="dl-variedad" autocomplete="off"></div>
+      <div><label for="mf-variedad">Variedad</label><select id="mf-variedad"></select></div>
       <div><label for="mf-etapa">Etapa</label><select id="mf-etapa"><option value="">—</option><option>M</option><option>I</option></select></div>
       <div><label for="mf-campana">Campaña</label><input id="mf-campana" list="dl-campana" autocomplete="off" placeholder="Ej. 2026-27"></div>
       <div><label for="mf-inicio_campana">Inicio de campaña</label><input id="mf-inicio_campana" type="date"></div>
@@ -255,12 +256,12 @@ textarea{min-height:110px}
       <div><label for="mf-cierre_campana">Cierre de campaña</label><input id="mf-cierre_campana" type="date"></div>
       <div><label for="mf-estado">Estado campaña</label><select id="mf-estado"><option>ACTIVO</option><option>CERRADO</option></select></div>
     </div>
-    <label for="mf-pep">PEP (Fundo/Módulo/Lote)</label>
+    <p class="ayuda" id="mf-aviso" hidden>Para elegir cultivo, variedad, fundo y sub fundo primero carga las maestras de Variedades y de Fundos (pestañas Variedades y Fundos).</p>
+    <label for="mf-pep">PEP (Fundo-Módulo-Lote)</label>
     <input id="mf-pep" readonly>
     <button class="btn" id="mf-guardar">Guardar válvula</button>
     <button class="btn sec" id="mf-cancelar" hidden>Cancelar edición</button>
-    <datalist id="dl-cultivo"></datalist><datalist id="dl-sub_fundo"></datalist><datalist id="dl-fundo"></datalist>
-    <datalist id="dl-modulo"></datalist><datalist id="dl-variedad"></datalist><datalist id="dl-campana"></datalist>
+    <datalist id="dl-modulo"></datalist><datalist id="dl-campana"></datalist>
   </div>
 
   <div class="card">
@@ -270,7 +271,7 @@ textarea{min-height:110px}
     <label for="mi-archivo">Archivo CSV</label>
     <input id="mi-archivo" type="file" accept=".csv,.txt,text/csv,text/plain">
     <label for="mi-texto">…o pega aquí desde Excel</label>
-    <textarea id="mi-texto" placeholder="Sede&#9;Cultivo&#9;Sub_Fundo&#9;Fundo&#9;Módulo&#9;Lote&#9;Turno&#9;Válvula&#9;Área&#9;Plantas&#9;…"></textarea>
+    <textarea id="mi-texto" placeholder="Sede&#9;Cultivo&#9;Fundo&#9;Sub_Fundo&#9;Módulo&#9;Lote&#9;Turno&#9;Válvula&#9;Área&#9;Plantas&#9;…"></textarea>
     <button class="btn" id="mi-importar">Revisar e importar</button>
     <div class="res-imp" id="mi-res"></div>
   </div>
@@ -337,39 +338,22 @@ textarea{min-height:110px}
 <section id="s-fundos">
   <div class="card">
     <label id="fu-titulo" style="margin-bottom:0">Agregar fundo</label>
-    <p class="ayuda">Maestra de fundos: a qué unidad de negocio, sede y sub fundo pertenece cada fundo.</p>
+    <p class="ayuda">Maestra de fundos: la sede es la unidad de negocio. Cada fila es un sub fundo dentro de su fundo (por ejemplo, fundo POM con sub fundos POM1 y POM2) y lleva su centro de costo.</p>
     <div class="grid2">
-      <div><label for="fu-unidad">Unidad de negocio</label><select id="fu-unidad"></select></div>
-      <div><label for="fu-sede">Sede</label><select id="fu-sede"></select></div>
+      <div><label for="fu-sede">Sede (unidad de negocio)</label><select id="fu-sede"></select></div>
+      <div><label for="fu-fundo">Fundo</label><input id="fu-fundo" list="dl-fu-fundo" autocomplete="off"></div>
       <div><label for="fu-sub_fundo">Sub fundo</label><input id="fu-sub_fundo" autocomplete="off"></div>
-      <div><label for="fu-fundo">Fundo</label><input id="fu-fundo" autocomplete="off"></div>
       <div><label for="fu-cc">Centro de costo</label><input id="fu-cc" autocomplete="off"></div>
       <div><label for="fu-estado">Estado</label><select id="fu-estado"><option>ACTIVO</option><option>CERRADO</option></select></div>
     </div>
+    <datalist id="dl-fu-fundo"></datalist>
     <button class="btn" id="fu-guardar">Guardar fundo</button>
     <button class="btn sec" id="fu-cancelar" hidden>Cancelar edición</button>
   </div>
   <div class="card">
-    <label style="margin-bottom:0">Fundos</label>
-    <input id="fu-q" placeholder="Buscar por fundo, sub fundo, sede o unidad" autocomplete="off" style="margin-top:6px">
+    <label style="margin-bottom:0">Fundos y sub fundos</label>
+    <input id="fu-q" placeholder="Buscar por fundo, sub fundo o sede" autocomplete="off" style="margin-top:6px">
     <div id="fu-lista" style="margin-top:8px"></div>
-  </div>
-</section>
-
-<!-- ================= UNIDADES DE NEGOCIO (módulo Agrícola) ================= -->
-<section id="s-unidades">
-  <div class="card">
-    <label id="un-titulo" style="margin-bottom:0">Agregar unidad de negocio</label>
-    <div class="grid2">
-      <div><label for="un-nombre">Unidad de negocio</label><input id="un-nombre" autocomplete="off"></div>
-      <div><label for="un-estado">Estado</label><select id="un-estado"><option>ACTIVO</option><option>CERRADO</option></select></div>
-    </div>
-    <button class="btn" id="un-guardar">Guardar unidad</button>
-    <button class="btn sec" id="un-cancelar" hidden>Cancelar edición</button>
-  </div>
-  <div class="card">
-    <label style="margin-bottom:6px">Unidades de negocio</label>
-    <div id="un-lista"></div>
   </div>
 </section>
 
@@ -377,15 +361,16 @@ textarea{min-height:110px}
 <section id="s-placas">
   <div class="card">
     <label id="pc-titulo" style="margin-bottom:0">Agregar placa</label>
-    <p class="ayuda">Maestra de placas: cada placa con su chofer y tipo de unidad.</p>
+    <p class="ayuda">Maestra de placas: chofer, tipo de unidad, combustible, sub fundo, área y capacidad. Primero carga los Fundos (con centro de costo) y las Áreas.</p>
     <div class="grid2">
       <div><label for="pc-placa">Placa</label><input id="pc-placa" autocomplete="off" autocapitalize="characters"></div>
       <div><label for="pc-chofer">Chofer</label><input id="pc-chofer" autocomplete="off"></div>
       <div><label for="pc-tipo">Tipo de unidad</label><input id="pc-tipo" list="dl-tipo" autocomplete="off"></div>
       <div><label for="pc-comb">Tipo de combustible</label><select id="pc-comb"><option value="">Selecciona…</option><option>Gasolina regular</option><option>Gasolina 95</option><option>Petróleo diesel 2</option></select></div>
       <div><label for="pc-sap">Cód. SAP del combustible</label><input id="pc-sap" autocomplete="off"></div>
-      <div><label for="pc-fundo">Fundo</label><select id="pc-fundo"></select></div>
-      <div><label for="pc-cc">Centro de costo</label><input id="pc-cc" readonly placeholder="Según el fundo"></div>
+      <div><label for="pc-sub">Sub fundo</label><select id="pc-sub"></select></div>
+      <div><label for="pc-area">Área</label><select id="pc-area"></select></div>
+      <div><label for="pc-cc">Centro de costo</label><input id="pc-cc" readonly placeholder="Según el sub fundo"></div>
       <div><label for="pc-cap">Capacidad máx. (galones)</label><input id="pc-cap" inputmode="decimal" autocomplete="off"></div>
       <div><label for="pc-estado">Estado</label><select id="pc-estado"><option>ACTIVO</option><option>CERRADO</option></select></div>
     </div>
@@ -395,8 +380,26 @@ textarea{min-height:110px}
   </div>
   <div class="card">
     <label style="margin-bottom:0">Placas</label>
-    <input id="pc-q" placeholder="Buscar por placa, chofer o tipo" autocomplete="off" style="margin-top:6px">
+    <input id="pc-q" placeholder="Buscar por placa, chofer, tipo, sub fundo o área" autocomplete="off" style="margin-top:6px">
     <div id="pc-lista" style="margin-top:8px"></div>
+  </div>
+</section>
+
+<!-- ================= ÁREAS (módulo Soporte, administrador) ================= -->
+<section id="s-areas">
+  <div class="card">
+    <label id="ar-titulo" style="margin-bottom:0">Agregar área</label>
+    <p class="ayuda">Áreas de trabajo a las que se asignan las placas (por ejemplo Cosecha, Riego, Mantenimiento). En la reserva el área se puede cambiar si el vehículo pasa de un área a otra.</p>
+    <div class="grid2">
+      <div><label for="ar-nombre">Área</label><input id="ar-nombre" autocomplete="off"></div>
+      <div><label for="ar-estado">Estado</label><select id="ar-estado"><option>ACTIVO</option><option>CERRADO</option></select></div>
+    </div>
+    <button class="btn" id="ar-guardar">Guardar área</button>
+    <button class="btn sec" id="ar-cancelar" hidden>Cancelar edición</button>
+  </div>
+  <div class="card">
+    <label style="margin-bottom:6px">Áreas</label>
+    <div id="ar-lista"></div>
   </div>
 </section>
 
@@ -517,7 +520,7 @@ textarea{min-height:110px}
       <option value="oscura">Oscura</option>
     </select>
   </div>
-  <p class="ayuda" style="text-align:center">Versión 8.0 · Los datos quedan en este celular hasta que se envían a la hoja central.</p>
+  <p class="ayuda" style="text-align:center">Versión 9.0 · Los datos quedan en este celular hasta que se envían a la hoja central.</p>
 </section>
 
 </main>
@@ -537,7 +540,7 @@ textarea{min-height:110px}
    Pega aquí la URL que te da Apps Script (termina en /exec).
    Sin esta URL nadie puede ingresar a la app. */
 const SYNC = {
-  url: "https://script.google.com/macros/s/AKfycbwww3I9xUCzQB6H5EODxcDwl-9NZbZzlCoVULoBgzoXq6dSm1jNym100zLT19RXE3EZ/exec"
+  url: ""
 };
 
 const ROLES = { admin:"Administrador", evaluador:"Evaluador" };
@@ -546,7 +549,7 @@ const NIV_TXT = { campana:"Campaña", sub_fundo:"Sub fundo", fundo:"Fundo", modu
 const SEDES = ["CARAZ","ICA","NEPEÑA","NAZCA","CASCAS"];
 const GRUPOS = ["Benéficos","Plagas","Enfermedades"];
 const ORGANOS = ["Brote","Planta","Flores","Baya","Cobertura"];
-const ESQUEMA = 8;      // cambia cuando cambia la forma de la configuración descargada
+const ESQUEMA = 9;      // cambia cuando cambia la forma de la configuración descargada
 const TIPOS = {
   conteo:"Conteo: número entero desde 0, con botones + y −. Se suma en «total_conteos».",
   entero:"Número entero (se puede limitar con mínimo y máximo).",
@@ -619,7 +622,7 @@ function diasEntre(a,b){
 
 /* ---------- Estado global ---------- */
 let SES=null;                                   // {usuario, nombre, rol}
-let CFG={version:0,esquema:ESQUEMA,maestra:[],plantillas:[],umbrales:[],fundos:[],unidades:[],variedades:[],placas:[]};   // configuración descargada del servidor
+let CFG={version:0,esquema:ESQUEMA,maestra:[],plantillas:[],umbrales:[],fundos:[],areas:[],variedades:[],placas:[]};   // configuración descargada del servidor
 let TRAB={plantilla:"",sel:{},plantas:{},rec:{}};
 let sesionVencida=false, nPend=0, filaPrevId="";
 
@@ -628,8 +631,8 @@ function getSep(){ try{ return localStorage.getItem("sep")||","; }catch(e){ retu
 function credLoad(){ try{ return JSON.parse(localStorage.getItem("cred")||"{}"); }catch(e){ return {}; } }
 function credSave(m){ try{ localStorage.setItem("cred",JSON.stringify(m)); }catch(e){} }
 function loadCfgSrv(u){
-  try{ const c=JSON.parse(localStorage.getItem("cfgsrv_"+u)||"null"); if(c&&c.esquema===ESQUEMA&&Array.isArray(c.maestra)&&Array.isArray(c.plantillas)){ c.umbrales=c.umbrales||[]; c.fundos=c.fundos||[]; c.unidades=c.unidades||[]; c.variedades=c.variedades||[]; c.placas=c.placas||[]; return c; } }catch(e){}
-  return {version:0,esquema:ESQUEMA,maestra:[],plantillas:[],umbrales:[],fundos:[],unidades:[],variedades:[],placas:[]};   // una configuración guardada por una versión anterior se descarta
+  try{ const c=JSON.parse(localStorage.getItem("cfgsrv_"+u)||"null"); if(c&&c.esquema===ESQUEMA&&Array.isArray(c.maestra)&&Array.isArray(c.plantillas)){ c.umbrales=c.umbrales||[]; c.fundos=c.fundos||[]; c.areas=c.areas||[]; c.variedades=c.variedades||[]; c.placas=c.placas||[]; return c; } }catch(e){}
+  return {version:0,esquema:ESQUEMA,maestra:[],plantillas:[],umbrales:[],fundos:[],areas:[],variedades:[],placas:[]};   // una configuración guardada por una versión anterior se descarta
 }
 function saveCfgSrv(){ try{ localStorage.setItem("cfgsrv_"+SES.usuario, JSON.stringify(CFG)); }catch(e){ toast("No se pudo guardar la configuración en el celular"); } }
 function loadTrab(){
@@ -799,9 +802,9 @@ function setTitulo(){
   $("h-titulo").innerHTML = MODACT==="agricola" ? "🗺️ Agrícola" : MODACT==="admin" ? "👥 Administración" : m ? `${m.i} ${esc(m.n)}` : "🌿 Evaluaciones";
 }
 function pestanasMod(){
-  if(MODACT==="agricola") return [["s-maestra","🗺️","Programa"],["s-fundos","🏞️","Fundos"],["s-unidades","🏢","Unidades"],["s-variedades","🍇","Variedades"],["s-umbrales","🎯","Umbrales"]];
+  if(MODACT==="agricola") return [["s-maestra","🗺️","Programa"],["s-fundos","🏞️","Fundos"],["s-variedades","🍇","Variedades"],["s-umbrales","🎯","Umbrales"]];
   if(MODACT==="admin") return [["s-plantilla","🧩","Plantillas"],["s-usuarios","👥","Usuarios"]];
-  if(MODACT==="soporte") return SES&&SES.rol==="admin" ? [["s-reserva","⛽","Reserva"],["s-registros","📋","Registros"],["s-placas","🚚","Placas"]] : [["s-reserva","⛽","Reserva"],["s-registros","📋","Registros"]];
+  if(MODACT==="soporte") return SES&&SES.rol==="admin" ? [["s-reserva","⛽","Reserva"],["s-registros","📋","Registros"],["s-placas","🚚","Placas"],["s-areas","🧭","Áreas"]] : [["s-reserva","⛽","Reserva"],["s-registros","📋","Registros"]];
   if(esEval(MODACT)) return [["s-evaluar","📝","Evaluar"],["s-registros","📋","Registros"]];
   return [];
 }
@@ -830,7 +833,7 @@ function irA(id){
   if(id==="s-reserva") renderReserva();
   if(id==="s-placas") renderPlacas();
   if(id==="s-variedades") renderVariedades();
-  if(id==="s-unidades") renderUnidades();
+  if(id==="s-areas") renderAreas();
   if(id==="s-umbrales") renderUmbrales();
   if(id==="s-plantilla") renderPlantillas();
   if(id==="s-ajustes") renderAjustes();
@@ -880,7 +883,7 @@ async function cargarConfig(forzar, silencioso){
     cfgUlt=Date.now();
     if(j.cambio){
       const primera=!CFG.version;
-      CFG={version:j.version,esquema:ESQUEMA,maestra:j.maestra||[],plantillas:j.plantillas||[],umbrales:j.umbrales||[],fundos:j.fundos||[],unidades:j.unidades||[],variedades:j.variedades||[],placas:j.placas||[]};
+      CFG={version:j.version,esquema:ESQUEMA,maestra:j.maestra||[],plantillas:j.plantillas||[],umbrales:j.umbrales||[],fundos:j.fundos||[],areas:j.areas||[],variedades:j.variedades||[],placas:j.placas||[]};
       saveCfgSrv(); aplicarConfig(false);
       if(primera && SES.rol!=="admin" && !MODACT){      // primera descarga: si solo tiene un módulo, se abre directo
         const d=modulosDisponibles();
@@ -904,7 +907,7 @@ function aplicarConfig(inicial){
   onValvulaCambio(true);
   renderForm(prev);
   actualizarAviso();
-  renderMaestra(); renderUmbrales(); renderPlantillas(); renderFundos(); renderUnidades(); renderPlacas(); renderVariedades(); renderReserva(); renderAjustes();
+  renderMaestra(); renderUmbrales(); renderPlantillas(); renderFundos(); renderAreas(); renderPlacas(); renderVariedades(); renderReserva(); renderAjustes();
   if(!MODACT) renderInicio();
   if(SES.rol==="admin") renderAccesos();
 }
@@ -1164,13 +1167,13 @@ function csvTexto(cab, filas){
 function construirCSV(regs){
   regs=regs.filter(r=>!r.rechazado);
   if(MODACT==="soporte"){
-    const cab=["id","fecha_registro","hora","usuario","registrado_por","placa","conductor","tipo_unidad","fundo","centro_costo","tipo_combustible","cod_sap","km","fecha_abastecimiento","galones","observaciones"];
-    return csvTexto(cab,regs.map(r=>[r.id,r.fecha,r.hora,r.usuario,r.evaluador,r.placa,r.conductor,r.tipo_unidad,r.fundo||"",r.centro_costo||"",r.tipo_combustible||"",r.cod_sap||"",r.km,r.fecha_abastecimiento,r.galones,r.obs||""]));
+    const cab=["id","fecha_registro","hora","usuario","registrado_por","placa","conductor","tipo_unidad","sub_fundo","area","centro_costo","tipo_combustible","cod_sap","km","fecha_abastecimiento","galones","observaciones"];
+    return csvTexto(cab,regs.map(r=>[r.id,r.fecha,r.hora,r.usuario,r.evaluador,r.placa,r.conductor,r.tipo_unidad,r.sub_fundo||"",r.area||"",r.centro_costo||"",r.tipo_combustible||"",r.cod_sap||"",r.km,r.fecha_abastecimiento,r.galones,r.obs||""]));
   }
   const claves=[];
   CFG.plantillas.filter(p=>!esEval(MODACT)||modPl(p)===MODACT).forEach(p=>p.campos.forEach(c=>{ if(!claves.includes(c.clave)) claves.push(c.clave); }));
   regs.forEach(r=>Object.keys(r.valores||r.conteos||{}).forEach(k=>{ if(!claves.includes(k)) claves.push(k); }));
-  const cab=["id","fecha","hora","usuario","evaluador","plantilla","version_plantilla","campana","sede","cultivo","sub_fundo","fundo","modulo",
+  const cab=["id","fecha","hora","usuario","evaluador","plantilla","version_plantilla","campana","sede","cultivo","fundo","sub_fundo","modulo",
              "lote","turno","valvula","pep","variedad","etapa","planta","dias_desde_inicio_campana","latitud","longitud","precision_m",
              "total_conteos","observaciones",...claves];
   const filas=regs.map(r=>{
@@ -1178,7 +1181,7 @@ function construirCSV(regs){
     const tot=r.total_conteos!==undefined?r.total_conteos:(r.total===undefined?"":r.total);
     const dias=r.dias_campana!==undefined?r.dias_campana:(r.dias_poda===undefined?"":r.dias_poda);
     return [r.id,r.fecha,r.hora,r.usuario,r.evaluador,r.plantilla_nombre||"",r.plantilla_version||"",r.campana||"",r.sede||"",r.cultivo||"",
-            r.sub_fundo||"",r.fundo,r.modulo||"",r.lote,r.turno||"",r.valvula||"",r.pep||"",r.variedad||"",r.etapa||"",r.planta,dias,
+            r.fundo,r.sub_fundo||"",r.modulo||"",r.lote,r.turno||"",r.valvula||"",r.pep||"",r.variedad||"",r.etapa||"",r.planta,dias,
             r.lat,r.lon,r.prec,tot,r.obs,...claves.map(k=>v[k]===undefined?"":v[k])];
   });
   return csvTexto(cab,filas);
@@ -1271,15 +1274,64 @@ function calcMaestraForm(){
   const p=parseInt(String($("mf-plantas").value).replace(/\s/g,""),10)||0;
   $("mf-densidad").value=(a>0&&p>0)?num(p/a):"";
   const t=["mf-fundo","mf-modulo","mf-lote"].map(id=>$(id).value.trim());
-  $("mf-pep").value=t.some(Boolean)?t.join("/"):"";
+  $("mf-pep").value=t.some(Boolean)?t.join("-"):"";
 }
-["mf-area","mf-plantas","mf-fundo","mf-modulo","mf-lote"].forEach(id=>$(id).addEventListener("input",calcMaestraForm));
+["mf-area","mf-plantas","mf-fundo","mf-modulo","mf-lote"].forEach(id=>{ $(id).addEventListener("input",calcMaestraForm); $(id).addEventListener("change",calcMaestraForm); });
 
-function varSug(){
-  const cu=norm($("mf-cultivo").value);
-  const cat=(CFG.variedades||[]).filter(v=>v.estado==="ACTIVO"&&(!cu||norm(v.cultivo)===cu)).map(v=>v.variedad);
-  const base=(cu&&cat.length)?cat:cat.concat(CFG.maestra.filter(r=>!cu||norm(r.cultivo)===cu).map(r=>r.variedad));
-  $("dl-variedad").innerHTML=[...new Set(base.filter(Boolean))].sort(coll).map(v=>`<option value="${esc(v)}">`).join("");
+// Listas desplegables del programa: salen de las maestras de Variedades y de Fundos, y dependen unas de otras
+function ponerSel(id,v){
+  const el=$(id); v=v||"";
+  if(v && ![...el.options].some(o=>o.value===v)) el.insertAdjacentHTML("beforeend",`<option value="${esc(v)}">${esc(v)} (fuera de la maestra)</option>`);
+  el.value=v;
+}
+function llenarSel(id,vals,vacio){
+  const el=$(id), cur=el.value;
+  const l=[...new Set(vals.filter(Boolean))].sort(coll);
+  el.innerHTML=`<option value="">${vacio}</option>`+l.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");
+  ponerSel(id,cur);
+}
+function listasMaestra(){
+  const sede=$("mf-sede").value, fu=$("mf-fundo").value, cu=$("mf-cultivo").value;
+  const F=CFG.fundos||[], V=CFG.variedades||[];
+  llenarSel("mf-cultivo",V.map(v=>v.cultivo),"Selecciona…");
+  llenarSel("mf-fundo",F.filter(f=>!sede||f.sede===sede).map(f=>f.fundo),"Selecciona…");
+  llenarSel("mf-sub_fundo",F.filter(f=>(!sede||f.sede===sede)&&(!fu||f.fundo===fu)).map(f=>f.sub_fundo),"Selecciona…");
+  llenarSel("mf-variedad",V.filter(v=>v.estado==="ACTIVO"&&v.cultivo===cu).map(v=>v.variedad),cu?"—":"Elige primero el cultivo");
+  $("mf-aviso").hidden = !!(F.length&&V.length);
+}
+function fijarJerarquia(sede,fundo,sub){
+  $("mf-sede").value=sede||""; $("mf-fundo").value=""; $("mf-sub_fundo").value=""; listasMaestra();
+  ponerSel("mf-fundo",fundo); listasMaestra(); ponerSel("mf-sub_fundo",sub);
+}
+$("mf-sede").addEventListener("change",()=>{
+  const sede=$("mf-sede").value, F=CFG.fundos||[];
+  const fu=F.find(f=>f.fundo===$("mf-fundo").value), sb=F.find(f=>f.sub_fundo===$("mf-sub_fundo").value);
+  if(sede && fu && fu.sede!==sede) $("mf-fundo").value="";
+  if(sede && sb && sb.sede!==sede) $("mf-sub_fundo").value="";
+  listasMaestra();
+});
+$("mf-fundo").addEventListener("change",()=>{
+  const F=CFG.fundos||[], fu=$("mf-fundo").value, f0=F.find(f=>f.fundo===fu);
+  if(f0 && $("mf-sede").value!==f0.sede) $("mf-sede").value=f0.sede;
+  if(fu && !F.some(f=>f.fundo===fu&&f.sub_fundo===$("mf-sub_fundo").value)) $("mf-sub_fundo").value="";
+  listasMaestra();
+});
+$("mf-sub_fundo").addEventListener("change",()=>{
+  const f0=(CFG.fundos||[]).find(f=>f.sub_fundo===$("mf-sub_fundo").value);
+  if(f0) fijarJerarquia(f0.sede,f0.fundo,f0.sub_fundo);
+  calcMaestraForm();
+});
+$("mf-cultivo").addEventListener("change",()=>{
+  const cu=$("mf-cultivo").value;
+  if(!(CFG.variedades||[]).some(v=>v.cultivo===cu&&v.variedad===$("mf-variedad").value)) $("mf-variedad").value="";
+  listasMaestra();
+});
+function cargarFormMaestra(f){
+  MF_CAMPOS.forEach(k=>{ if(!["sede","cultivo","fundo","sub_fundo","variedad"].includes(k)) $("mf-"+k).value=(f[k]===undefined||f[k]===null)?"":f[k]; });
+  $("mf-cultivo").value=""; $("mf-variedad").value="";
+  fijarJerarquia(f.sede,f.fundo,f.sub_fundo);
+  listasMaestra(); ponerSel("mf-cultivo",f.cultivo); listasMaestra(); ponerSel("mf-variedad",f.variedad);
+  calcMaestraForm();
 }
 function renderMaestra(){
   if(!SES||SES.rol!=="admin") return;
@@ -1292,10 +1344,8 @@ function renderMaestra(){
   $("m-sub").innerHTML=`<option value="">Todos</option>`+subs.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
   $("m-sub").value=MF.sub; $("m-est").value=MF.estado;
   const dl=(id,k)=>{ $(id).innerHTML=[...new Set(CFG.maestra.map(r=>r[k]).filter(Boolean))].sort(coll).map(v=>`<option value="${esc(v)}">`).join(""); };
-  $("dl-cultivo").innerHTML=[...new Set(CFG.maestra.map(r=>r.cultivo).concat((CFG.variedades||[]).map(v=>v.cultivo)).filter(Boolean))].sort(coll).map(v=>`<option value="${esc(v)}">`).join("");
-  const dl2=(id,k)=>{ $(id).innerHTML=[...new Set(CFG.maestra.map(r=>r[k]).concat((CFG.fundos||[]).map(r=>r[k])).filter(Boolean))].sort(coll).map(v=>`<option value="${esc(v)}">`).join(""); };
-  dl2("dl-sub_fundo","sub_fundo"); dl2("dl-fundo","fundo"); dl("dl-modulo","modulo");
-  dl("dl-campana","campana"); varSug();
+  dl("dl-modulo","modulo");
+  dl("dl-campana","campana"); listasMaestra();
 
   // filas que vienen de la versión anterior y todavía no tienen sede, cultivo ni sub fundo
   const sinSub=CFG.maestra.filter(r=>!r.sub_fundo).length;
@@ -1327,7 +1377,7 @@ function renderMaestra(){
           <small>inicio campaña ${esc(f.inicio_campana||"—")} · inicio cosecha ${esc(f.inicio_cosecha||"—")} · cierre ${esc(f.cierre_campana||"—")}</small></div>
           <div class="acc"><button data-acc="editar" data-id="${esc(f.id)}">Editar</button></div></div>`).join("") : "";
     return `<div class="lote"><div class="reg"><div>
-        <span class="t">${esc(g.pep||[g.fundo,g.modulo,g.lote].join("/"))}</span><span class="tag ${g.cerrado?"no":"ok"}">${g.cerrado?"cerrado":(g.parcial?"parcial":"activo")}</span>
+        <span class="t">${esc(g.pep||[g.fundo,g.modulo,g.lote].join("-"))}</span><span class="tag ${g.cerrado?"no":"ok"}">${g.cerrado?"cerrado":(g.parcial?"parcial":"activo")}</span>
         <small>${esc(g.sede||"sin sede")} · ${esc(g.cultivo||"sin cultivo")} · ${esc(g.sub_fundo||"sin sub fundo")} · campaña ${esc(g.campana)}</small>
         <small>${g.filas.length} válvulas · ${num(area)} ha · ${num(pl)} plantas${cierre}</small></div>
         <div class="acc"><button data-acc="ver" data-i="${i}">${abierto?"Ocultar":"Válvulas"}</button>
@@ -1347,7 +1397,7 @@ $("m-lotes").addEventListener("click", async e=>{
       renderMaestra();
     } else if(b.dataset.acc==="cierre"){
       const g=LOTES[b.dataset.i], cerrar=!g.cerrado;
-      const nom=`${g.pep||[g.fundo,g.modulo,g.lote].join("/")} (campaña ${g.campana})`;
+      const nom=`${g.pep||[g.fundo,g.modulo,g.lote].join("-")} (campaña ${g.campana})`;
       if(!confirm(cerrar ? `¿Cerrar el lote ${nom}?\nLos evaluadores ya no podrán seleccionarlo y se registrará la fecha de cierre de campaña. Podrás reabrirlo.` : `¿Reabrir el lote ${nom}?\nSe borrará su fecha de cierre de campaña.`)) return;
       await apiAdmin("lote_estado",{campana:g.campana,fundo:g.fundo,modulo:g.modulo,lote:g.lote,estado:cerrar?"CERRADO":"ACTIVO"});
       toast(cerrar?"Lote cerrado":"Lote reabierto");
@@ -1355,8 +1405,7 @@ $("m-lotes").addEventListener("click", async e=>{
     } else if(b.dataset.acc==="editar"){
       const f=CFG.maestra.find(x=>x.id===b.dataset.id); if(!f) return;
       MF.editId=f.id;
-      MF_CAMPOS.forEach(k=>{ $("mf-"+k).value = (f[k]===undefined||f[k]===null) ? "" : f[k]; });
-      calcMaestraForm();
+      cargarFormMaestra(f);
       $("mf-titulo").textContent="Editando válvula"; $("mf-guardar").textContent="Guardar cambios"; $("mf-cancelar").hidden=false;
       window.scrollTo(0,0);
     }
@@ -1366,7 +1415,7 @@ $("m-lotes").addEventListener("click", async e=>{
 function limpiarFormMaestra(){
   MF.editId="";
   MF_CAMPOS.forEach(k=>{ $("mf-"+k).value=""; });
-  $("mf-estado").value="ACTIVO"; calcMaestraForm();
+  $("mf-estado").value="ACTIVO"; listasMaestra(); calcMaestraForm();
   $("mf-titulo").textContent="Agregar válvula al programa de producción"; $("mf-guardar").textContent="Guardar válvula"; $("mf-cancelar").hidden=true;
 }
 $("mf-cancelar").onclick=limpiarFormMaestra;
@@ -1456,7 +1505,7 @@ async function leerArchivoEn(inputFile, areaTexto){
 
 /* ---------- Importar la maestra ---------- */
 const COLS_MAESTRA = {
-  sede:["sede"], cultivo:["cultivo"], sub_fundo:["sub fundo","subfundo"], fundo:["fundo"], modulo:["modulo"], lote:["lote"],
+  sede:["sede"], cultivo:["cultivo"], fundo:["fundo"], sub_fundo:["sub fundo","subfundo"], modulo:["modulo"], lote:["lote"],
   turno:["turno"], valvula:["valvula","valvulas"], area:["area","area ha","area has"],
   plantas:["plantas","n plantas","nro plantas","numero de plantas","n de plantas"],
   variedad:["variedad"], etapa:["etapa"],
@@ -1465,13 +1514,13 @@ const COLS_MAESTRA = {
   cierre_campana:["cierre de campana","cierre campana","fecha cierre de campana","fecha cierre campana"],
   campana:["campana"], estado:["estado campana","estado de campana","estado"]
 };
-const REQ_MAESTRA=["sede","cultivo","sub_fundo","fundo","modulo","lote","turno","valvula","campana"];
+const REQ_MAESTRA=["sede","cultivo","fundo","sub_fundo","modulo","lote","turno","valvula","campana"];
 $("mi-archivo").onchange=()=>leerArchivoEn($("mi-archivo"),$("mi-texto"));
 $("mi-formato").onclick=async ()=>{
-  const cab=["Sede","Cultivo","Sub_Fundo","Fundo","Módulo","Lote","Turno","Válvula","Área","Plantas","Densidad","Variedad","Etapa",
+  const cab=["Sede","Cultivo","Fundo","Sub_Fundo","Módulo","Lote","Turno","Válvula","Área","Plantas","Densidad","Variedad","Etapa",
              "Inicio de campaña","Inicio de cosecha","Cierre de campaña","Campaña","PEP","Estado Campaña"];
-  const ej=[["ICA","Uva","Sub fundo 1","Fundo 1","M1","L-01","T1","V-01","2.5","4500","","Variedad A","M","2026-06-15","2026-12-01","","2026-27","","ACTIVO"],
-            ["ICA","Uva","Sub fundo 1","Fundo 1","M1","L-01","T1","V-02","2","3600","","Variedad A","M","2026-06-15","2026-12-01","","2026-27","","ACTIVO"]];
+  const ej=[["ICA","Uva","Fundo 1","Sub fundo 1","M1","L-01","T1","V-01","2.5","4500","","Variedad A","M","2026-06-15","2026-12-01","","2026-27","","ACTIVO"],
+            ["ICA","Uva","Fundo 1","Sub fundo 1","M1","L-01","T1","V-02","2","3600","","Variedad A","M","2026-06-15","2026-12-01","","2026-27","","ACTIVO"]];
   await entregarArchivo("formato_maestra.csv", csvTexto(cab,ej));
 };
 $("mi-importar").onclick=()=>{
@@ -1585,11 +1634,17 @@ function renderPlantillas(){
   $("pl-lista").innerHTML=CFG.plantillas.filter(p=>!p.fija).map(p=>`
     <div class="reg"><div><span class="t">${esc(p.nombre)}</span><span class="tag ${p.activa?"ok":"no"}">${p.activa?"activa":"inactiva"}</span>
       <small>${esc(modNombre(modPl(p)))} · Versión ${esc(p.version)} · ${p.campos.length} campos</small></div>
-      <div class="acc"><button data-id="${esc(p.id)}">Editar</button></div></div>`).join("") || "<p class='ayuda'>Aún no hay plantillas.</p>";
+      <div class="acc"><button data-acc="editar" data-id="${esc(p.id)}">Editar</button><button class="${p.activa?"rojo":""}" data-acc="estado" data-id="${esc(p.id)}">${p.activa?"Desactivar":"Activar"}</button></div></div>`).join("") || "<p class='ayuda'>Aún no hay plantillas.</p>";
 }
-$("pl-lista").addEventListener("click",e=>{
+$("pl-lista").addEventListener("click",async e=>{
   const b=e.target.closest("button"); if(!b) return;
   const p=CFG.plantillas.find(x=>x.id===b.dataset.id); if(!p) return;
+  if(b.dataset.acc==="estado"){
+    if(p.activa && !confirm(`¿Desactivar la cartilla «${p.nombre}»?\nLos evaluadores dejarán de verla. Lo que ya registraron se sigue enviando y puedes activarla de nuevo cuando quieras.`)) return;
+    try{ await apiAdmin("plantilla_estado",{id:p.id,activa:!p.activa}); toast(p.activa?"Cartilla desactivada":"Cartilla activada"); await cargarConfig(true,true); renderPlantillas(); }
+    catch(err){ toast(err.message); }
+    return;
+  }
   abrirEditor({id:p.id,nombre:p.nombre,activa:p.activa,version:p.version,mod_eval:modPl(p),
     campos:JSON.parse(JSON.stringify(p.campos)).map(c=>Object.assign(c,{_nuevo:false}))});
 });
@@ -1838,74 +1893,33 @@ $("nu-crear").onclick=async ()=>{
 /* =====================================================================
    ADMINISTRADOR: MÓDULO AGRÍCOLA — FUNDOS Y UNIDADES DE NEGOCIO
    ===================================================================== */
-const FU={editId:"",q:""}, UN={editId:""};
-function renderUnidades(){
-  if(!SES||SES.rol!=="admin") return;
-  const U=(CFG.unidades||[]).slice().sort((a,b)=>coll(a.nombre,b.nombre));
-  const usados={}; (CFG.fundos||[]).forEach(f=>usados[f.unidad]=(usados[f.unidad]||0)+1);
-  $("un-lista").innerHTML = U.map(u=>`
-    <div class="reg"><div><span class="t">${esc(u.nombre)}</span><span class="tag ${u.estado==="ACTIVO"?"ok":"no"}">${esc(u.estado.toLowerCase())}</span>
-      <small>${usados[u.nombre]||0} fundos</small></div>
-      <div class="acc"><button data-acc="editar" data-id="${esc(u.id)}">Editar</button><button class="rojo" data-acc="borrar" data-id="${esc(u.id)}">Eliminar</button></div></div>`).join("")
-    || "<p class='ayuda'>Aún no hay unidades de negocio.</p>";
-}
-function limpiarFormUnidad(){ UN.editId=""; $("un-nombre").value=""; $("un-estado").value="ACTIVO";
-  $("un-titulo").textContent="Agregar unidad de negocio"; $("un-guardar").textContent="Guardar unidad"; $("un-cancelar").hidden=true; }
-$("un-cancelar").onclick=limpiarFormUnidad;
-$("un-guardar").onclick=async ()=>{
-  $("un-guardar").disabled=true;
-  try{
-    await apiAdmin("unidad_guardar",{fila:{id:UN.editId||undefined,nombre:$("un-nombre").value,estado:$("un-estado").value}});
-    toast(UN.editId?"Cambios guardados":"Unidad de negocio agregada");
-    limpiarFormUnidad(); await cargarConfig(true,true); renderUnidades(); renderFundos();
-  }catch(err){ toast(err.message); }
-  finally{ $("un-guardar").disabled=false; }
-};
-$("un-lista").addEventListener("click",async e=>{
-  const b=e.target.closest("button"); if(!b) return;
-  const u=(CFG.unidades||[]).find(x=>x.id===b.dataset.id); if(!u) return;
-  try{
-    if(b.dataset.acc==="editar"){
-      UN.editId=u.id; $("un-nombre").value=u.nombre; $("un-estado").value=u.estado;
-      $("un-titulo").textContent="Editando unidad de negocio"; $("un-guardar").textContent="Guardar cambios"; $("un-cancelar").hidden=false;
-      window.scrollTo(0,0);
-    } else if(b.dataset.acc==="borrar"){
-      if(!confirm(`¿Eliminar la unidad de negocio ${u.nombre}?`)) return;
-      await apiAdmin("unidad_eliminar",{id:u.id});
-      toast("Unidad de negocio eliminada");
-      await cargarConfig(true,true); renderUnidades();
-    }
-  }catch(err){ toast(err.message); }
-});
-
+const FU={editId:"",q:""};
 function renderFundos(){
   if(!SES||SES.rol!=="admin") return;
-  const cur=$("fu-unidad").value;
-  $("fu-unidad").innerHTML=`<option value="">Selecciona…</option>`+(CFG.unidades||[]).slice().sort((a,b)=>coll(a.nombre,b.nombre)).map(u=>`<option value="${esc(u.nombre)}">${esc(u.nombre)}${u.estado==="ACTIVO"?"":" (cerrada)"}</option>`).join("");
-  $("fu-unidad").value=cur;
   const q=norm(FU.q);
-  const lista=(CFG.fundos||[]).filter(f=>!q||norm([f.fundo,f.sub_fundo,f.sede,f.unidad].join(" ")).includes(q))
-    .sort((a,b)=>coll(a.unidad,b.unidad)||coll(a.sede,b.sede)||coll(a.sub_fundo,b.sub_fundo)||coll(a.fundo,b.fundo));
+  $("dl-fu-fundo").innerHTML=[...new Set((CFG.fundos||[]).map(f=>f.fundo).filter(Boolean))].sort(coll).map(v=>`<option value="${esc(v)}">`).join("");
+  const lista=(CFG.fundos||[]).filter(f=>!q||norm([f.fundo,f.sub_fundo,f.sede].join(" ")).includes(q))
+    .sort((a,b)=>coll(a.sede,b.sede)||coll(a.fundo,b.fundo)||coll(a.sub_fundo,b.sub_fundo));
   const MAX=100;
   $("fu-lista").innerHTML = lista.slice(0,MAX).map(f=>`
-    <div class="reg"><div><span class="t">${esc(f.fundo)}</span><span class="tag ${f.estado==="ACTIVO"?"ok":"no"}">${esc(f.estado.toLowerCase())}</span>
-      <small>${esc(f.unidad)} · ${esc(f.sede)} · ${esc(f.sub_fundo)} · CC: ${esc(f.centro_costo||"sin definir")}</small></div>
+    <div class="reg"><div><span class="t">${esc(f.fundo)} › ${esc(f.sub_fundo)}</span><span class="tag ${f.estado==="ACTIVO"?"ok":"no"}">${esc(f.estado.toLowerCase())}</span>
+      <small>${esc(f.sede)} · CC: ${esc(f.centro_costo||"sin definir")}</small></div>
       <div class="acc"><button data-acc="editar" data-id="${esc(f.id)}">Editar</button><button class="rojo" data-acc="borrar" data-id="${esc(f.id)}">Eliminar</button></div></div>`).join("")
     + (lista.length>MAX ? `<p class="ayuda">Mostrando ${MAX} de ${lista.length}: usa el buscador.</p>` : "")
     || "<p class='ayuda'>No hay fundos para mostrar.</p>";
 }
 $("fu-q").addEventListener("input",()=>{ FU.q=$("fu-q").value; renderFundos(); });
-function limpiarFormFundo(){ FU.editId=""; $("fu-fundo").value=""; $("fu-cc").value=""; $("fu-estado").value="ACTIVO";
+function limpiarFormFundo(){ FU.editId=""; $("fu-sub_fundo").value=""; $("fu-cc").value=""; $("fu-estado").value="ACTIVO";
   $("fu-titulo").textContent="Agregar fundo"; $("fu-guardar").textContent="Guardar fundo"; $("fu-cancelar").hidden=true; }
-$("fu-cancelar").onclick=()=>{ limpiarFormFundo(); $("fu-sub_fundo").value=""; };
+$("fu-cancelar").onclick=()=>{ limpiarFormFundo(); $("fu-fundo").value=""; };
 $("fu-guardar").onclick=async ()=>{
   $("fu-guardar").disabled=true;
   try{
-    await apiAdmin("fundo_guardar",{fila:{id:FU.editId||undefined,unidad:$("fu-unidad").value,sede:$("fu-sede").value,
-      sub_fundo:$("fu-sub_fundo").value,fundo:$("fu-fundo").value,centro_costo:$("fu-cc").value,estado:$("fu-estado").value}});
+    await apiAdmin("fundo_guardar",{fila:{id:FU.editId||undefined,sede:$("fu-sede").value,fundo:$("fu-fundo").value,
+      sub_fundo:$("fu-sub_fundo").value,centro_costo:$("fu-cc").value,estado:$("fu-estado").value}});
     toast(FU.editId?"Cambios guardados":"Fundo agregado");
     const editando=!!FU.editId;
-    limpiarFormFundo(); if(editando) $("fu-sub_fundo").value="";     // al agregar varios seguidos se conservan unidad, sede y sub fundo
+    limpiarFormFundo(); if(editando) $("fu-fundo").value="";     // al agregar varios sub fundos seguidos se conservan la sede y el fundo
     await cargarConfig(true,true); renderFundos();
   }catch(err){ toast(err.message); }
   finally{ $("fu-guardar").disabled=false; }
@@ -1915,12 +1929,12 @@ $("fu-lista").addEventListener("click",async e=>{
   const f=(CFG.fundos||[]).find(x=>x.id===b.dataset.id); if(!f) return;
   try{
     if(b.dataset.acc==="editar"){
-      FU.editId=f.id; $("fu-unidad").value=f.unidad; $("fu-sede").value=f.sede; $("fu-sub_fundo").value=f.sub_fundo;
-      $("fu-fundo").value=f.fundo; $("fu-cc").value=f.centro_costo||""; $("fu-estado").value=f.estado;
+      FU.editId=f.id; $("fu-sede").value=f.sede; $("fu-fundo").value=f.fundo; $("fu-sub_fundo").value=f.sub_fundo;
+      $("fu-cc").value=f.centro_costo||""; $("fu-estado").value=f.estado;
       $("fu-titulo").textContent="Editando fundo"; $("fu-guardar").textContent="Guardar cambios"; $("fu-cancelar").hidden=false;
       window.scrollTo(0,0);
     } else if(b.dataset.acc==="borrar"){
-      if(!confirm(`¿Eliminar el fundo ${f.fundo} (${f.sub_fundo})?`)) return;
+      if(!confirm(`¿Eliminar el sub fundo ${f.sub_fundo} del fundo ${f.fundo}?`)) return;
       await apiAdmin("fundo_eliminar",{id:f.id});
       toast("Fundo eliminado");
       await cargarConfig(true,true); renderFundos();
@@ -1928,13 +1942,11 @@ $("fu-lista").addEventListener("click",async e=>{
   }catch(err){ toast(err.message); }
 });
 
-$("mf-cultivo").addEventListener("input",varSug);
-
 /* =====================================================================
    MÓDULO SOPORTE: RESERVA DE COMBUSTIBLE
    ===================================================================== */
 const COMBUSTIBLES=["Gasolina regular","Gasolina 95","Petróleo diesel 2"];
-const fundosCC=()=>{ const m=new Map(); (CFG.fundos||[]).forEach(f=>{ if(f.fundo&&(!m.has(f.fundo)||(!m.get(f.fundo)&&f.centro_costo))) m.set(f.fundo,f.centro_costo||""); }); return m; };
+const subCC=()=>{ const m=new Map(); (CFG.fundos||[]).forEach(f=>{ if(f.sub_fundo) m.set(f.sub_fundo,f); }); return m; };
 const sapDe=c=>{ const p=(CFG.placas||[]).find(x=>x.tipo_combustible===c&&x.cod_sap); return p?p.cod_sap:""; };
 function renderReserva(){
   if(!SES) return;
@@ -1942,13 +1954,17 @@ function renderReserva(){
   const cur=$("rv-placa").value;
   $("rv-placa").innerHTML=`<option value="">Selecciona…</option>`+pl.map(x=>`<option value="${esc(x.placa)}">${esc(x.placa)} · ${esc(x.tipo_unidad)}</option>`).join("");
   $("rv-placa").value=cur;
-  const fcur=$("rv-fundo").value, ccur=$("rv-comb").value;
-  $("rv-fundo").innerHTML=`<option value="">Selecciona…</option>`+[...fundosCC().keys()].sort(coll).map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join("");
-  $("rv-fundo").value=fcur;
+  const scur=$("rv-sub").value, acur=$("rv-area").value, ccur=$("rv-comb").value;
+  $("rv-sub").innerHTML=`<option value="">Selecciona…</option>`+[...subCC().values()].sort((a,b)=>coll(a.fundo,b.fundo)||coll(a.sub_fundo,b.sub_fundo)).map(f=>`<option value="${esc(f.sub_fundo)}">${esc(f.sub_fundo)} (${esc(f.fundo)})</option>`).join("");
+  $("rv-sub").value=scur;
+  $("rv-area").innerHTML=`<option value="">Selecciona…</option>`+(CFG.areas||[]).filter(a=>a.estado==="ACTIVO").sort((a,b)=>coll(a.nombre,b.nombre)).map(a=>`<option value="${esc(a.nombre)}">${esc(a.nombre)}</option>`).join("");
+  ponerSel("rv-area",acur);
   $("rv-comb").innerHTML=`<option value="">Selecciona…</option>`+COMBUSTIBLES.map(c=>`<option>${esc(c)}</option>`).join("");
   $("rv-comb").value=ccur;
-  $("rv-cc").value=fundosCC().get($("rv-fundo").value)||"";
-  if(!$("rv-fecha").value) $("rv-fecha").value=hoyISO();
+  $("rv-cc").value=(subCC().get($("rv-sub").value)||{}).centro_costo||"";
+  const hoy=hoyISO();
+  $("rv-fecha").min=hoy;                                   // no se puede abastecer en una fecha anterior a la de registro
+  if(!$("rv-fecha").value || $("rv-fecha").value<hoy) $("rv-fecha").value=hoy;
   const av=$("rv-aviso");
   const m=!CFG.version ? "Aún no se descargó la configuración. Conéctate a internet una vez."
     : !pl.length ? (SES.rol==="admin" ? "No hay placas registradas. Agrégalas en Soporte > Placas." : "No hay placas disponibles. Avisa al administrador.") : "";
@@ -1957,11 +1973,12 @@ function renderReserva(){
 $("rv-placa").onchange=()=>{
   const x=(CFG.placas||[]).find(p=>p.placa===$("rv-placa").value);
   $("rv-conductor").value=x?x.chofer:""; $("rv-tipo").value=x?x.tipo_unidad:"";
-  $("rv-fundo").value=x&&fundosCC().has(x.fundo)?x.fundo:""; $("rv-comb").value=x?x.tipo_combustible||"":"";
-  $("rv-cc").value=fundosCC().get($("rv-fundo").value)||"";
+  $("rv-sub").value=x&&subCC().has(x.sub_fundo)?x.sub_fundo:""; $("rv-comb").value=x?x.tipo_combustible||"":"";
+  ponerSel("rv-area",x?x.area:"");
+  $("rv-cc").value=(subCC().get($("rv-sub").value)||{}).centro_costo||"";
   $("rv-cap").textContent=x&&x.capacidad!==""&&x.capacidad!==undefined?`Capacidad máxima de ${x.placa}: ${num(x.capacidad)} galones`:"";
 };
-$("rv-fundo").onchange=()=>{ $("rv-cc").value=fundosCC().get($("rv-fundo").value)||""; };
+$("rv-sub").onchange=()=>{ $("rv-cc").value=(subCC().get($("rv-sub").value)||{}).centro_costo||""; };
 const numReserva = t => { const x=String(t||"").trim().replace(/\s/g,"").replace(",","."); return x!==""&&/^\d+(\.\d+)?$/.test(x) ? Number(x) : NaN; };
 $("rv-guardar").onclick=async ()=>{
   if(!SES) return;
@@ -1969,10 +1986,12 @@ $("rv-guardar").onclick=async ()=>{
   if(!x){ toast("Elige la placa"); $("rv-placa").focus(); return; }
   const conductor=$("rv-conductor").value.trim();
   if(!conductor){ toast("Indica el conductor"); $("rv-conductor").focus(); return; }
-  const fundo=$("rv-fundo").value;
-  if(!fundo){ toast("Elige el fundo"); $("rv-fundo").focus(); return; }
-  const cc=fundosCC().get(fundo)||"";
-  if(!cc){ toast("El fundo no tiene centro de costo. Avisa al administrador."); return; }
+  const sub_fundo=$("rv-sub").value;
+  if(!sub_fundo){ toast("Elige el sub fundo"); $("rv-sub").focus(); return; }
+  const cc=(subCC().get(sub_fundo)||{}).centro_costo||"";
+  if(!cc){ toast("El sub fundo no tiene centro de costo. Avisa al administrador."); return; }
+  const area=$("rv-area").value;
+  if(!area){ toast("Elige el área"); $("rv-area").focus(); return; }
   const comb=$("rv-comb").value;
   if(!comb){ toast("Elige el tipo de combustible a abastecer"); $("rv-comb").focus(); return; }
   const kmT=$("rv-km").value.trim().replace(/\s/g,"");
@@ -1980,6 +1999,7 @@ $("rv-guardar").onclick=async ()=>{
   const km=kmT===""?"":Number(kmT);
   const fecha=$("rv-fecha").value;
   if(!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || isNaN(new Date(fecha+"T00:00:00"))){ toast("Indica la fecha de abastecimiento"); $("rv-fecha").focus(); return; }
+  if(fecha<hoyISO()){ toast(`La fecha de abastecimiento no puede ser anterior a hoy (${hoyISO()})`); $("rv-fecha").value=hoyISO(); $("rv-fecha").focus(); return; }
   const gal=numReserva($("rv-gal").value);
   if(!(gal>0)){ toast("Cantidad en galones no válida"); $("rv-gal").focus(); return; }
   if(gal>500){ toast("La cantidad parece demasiado alta (máximo 500 galones)"); $("rv-gal").focus(); return; }
@@ -1993,13 +2013,13 @@ $("rv-guardar").onclick=async ()=>{
     id:uuid(), fecha:hoyISO(), hora:`${pad(ahora.getHours())}:${pad(ahora.getMinutes())}:${pad(ahora.getSeconds())}`, ts:ahora.getTime(),
     usuario:SES.usuario, evaluador:SES.nombre,
     plantilla_id:"combustible", plantilla_nombre:"Reserva de combustible", plantilla_version:1, mod_eval:"soporte",
-    placa:x.placa, conductor, tipo_unidad:x.tipo_unidad, fundo, centro_costo:cc, tipo_combustible:comb, cod_sap:sapDe(comb), km, fecha_abastecimiento:fecha, galones:gal, obs:$("rv-obs").value.trim(),
+    placa:x.placa, conductor, tipo_unidad:x.tipo_unidad, sub_fundo, area, centro_costo:cc, tipo_combustible:comb, cod_sap:sapDe(comb), km, fecha_abastecimiento:fecha, galones:gal, obs:$("rv-obs").value.trim(),
     exportado:false, enviado:false
   };
   try{
     await dbPut(reg);
     toast(`Reserva guardada: ${x.placa} · ${num(gal)} gal`);
-    $("rv-placa").value=""; $("rv-conductor").value=""; $("rv-tipo").value=""; $("rv-fundo").value=""; $("rv-cc").value=""; $("rv-comb").value=""; $("rv-cap").textContent=""; $("rv-km").value=""; $("rv-gal").value=""; $("rv-obs").value=""; $("rv-fecha").value=hoyISO();
+    $("rv-placa").value=""; $("rv-conductor").value=""; $("rv-tipo").value=""; $("rv-sub").value=""; $("rv-area").value=""; $("rv-cc").value=""; $("rv-comb").value=""; $("rv-cap").textContent=""; $("rv-km").value=""; $("rv-gal").value=""; $("rv-obs").value=""; $("rv-fecha").value=hoyISO();
     window.scrollTo({top:0,behavior:"smooth"});
     await refrescarRegistros();
     sincronizar(false);
@@ -2013,28 +2033,32 @@ const PC={editId:"",q:""}, VA={editId:"",q:""};
 function renderPlacas(){
   if(!SES||SES.rol!=="admin") return;
   $("dl-tipo").innerHTML=[...new Set((CFG.placas||[]).map(p=>p.tipo_unidad).filter(Boolean))].sort(coll).map(v=>`<option value="${esc(v)}">`).join("");
-  const fc=$("pc-fundo").value;
-  $("pc-fundo").innerHTML=`<option value="">Selecciona…</option>`+[...fundosCC().keys()].sort(coll).map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join("");
-  $("pc-fundo").value=fc; $("pc-cc").value=fundosCC().get($("pc-fundo").value)||"";
+  const sc=$("pc-sub").value, ac=$("pc-area").value;
+  $("pc-sub").innerHTML=`<option value="">Selecciona…</option>`+[...subCC().values()].filter(f=>f.estado==="ACTIVO").sort((a,b)=>coll(a.fundo,b.fundo)||coll(a.sub_fundo,b.sub_fundo)).map(f=>`<option value="${esc(f.sub_fundo)}">${esc(f.sub_fundo)} (${esc(f.fundo)})</option>`).join("");
+  ponerSel("pc-sub",sc);
+  $("pc-area").innerHTML=`<option value="">Selecciona…</option>`+(CFG.areas||[]).filter(a=>a.estado==="ACTIVO").sort((a,b)=>coll(a.nombre,b.nombre)).map(a=>`<option value="${esc(a.nombre)}">${esc(a.nombre)}</option>`).join("");
+  ponerSel("pc-area",ac);
+  $("pc-cc").value=(subCC().get($("pc-sub").value)||{}).centro_costo||"";
   const q=norm(PC.q);
-  const l=(CFG.placas||[]).filter(p=>!q||norm([p.placa,p.chofer,p.tipo_unidad].join(" ")).includes(q)).sort((a,b)=>coll(a.placa,b.placa));
+  const l=(CFG.placas||[]).filter(p=>!q||norm([p.placa,p.chofer,p.tipo_unidad,p.sub_fundo,p.area].join(" ")).includes(q)).sort((a,b)=>coll(a.placa,b.placa));
   $("pc-lista").innerHTML = l.slice(0,100).map(p=>`
     <div class="reg"><div><span class="t">${esc(p.placa)}</span><span class="tag ${p.estado==="ACTIVO"?"ok":"no"}">${esc(p.estado.toLowerCase())}</span>
-      <small>${esc(p.tipo_unidad)} · ${esc(p.chofer)}</small><small>${esc(p.tipo_combustible||"sin combustible")}${p.cod_sap?" ("+esc(p.cod_sap)+")":""} · ${esc(p.fundo||"sin fundo")}${p.centro_costo?" · CC "+esc(p.centro_costo):""} · cap. ${p.capacidad===""||p.capacidad===undefined?"—":esc(num(p.capacidad))} gal</small></div>
+      <small>${esc(p.tipo_unidad)} · ${esc(p.chofer)}</small><small>${esc(p.tipo_combustible||"sin combustible")}${p.cod_sap?" ("+esc(p.cod_sap)+")":""} · ${esc(p.sub_fundo||"sin sub fundo")} · ${esc(p.area||"sin área")}${p.centro_costo?" · CC "+esc(p.centro_costo):""} · cap. ${p.capacidad===""||p.capacidad===undefined?"—":esc(num(p.capacidad))} gal</small></div>
       <div class="acc"><button data-acc="editar" data-id="${esc(p.id)}">Editar</button><button class="rojo" data-acc="borrar" data-id="${esc(p.id)}">Eliminar</button></div></div>`).join("")
     + (l.length>100 ? `<p class="ayuda">Mostrando 100 de ${l.length}: usa el buscador.</p>` : "")
     || "<p class='ayuda'>No hay placas para mostrar.</p>";
 }
 $("pc-q").addEventListener("input",()=>{ PC.q=$("pc-q").value; renderPlacas(); });
-function limpiarFormPlaca(){ PC.editId=""; ["pc-placa","pc-chofer","pc-tipo","pc-sap","pc-cap","pc-cc"].forEach(i=>$(i).value=""); $("pc-comb").value=""; $("pc-fundo").value=""; $("pc-estado").value="ACTIVO";
+function limpiarFormPlaca(){ PC.editId=""; ["pc-placa","pc-chofer","pc-tipo","pc-sap","pc-cap","pc-cc"].forEach(i=>$(i).value=""); $("pc-comb").value=""; $("pc-sub").value=""; $("pc-area").value=""; $("pc-estado").value="ACTIVO";
   $("pc-titulo").textContent="Agregar placa"; $("pc-guardar").textContent="Guardar placa"; $("pc-cancelar").hidden=true; }
 $("pc-cancelar").onclick=limpiarFormPlaca;
-$("pc-fundo").onchange=()=>{ $("pc-cc").value=fundosCC().get($("pc-fundo").value)||""; };
+$("pc-sub").onchange=()=>{ $("pc-cc").value=(subCC().get($("pc-sub").value)||{}).centro_costo||""; };
 $("pc-comb").onchange=()=>{ if(!$("pc-sap").value.trim()) $("pc-sap").value=sapDe($("pc-comb").value); };
 $("pc-guardar").onclick=async ()=>{
   $("pc-guardar").disabled=true;
   try{
-    await apiAdmin("placa_guardar",{fila:{id:PC.editId||undefined,placa:$("pc-placa").value,chofer:$("pc-chofer").value,tipo_unidad:$("pc-tipo").value,tipo_combustible:$("pc-comb").value,cod_sap:$("pc-sap").value,fundo:$("pc-fundo").value,capacidad:$("pc-cap").value,estado:$("pc-estado").value}});
+    await apiAdmin("placa_guardar",{fila:{id:PC.editId||undefined,placa:$("pc-placa").value,chofer:$("pc-chofer").value,tipo_unidad:$("pc-tipo").value,
+      tipo_combustible:$("pc-comb").value,cod_sap:$("pc-sap").value,sub_fundo:$("pc-sub").value,area:$("pc-area").value,capacidad:$("pc-cap").value,estado:$("pc-estado").value}});
     toast(PC.editId?"Cambios guardados":"Placa agregada");
     limpiarFormPlaca(); await cargarConfig(true,true); renderPlacas();
   }catch(err){ toast(err.message); }
@@ -2045,11 +2069,51 @@ $("pc-lista").addEventListener("click",async e=>{
   const p=(CFG.placas||[]).find(x=>x.id===b.dataset.id); if(!p) return;
   try{
     if(b.dataset.acc==="editar"){
-      PC.editId=p.id; $("pc-placa").value=p.placa; $("pc-chofer").value=p.chofer; $("pc-tipo").value=p.tipo_unidad; $("pc-comb").value=p.tipo_combustible||""; $("pc-sap").value=p.cod_sap||""; $("pc-fundo").value=p.fundo||""; $("pc-cc").value=fundosCC().get(p.fundo)||p.centro_costo||""; $("pc-cap").value=p.capacidad===undefined?"":p.capacidad; $("pc-estado").value=p.estado;
+      PC.editId=p.id; $("pc-placa").value=p.placa; $("pc-chofer").value=p.chofer; $("pc-tipo").value=p.tipo_unidad; $("pc-comb").value=p.tipo_combustible||""; $("pc-sap").value=p.cod_sap||"";
+      ponerSel("pc-sub",p.sub_fundo); ponerSel("pc-area",p.area); $("pc-cc").value=(subCC().get(p.sub_fundo)||{}).centro_costo||p.centro_costo||"";
+      $("pc-cap").value=p.capacidad===undefined?"":p.capacidad; $("pc-estado").value=p.estado;
       $("pc-titulo").textContent="Editando placa"; $("pc-guardar").textContent="Guardar cambios"; $("pc-cancelar").hidden=false; window.scrollTo(0,0);
     } else if(b.dataset.acc==="borrar"){
       if(!confirm(`¿Eliminar la placa ${p.placa}?`)) return;
       await apiAdmin("placa_eliminar",{id:p.id}); toast("Placa eliminada"); await cargarConfig(true,true); renderPlacas();
+    }
+  }catch(err){ toast(err.message); }
+});
+
+/* ---------- Áreas (Soporte) ---------- */
+const AR={editId:""};
+function renderAreas(){
+  if(!SES||SES.rol!=="admin") return;
+  const usadas={}; (CFG.placas||[]).forEach(p=>usadas[p.area]=(usadas[p.area]||0)+1);
+  $("ar-lista").innerHTML=(CFG.areas||[]).slice().sort((a,b)=>coll(a.nombre,b.nombre)).map(a=>`
+    <div class="reg"><div><span class="t">${esc(a.nombre)}</span><span class="tag ${a.estado==="ACTIVO"?"ok":"no"}">${esc(a.estado.toLowerCase())}</span>
+      <small>${usadas[a.nombre]||0} placas</small></div>
+      <div class="acc"><button data-acc="editar" data-id="${esc(a.id)}">Editar</button><button class="rojo" data-acc="borrar" data-id="${esc(a.id)}">Eliminar</button></div></div>`).join("")
+    || "<p class='ayuda'>Aún no hay áreas.</p>";
+}
+function limpiarFormArea(){ AR.editId=""; $("ar-nombre").value=""; $("ar-estado").value="ACTIVO";
+  $("ar-titulo").textContent="Agregar área"; $("ar-guardar").textContent="Guardar área"; $("ar-cancelar").hidden=true; }
+$("ar-cancelar").onclick=limpiarFormArea;
+$("ar-guardar").onclick=async ()=>{
+  $("ar-guardar").disabled=true;
+  try{
+    await apiAdmin("area_guardar",{fila:{id:AR.editId||undefined,nombre:$("ar-nombre").value,estado:$("ar-estado").value}});
+    toast(AR.editId?"Cambios guardados":"Área agregada");
+    limpiarFormArea(); await cargarConfig(true,true); renderAreas(); renderPlacas();
+  }catch(err){ toast(err.message); }
+  finally{ $("ar-guardar").disabled=false; }
+};
+$("ar-lista").addEventListener("click",async e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  const a=(CFG.areas||[]).find(x=>x.id===b.dataset.id); if(!a) return;
+  try{
+    if(b.dataset.acc==="editar"){
+      AR.editId=a.id; $("ar-nombre").value=a.nombre; $("ar-estado").value=a.estado;
+      $("ar-titulo").textContent="Editando área"; $("ar-guardar").textContent="Guardar cambios"; $("ar-cancelar").hidden=false;
+    } else if(b.dataset.acc==="borrar"){
+      if(!confirm(`¿Eliminar el área ${a.nombre}?`)) return;
+      await apiAdmin("area_eliminar",{id:a.id});
+      toast("Área eliminada"); await cargarConfig(true,true); renderAreas();
     }
   }catch(err){ toast(err.message); }
 });
@@ -2076,7 +2140,7 @@ $("va-guardar").onclick=async ()=>{
     await apiAdmin("variedad_guardar",{fila:{id:VA.editId||undefined,cultivo:$("va-cultivo").value,variedad:$("va-variedad").value,estado:$("va-estado").value}});
     toast(VA.editId?"Cambios guardados":"Variedad agregada");
     const ed=!!VA.editId; limpiarFormVar(); if(ed) $("va-cultivo").value="";      // al agregar varias seguidas se conserva el cultivo
-    await cargarConfig(true,true); renderVariedades(); varSug();
+    await cargarConfig(true,true); renderVariedades(); listasMaestra();
   }catch(err){ toast(err.message); }
   finally{ $("va-guardar").disabled=false; }
 };
@@ -2089,7 +2153,7 @@ $("va-lista").addEventListener("click",async e=>{
       $("va-titulo").textContent="Editando variedad"; $("va-guardar").textContent="Guardar cambios"; $("va-cancelar").hidden=false; window.scrollTo(0,0);
     } else if(b.dataset.acc==="borrar"){
       if(!confirm(`¿Eliminar la variedad ${v.variedad} de ${v.cultivo}?`)) return;
-      await apiAdmin("variedad_eliminar",{id:v.id}); toast("Variedad eliminada"); await cargarConfig(true,true); renderVariedades(); varSug();
+      await apiAdmin("variedad_eliminar",{id:v.id}); toast("Variedad eliminada"); await cargarConfig(true,true); renderVariedades(); listasMaestra();
     }
   }catch(err){ toast(err.message); }
 });
@@ -2099,7 +2163,7 @@ function renderAjustes(){
   if(!SES) return;
   const ab=CFG.maestra.filter(r=>r.estado!=="CERRADO").length;
   $("aj-info").textContent = CFG.version
-    ? `Versión ${CFG.version} · ${ab} válvulas activas ·${SES.rol==="admin"?` ${(CFG.umbrales||[]).length} umbrales · ${(CFG.fundos||[]).length} fundos · ${(CFG.unidades||[]).length} unidades de negocio · ${(CFG.variedades||[]).length} variedades · ${(CFG.placas||[]).length} placas ·`:""} ${CFG.plantillas.filter(p=>p.activa).length} plantillas activas`
+    ? `Versión ${CFG.version} · ${ab} válvulas activas ·${SES.rol==="admin"?` ${(CFG.umbrales||[]).length} umbrales · ${(CFG.fundos||[]).length} fundos · ${(CFG.areas||[]).length} áreas · ${(CFG.variedades||[]).length} variedades · ${(CFG.placas||[]).length} placas ·`:""} ${CFG.plantillas.filter(p=>p.activa).length} plantillas activas`
     : "Aún no se ha descargado. Conéctate a internet.";
 }
 $("aj-actualizar").onclick=()=>cargarConfig(true,false);

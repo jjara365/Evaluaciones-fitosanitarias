@@ -1,5 +1,5 @@
 /**
- * RECEPTOR CENTRAL de evaluaciones de campo (versión 8: combustible con fundo, centro de costo y tipo de combustible).
+ * RECEPTOR CENTRAL de evaluaciones de campo (versión 9: fundo > sub fundo, áreas, una hoja por cartilla).
  * Se pega en Google Sheets: Extensiones > Apps Script.
  *
  * Hojas que maneja (se crean solas):
@@ -7,11 +7,11 @@
  *   - "Maestra":    programa de producción (sede, cultivo, sub fundo, fundo, módulo, lote, turno, válvula...)
  *   - "Umbrales":   maestra de umbrales (grupo, variable, ítem, umbral, órgano, semana de cultivo, campaña)
  *   - "Plantillas": formularios de evaluación definidos por el administrador (cada uno pertenece a un módulo)
- *   - "Fundos", "Unidades de negocio" y "Variedades": catálogos del módulo Agrícola
- *   - "Placas": catálogo del módulo Soporte (placa, chofer, tipo de unidad)
+ *   - "Fundos" (sede, fundo, sub fundo, centro de costo) y "Variedades": catálogos del módulo Agrícola
+ *   - "Placas" y "Áreas": catálogos del módulo Soporte
  *   - "Reservas_Combustible": reservas de combustible enviadas desde los celulares
- *   - "Registros_Fitosanidad", "Registros_Riego", "Registros_Fenología", "Registros_Calidad":
- *     evaluaciones enviadas desde los celulares, una hoja por módulo de evaluación
+ *   - Una hoja por cartilla de evaluación, llamada "<Módulo> - <nombre de la cartilla>" (se crea sola con el primer registro).
+ *     Si cambias el nombre de la cartilla en la app, su hoja cambia de nombre sola: no renombres estas hojas a mano.
  *
  * Roles: "admin" (todos los permisos) y "evaluador" (solo los sub fundos y plantillas que se le asignen).
  * IMPORTANTE: administra Usuarios, Maestra, Umbrales y Plantillas desde la app, no editando las hojas a mano.
@@ -25,7 +25,7 @@ const HOJA_USR  = "Usuarios";
 const HOJA_MAE  = "Maestra";
 const HOJA_PLA  = "Plantillas";
 const HOJA_UMB  = "Umbrales";
-const HOJA_UNI  = "Unidades de negocio";
+const HOJA_ARE  = "Áreas";
 const HOJA_FUN  = "Fundos";
 const HOJA_VAR  = "Variedades";
 const HOJA_PLC  = "Placas";
@@ -33,9 +33,9 @@ const HOJA_PLC  = "Placas";
 // Módulo Soporte: la "Reserva de combustible" es una carilla fija del sistema (no se edita en Plantillas).
 // El administrador la asigna a los usuarios igual que cualquier plantilla.
 const COMB_ID = "combustible";
-const COMB_BASE = ["id","fecha_registro","hora","usuario","registrado_por","placa","conductor","tipo_unidad","fundo","centro_costo",
+const COMB_BASE = ["id","fecha_registro","hora","usuario","registrado_por","placa","conductor","tipo_unidad","sub_fundo","area","centro_costo",
                    "tipo_combustible","cod_sap","km","fecha_abastecimiento","galones","observaciones","alerta_permiso","enviado_por","recibido"];
-const COMB_TEXTO = ["placa","conductor","tipo_unidad","fundo","centro_costo","tipo_combustible","cod_sap"];   // siempre como texto (ceros a la izquierda)
+const COMB_TEXTO = ["placa","conductor","tipo_unidad","sub_fundo","area","centro_costo","tipo_combustible","cod_sap"];   // siempre como texto (ceros a la izquierda)
 const PLA_COMBUSTIBLE = { id: COMB_ID, nombre: "Reserva de combustible", version: 1, activa: true, campos: [], mod_eval: "soporte", fija: true };
 
 // Módulos de evaluación (el módulo "Agrícola" es de administración y no recibe registros)
@@ -44,7 +44,7 @@ const MODULOS = [
   { id: "riego",       nombre: "Riego",       hoja: "Registros_Riego" },
   { id: "fenologia",   nombre: "Fenología",   hoja: "Registros_Fenología" },
   { id: "calidad",     nombre: "Calidad",     hoja: "Registros_Calidad" },
-  { id: "soporte",     nombre: "Soporte",     hoja: "Reservas_Combustible", base: COMB_BASE, texto: ["A:C", "F:L", "N:N"], fija: true }
+  { id: "soporte",     nombre: "Soporte",     hoja: "Reservas_Combustible", base: COMB_BASE, texto: ["A:C", "F:M", "O:O"], fija: true }
 ];
 function modulo_(id) {
   const n = normTxt_(id);
@@ -53,16 +53,16 @@ function modulo_(id) {
 }
 
 // Catálogos del módulo Agrícola
-const UNI_HEAD = ["Unidad de negocio","Estado","id"];
-const FUN_HEAD = ["Unidad de negocio","Sede","Sub_Fundo","Fundo","Centro de costo","Estado","id"];
+const FUN_HEAD = ["Sede","Fundo","Sub_Fundo","Centro de costo","Estado","id"];
+const ARE_HEAD = ["Área","Estado","id"];
 const VAR_HEAD = ["Cultivo","Variedad","Estado","id"];
-const PLC_HEAD = ["Placa","Chofer","Tipo de unidad","Tipo de combustible","Cód. SAP combustible","Fundo","Centro de costo","Capacidad máx. (gal)","Estado","id"];
+const PLC_HEAD = ["Placa","Chofer","Tipo de unidad","Tipo de combustible","Cód. SAP combustible","Sub Fundo","Área","Centro de costo","Capacidad máx. (gal)","Estado","id"];
 const COMBUSTIBLES = ["Gasolina regular", "Gasolina 95", "Petróleo diesel 2"];
 
 
 // Columnas fijas de Registros. Los campos de la plantilla se agregan solos a la derecha.
 const BASE = ["id","fecha","hora","usuario","evaluador","plantilla","version_plantilla","campana",
-              "sede","cultivo","sub_fundo","fundo","modulo","lote","turno","valvula","pep","variedad","etapa",
+              "sede","cultivo","fundo","sub_fundo","modulo","lote","turno","valvula","pep","variedad","etapa",
               "planta","dias_desde_inicio_campana","latitud","longitud","precision_m","total_conteos",
               "observaciones","alerta_permiso","enviado_por","recibido"];
 const RESERVADAS = BASE.concat(["maestra_id","plantilla_id"]);
@@ -72,10 +72,10 @@ const USR_COLS = ["DNI","Nombre completo","Rol","Usuario","salt","hash","Estatus
 const ESTATUS  = ["ACTIVO","CERRADO"];
 
 // Maestra (programa de producción): este es el orden de las columnas; "id" va al final (uso interno de la app)
-const MAE_HEAD = ["Sede","Cultivo","Sub_Fundo","Fundo","Módulo","Lote","Turno","Válvula","Área","Plantas","Densidad",
+const MAE_HEAD = ["Sede","Cultivo","Fundo","Sub_Fundo","Módulo","Lote","Turno","Válvula","Área","Plantas","Densidad",
                   "Variedad","Etapa","Inicio de campaña","Inicio de cosecha","Cierre de campaña","Campaña","PEP",
                   "Estado Campaña","id"];
-const MAE_KEYS = ["sede","cultivo","sub_fundo","fundo","modulo","lote","turno","valvula","area","plantas","densidad",
+const MAE_KEYS = ["sede","cultivo","fundo","sub_fundo","modulo","lote","turno","valvula","area","plantas","densidad",
                   "variedad","etapa","inicio_campana","inicio_cosecha","cierre_campana","campana","pep",
                   "estado","id"];
 const SEDES   = ["CARAZ","ICA","NEPEÑA","NAZCA","CASCAS"];
@@ -166,8 +166,9 @@ function doPost(e) {
       case "umbral_guardar":
       case "umbral_importar":
       case "umbral_eliminar":
-      case "unidad_guardar":
-      case "unidad_eliminar":
+      case "area_guardar":
+      case "area_eliminar":
+      case "plantilla_estado":
       case "fundo_guardar":
       case "fundo_eliminar":
       case "variedad_guardar":
@@ -447,7 +448,24 @@ function hojaMaestra_() {
   }
   // Formato de la versión 4: la primera columna era "id"
   if (normTxt_(sh.getRange(1, 1, 1, 1).getValues()[0][0]) === "id") migrarMaestra_(sh);
+  // Hasta la versión 8 Sub_Fundo iba antes que Fundo y el PEP se unía con "/"
+  else if (String(sh.getRange(1, 3, 1, 1).getValues()[0][0]) === "Sub_Fundo") migrarMaestraV9_(sh);
   return sh;
+}
+function migrarMaestraV9_(sh) {
+  const n = sh.getLastRow();
+  const filas = n > 1 ? sh.getRange(2, 1, n - 1, MAE_HEAD.length).getValues() : [];
+  respaldo_(sh, "Maestra_respaldo_v8");
+  sh.getRange(1, 1, 1, MAE_HEAD.length).setValues([MAE_HEAD]).setFontWeight("bold");
+  if (filas.length) {
+    sh.getRange(2, 1, filas.length, MAE_HEAD.length).setValues(filas.map(f => {
+      const g = f.slice();
+      g[2] = f[3]; g[3] = f[2];                                            // intercambia Sub_Fundo y Fundo (cada dato conserva su campo)
+      if (String(f[19]) !== "") g[17] = [g[2], g[4], g[5]].map(limpiar_).join("-");   // PEP = Fundo-Módulo-Lote
+      return g;
+    }));
+  }
+  subirVersion_();
 }
 
 // v4: id, campana, fundo, modulo, lote, turno, valvula, area_ha, plantas, fecha_poda, inicio_cosecha, estado, fecha_cierre
@@ -479,10 +497,10 @@ function migrarMaestra_(sh) {
   subirVersion_();     // los celulares deben volver a descargar su configuración
 }
 
-// Densidad = plantas entre área; PEP = Fundo/Módulo/Lote
+// Densidad = plantas entre área; PEP = Fundo-Módulo-Lote
 function completarCalculados_(o) {
   o.densidad = (o.area !== "" && o.area > 0 && o.plantas !== "") ? Math.round(o.plantas / o.area * 100) / 100 : "";
-  o.pep = [o.fundo, o.modulo, o.lote].join("/");
+  o.pep = [o.fundo, o.modulo, o.lote].join("-");
   return o;
 }
 
@@ -501,7 +519,7 @@ function maestra_() {
   return sh.getRange(2, 1, n - 1, MAE_KEYS.length).getValues()
     .filter(f => String(f[19]) !== "")
     .map(f => ({
-      sede: limpiar_(f[0]), cultivo: limpiar_(f[1]), sub_fundo: limpiar_(f[2]), fundo: limpiar_(f[3]),
+      sede: limpiar_(f[0]), cultivo: limpiar_(f[1]), fundo: limpiar_(f[2]), sub_fundo: limpiar_(f[3]),
       modulo: limpiar_(f[4]), lote: limpiar_(f[5]), turno: limpiar_(f[6]), valvula: limpiar_(f[7]),
       area: num(f[8]), plantas: num(f[9]), densidad: num(f[10]),
       variedad: limpiar_(f[11]), etapa: limpiar_(f[12]),
@@ -538,6 +556,21 @@ function validarFila_(o, previo) {
   f.plantas = pl === "" ? "" : Number(pl);
   if (f.plantas !== "" && (isNaN(f.plantas) || f.plantas < 0 || Math.floor(f.plantas) !== f.plantas)) return { error: "Plantas debe ser un número entero" };
 
+  // Fundo y sub fundo deben existir en la maestra de Fundos (si ya hay fundos cargados), con la sede que les corresponde
+  const catF = fundos_();
+  if (catF.length) {
+    const rf = catF.find(x => normTxt_(x.fundo) === normTxt_(f.fundo) && normTxt_(x.sub_fundo) === normTxt_(f.sub_fundo));
+    if (!rf) return { error: "El fundo «" + f.fundo + "» con sub fundo «" + f.sub_fundo + "» no existe en la maestra de Fundos" };
+    if (rf.sede !== f.sede) return { error: "El sub fundo " + rf.sub_fundo + " pertenece a la sede " + rf.sede };
+    f.fundo = rf.fundo; f.sub_fundo = rf.sub_fundo;
+  }
+  // Cultivo y variedad deben existir en la maestra de Variedades (si ya hay variedades cargadas)
+  const catV = variedades_();
+  if (catV.length) {
+    const rc = catV.find(x => normTxt_(x.cultivo) === normTxt_(f.cultivo));
+    if (!rc) return { error: "El cultivo «" + f.cultivo + "» no existe en la maestra de Variedades" };
+    f.cultivo = rc.cultivo;
+  }
   const vc = variedadCanon_(f.cultivo, f.variedad);
   if (!vc.ok) return { error: vc.error };
   f.variedad = vc.valor;
@@ -770,91 +803,62 @@ function catEscribir_(nombre, head, matriz) {
   if (m.length) sh.getRange(2, 1, m.length, head.length).setValues(m);
 }
 
-function unidades_() {
-  return catLeer_(HOJA_UNI, UNI_HEAD).map(f => ({
-    nombre: limpiar_(f[0]), estado: String(f[1]).trim().toUpperCase() === "CERRADO" ? "CERRADO" : "ACTIVO", id: String(f[2]) }));
-}
-function unidadesEscribir_(l) { catEscribir_(HOJA_UNI, UNI_HEAD, l.map(x => [x.nombre, x.estado, x.id])); }
 function migrarFundos_() {
   const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_FUN);
-  if (!sh || String(sh.getRange(1, 5, 1, 1).getValues()[0][0]) !== "Estado") return;   // formato anterior: sin centro de costo
+  if (!sh) return;
+  const h0 = String(sh.getRange(1, 1, 1, 1).getValues()[0][0]);
+  if (h0 !== "Unidad de negocio") return;                  // formato anterior (v8): unidad de negocio, sede, sub fundo, fundo, centro de costo
   const n = sh.getLastRow();
-  const viejas = n > 1 ? sh.getRange(2, 1, n - 1, 6).getValues().filter(f => String(f[5]) !== "") : [];
-  asegurarTamano_(sh, Math.max(n, 2), FUN_HEAD.length);
+  const k = String(sh.getRange(1, 5, 1, 1).getValues()[0][0]) === "Estado" ? 0 : 1;   // v7 no tenía centro de costo
+  const viejas = n > 1 ? sh.getRange(2, 1, n - 1, 7).getValues() : [];
+  const nuevas = viejas.map(f => k ? [f[1], f[3], f[2], f[4], f[5], f[6]] : [f[1], f[3], f[2], "", f[4], f[5]]).filter(f => String(f[5]) !== "");
+  respaldo_(sh, "Fundos_respaldo_v8");
+  sh.clear();
+  sh.getRange("A:F").setNumberFormat("@");
+  asegurarTamano_(sh, Math.max(nuevas.length + 1, 2), FUN_HEAD.length);
   sh.getRange(1, 1, 1, FUN_HEAD.length).setValues([FUN_HEAD]).setFontWeight("bold");
-  if (n > 1) sh.getRange(2, 1, n - 1, FUN_HEAD.length).setValues(Array.from({ length: n - 1 }, (_, i) => viejas[i] ? [viejas[i][0], viejas[i][1], viejas[i][2], viejas[i][3], "", viejas[i][4], viejas[i][5]] : FUN_HEAD.map(() => "")));
+  if (nuevas.length) sh.getRange(2, 1, nuevas.length, FUN_HEAD.length).setValues(nuevas);
   subirVersion_();
 }
 function fundos_() {
   migrarFundos_();
   return catLeer_(HOJA_FUN, FUN_HEAD).map(f => ({
-    unidad: limpiar_(f[0]), sede: limpiar_(f[1]), sub_fundo: limpiar_(f[2]), fundo: limpiar_(f[3]), centro_costo: limpiar_(f[4]),
-    estado: String(f[5]).trim().toUpperCase() === "CERRADO" ? "CERRADO" : "ACTIVO", id: String(f[6]) }));
+    sede: limpiar_(f[0]), fundo: limpiar_(f[1]), sub_fundo: limpiar_(f[2]), centro_costo: limpiar_(f[3]),
+    estado: String(f[4]).trim().toUpperCase() === "CERRADO" ? "CERRADO" : "ACTIVO", id: String(f[5]) }));
 }
-function fundosEscribir_(l) { catEscribir_(HOJA_FUN, FUN_HEAD, l.map(x => [x.unidad, x.sede, x.sub_fundo, x.fundo, x.centro_costo || "", x.estado, x.id])); }
+function fundosEscribir_(l) { catEscribir_(HOJA_FUN, FUN_HEAD, l.map(x => [x.sede, x.fundo, x.sub_fundo, x.centro_costo || "", x.estado, x.id])); }
 
-function unidadGuardar_(f) {
-  f = f || {};
-  const lista = unidades_();
-  const previa = f.id ? (lista.find(x => x.id === String(f.id)) || null) : null;
-  if (f.id && !previa) return fallo_("La unidad de negocio ya no existe");
-  const nombre = limpiar_(f.nombre);
-  if (!nombre) return fallo_("Falta: unidad de negocio");
-  const estado = canon_(f.estado || "ACTIVO", ESTADOS);
-  if (!estado) return fallo_("Estado no válido (usa ACTIVO o CERRADO)");
-  if (lista.some(x => (!previa || x.id !== previa.id) && normTxt_(x.nombre) === normTxt_(nombre)))
-    return fallo_("Ya existe esa unidad de negocio");
-  if (previa) {
-    lista[lista.findIndex(x => x.id === previa.id)] = { nombre: nombre, estado: estado, id: previa.id };
-    if (previa.nombre !== nombre) {          // los fundos siguen a su unidad si se le cambia el nombre
-      const fl = fundos_();
-      let cambio = false;
-      fl.forEach(x => { if (x.unidad === previa.nombre) { x.unidad = nombre; cambio = true; } });
-      if (cambio) fundosEscribir_(fl);
-    }
-  } else lista.push({ nombre: nombre, estado: estado, id: Utilities.getUuid() });
-  unidadesEscribir_(lista);
-  return { ok: true, version: subirVersion_() };
-}
-function unidadEliminar_(id) {
-  const lista = unidades_();
-  const i = lista.findIndex(x => x.id === String(id || ""));
-  if (i < 0) return fallo_("La unidad de negocio ya no existe");
-  if (fundos_().some(x => x.unidad === lista[i].nombre)) return fallo_("Hay fundos con esta unidad de negocio: cámbialos o elimínalos primero");
-  lista.splice(i, 1);
-  unidadesEscribir_(lista);
-  return { ok: true, version: subirVersion_() };
-}
-
+// Jerarquía: sede > fundo > sub fundo (cada fila es un sub fundo). El centro de costo es del sub fundo.
 function fundoGuardar_(f) {
   f = f || {};
   const lista = fundos_();
   const previo = f.id ? (lista.find(x => x.id === String(f.id)) || null) : null;
   if (f.id && !previo) return fallo_("El fundo ya no existe");
-  const u = unidades_().find(x => normTxt_(x.nombre) === normTxt_(f.unidad));
-  if (!limpiar_(f.unidad)) return fallo_("Falta: unidad de negocio");
-  if (!u) return fallo_("La unidad de negocio no existe: créala primero");
   const sede = canon_(f.sede, SEDES);
   if (sede === null) return fallo_("Sede no válida (usa: " + SEDES.join(", ") + ")");
   const estado = canon_(f.estado || "ACTIVO", ESTADOS);
   if (!estado) return fallo_("Estado no válido (usa ACTIVO o CERRADO)");
-  const o = { unidad: u.nombre, sede: sede, sub_fundo: limpiar_(f.sub_fundo), fundo: limpiar_(f.fundo), centro_costo: limpiar_(f.centro_costo), estado: estado };
+  const o = { sede: sede, fundo: limpiar_(f.fundo), sub_fundo: limpiar_(f.sub_fundo), centro_costo: limpiar_(f.centro_costo), estado: estado };
   const falta = [];
   if (!o.sede) falta.push("sede");
-  if (!o.sub_fundo) falta.push("sub fundo");
   if (!o.fundo) falta.push("fundo");
+  if (!o.sub_fundo) falta.push("sub fundo");
   if (falta.length) return fallo_("Falta: " + falta.join(", "));
   if (o.centro_costo && !/^[A-Za-z0-9._\-\/]{1,20}$/.test(o.centro_costo)) return fallo_("Centro de costo no válido (letras, números, guion o punto; máximo 20)");
-  const k = x => [x.sede, x.sub_fundo, x.fundo].map(normTxt_).join("|");
-  if (lista.some(x => (!previo || x.id !== previo.id) && k(x) === k(o))) return fallo_("Ya existe ese fundo en esa sede y sub fundo");
+  const otras = lista.filter(x => !previo || x.id !== previo.id);
+  const mismo = otras.find(x => normTxt_(x.sub_fundo) === normTxt_(o.sub_fundo));
+  if (mismo) return fallo_(normTxt_(mismo.fundo) === normTxt_(o.fundo) && mismo.sede === o.sede ? "Ya existe ese sub fundo en ese fundo" : "El sub fundo " + mismo.sub_fundo + " ya pertenece al fundo " + mismo.fundo + " (" + mismo.sede + ")");
+  // un mismo fundo pertenece a una sola sede
+  const otraSede = otras.find(x => normTxt_(x.fundo) === normTxt_(o.fundo) && x.sede !== o.sede);
+  if (otraSede) return fallo_("El fundo " + otraSede.fundo + " ya está en la sede " + otraSede.sede);
   if (previo) { o.id = previo.id; lista[lista.findIndex(x => x.id === previo.id)] = o; }
   else { o.id = Utilities.getUuid(); lista.push(o); }
   fundosEscribir_(lista);
-  // las placas asignadas a este fundo siguen su nombre y su centro de costo
-  if (previo && (previo.fundo !== o.fundo || previo.centro_costo !== o.centro_costo)) {
+  // las placas de este sub fundo siguen su nombre y su centro de costo
+  if (previo && (previo.sub_fundo !== o.sub_fundo || previo.centro_costo !== o.centro_costo)) {
     const pl = placas_(true);
     let cambio = false;
-    pl.forEach(x => { if (x.fundo === previo.fundo) { x.fundo = o.fundo; x.centro_costo = o.centro_costo; cambio = true; } });
+    pl.forEach(x => { if (x.sub_fundo === previo.sub_fundo) { x.sub_fundo = o.sub_fundo; x.centro_costo = o.centro_costo; cambio = true; } });
     if (cambio) placasEscribir_(pl);
   }
   return { ok: true, version: subirVersion_() };
@@ -863,10 +867,48 @@ function fundoEliminar_(id) {
   const lista = fundos_();
   const i = lista.findIndex(x => x.id === String(id || ""));
   if (i < 0) return fallo_("El fundo ya no existe");
-  if (lista.filter(x => x.fundo === lista[i].fundo).length === 1 && placas_(true).some(p => p.fundo === lista[i].fundo))
-    return fallo_("Hay placas asignadas a este fundo: cámbialas primero");
+  if (placas_(true).some(p => p.sub_fundo === lista[i].sub_fundo))
+    return fallo_("Hay placas asignadas a este sub fundo: cámbialas primero");
   lista.splice(i, 1);
   fundosEscribir_(lista);
+  return { ok: true, version: subirVersion_() };
+}
+
+/* ---------- Áreas (módulo Soporte) ---------- */
+function areas_() {
+  return catLeer_(HOJA_ARE, ARE_HEAD).map(f => ({
+    nombre: limpiar_(f[0]), estado: String(f[1]).trim().toUpperCase() === "CERRADO" ? "CERRADO" : "ACTIVO", id: String(f[2]) }));
+}
+function areasEscribir_(l) { catEscribir_(HOJA_ARE, ARE_HEAD, l.map(x => [x.nombre, x.estado, x.id])); }
+function areaGuardar_(f) {
+  f = f || {};
+  const lista = areas_();
+  const previa = f.id ? (lista.find(x => x.id === String(f.id)) || null) : null;
+  if (f.id && !previa) return fallo_("El área ya no existe");
+  const nombre = limpiar_(f.nombre);
+  if (!nombre) return fallo_("Falta: área");
+  const estado = canon_(f.estado || "ACTIVO", ESTADOS);
+  if (!estado) return fallo_("Estado no válido (usa ACTIVO o CERRADO)");
+  if (lista.some(x => (!previa || x.id !== previa.id) && normTxt_(x.nombre) === normTxt_(nombre))) return fallo_("Ya existe esa área");
+  if (previa) {
+    lista[lista.findIndex(x => x.id === previa.id)] = { nombre: nombre, estado: estado, id: previa.id };
+    if (previa.nombre !== nombre) {          // las placas siguen al área si se le cambia el nombre
+      const pl = placas_(true);
+      let cambio = false;
+      pl.forEach(x => { if (x.area === previa.nombre) { x.area = nombre; cambio = true; } });
+      if (cambio) placasEscribir_(pl);
+    }
+  } else lista.push({ nombre: nombre, estado: estado, id: Utilities.getUuid() });
+  areasEscribir_(lista);
+  return { ok: true, version: subirVersion_() };
+}
+function areaEliminar_(id) {
+  const lista = areas_();
+  const i = lista.findIndex(x => x.id === String(id || ""));
+  if (i < 0) return fallo_("El área ya no existe");
+  if (placas_(true).some(p => p.area === lista[i].nombre)) return fallo_("Hay placas en esta área: cámbialas primero");
+  lista.splice(i, 1);
+  areasEscribir_(lista);
   return { ok: true, version: subirVersion_() };
 }
 
@@ -923,33 +965,47 @@ function variedadCanon_(cultivo, variedad) {
 const normPlaca_ = s => String(s === undefined || s === null ? "" : s).toUpperCase().replace(/[^A-Z0-9]/g, "");
 function migrarPlacas_() {
   const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_PLC);
-  if (!sh || String(sh.getRange(1, 4, 1, 1).getValues()[0][0]) !== "Estado") return;   // formato anterior: sin combustible, fundo ni capacidad
+  if (!sh) return;
+  const h = [3, 5, 6].map(c => String(sh.getRange(1, c + 1, 1, 1).getValues()[0][0]));
+  const v7 = h[0] === "Estado", v8 = h[1] === "Fundo";
+  if (!v7 && !v8) return;                                  // ya está en el formato actual
   const n = sh.getLastRow();
-  const viejas = n > 1 ? sh.getRange(2, 1, n - 1, 5).getValues().filter(f => String(f[4]) !== "") : [];
-  asegurarTamano_(sh, Math.max(n, 2), PLC_HEAD.length);
+  const cols = v7 ? 5 : 10;
+  const viejas = n > 1 ? sh.getRange(2, 1, n - 1, cols).getValues().filter(f => String(f[cols - 1]) !== "") : [];
+  const subs = {};
+  fundos_().forEach(x => { subs[normTxt_(x.sub_fundo)] = x; });
+  const nuevas = viejas.map(f => {
+    if (v7) return [f[0], f[1], f[2], "", "", "", "", "", "", f[3], f[4]];
+    const sf = subs[normTxt_(f[5])];                       // el "fundo" de la v8 solo se conserva si coincide con un sub fundo
+    return [f[0], f[1], f[2], f[3], f[4], sf ? sf.sub_fundo : "", "", sf ? sf.centro_costo : "", f[7], f[8], f[9]];
+  });
+  respaldo_(sh, "Placas_respaldo_v8");
+  sh.clear();
+  asegurarTamano_(sh, Math.max(nuevas.length + 1, 2), PLC_HEAD.length);
+  sh.getRange("A:I").setNumberFormat("@");
   sh.getRange(1, 1, 1, PLC_HEAD.length).setValues([PLC_HEAD]).setFontWeight("bold");
-  if (n > 1) sh.getRange(2, 1, n - 1, PLC_HEAD.length).setValues(Array.from({ length: n - 1 }, (_, i) => viejas[i] ? [viejas[i][0], viejas[i][1], viejas[i][2], "", "", "", "", "", viejas[i][3], viejas[i][4]] : PLC_HEAD.map(() => "")));
-  sh.getRange("A:H").setNumberFormat("@");
+  if (nuevas.length) sh.getRange(2, 1, nuevas.length, PLC_HEAD.length).setValues(nuevas);
   subirVersion_();
 }
-// El centro de costo siempre es el actual del fundo (salvo que se pida solo lo guardado, para reescribir la hoja)
+// El centro de costo siempre es el actual del sub fundo (salvo que se pida solo lo guardado, para reescribir la hoja)
 function placas_(crudo) {
   migrarPlacas_();
   const cc = {};
-  if (!crudo) fundos_().forEach(f => { if (!(f.fundo in cc) || (!cc[f.fundo] && f.centro_costo)) cc[f.fundo] = f.centro_costo; });
+  if (!crudo) fundos_().forEach(f => { cc[f.sub_fundo] = f.centro_costo; });
   return catLeer_(HOJA_PLC, PLC_HEAD).map(f => {
-    const fundo = limpiar_(f[5]);
-    const cap = Number(f[7]);
+    const sub = limpiar_(f[5]);
+    const cap = Number(f[8]);
     return { placa: limpiar_(f[0]).toUpperCase(), chofer: limpiar_(f[1]), tipo_unidad: limpiar_(f[2]), tipo_combustible: limpiar_(f[3]),
-      cod_sap: limpiar_(f[4]), fundo: fundo, centro_costo: crudo ? limpiar_(f[6]) : (cc[fundo] !== undefined ? cc[fundo] : limpiar_(f[6])),
-      capacidad: (f[7] === "" || isNaN(cap)) ? "" : cap,
-      estado: String(f[8]).trim().toUpperCase() === "CERRADO" ? "CERRADO" : "ACTIVO", id: String(f[9]) };
+      cod_sap: limpiar_(f[4]), sub_fundo: sub, area: limpiar_(f[6]),
+      centro_costo: crudo ? limpiar_(f[7]) : (cc[sub] !== undefined ? cc[sub] : limpiar_(f[7])),
+      capacidad: (f[8] === "" || isNaN(cap)) ? "" : cap,
+      estado: String(f[9]).trim().toUpperCase() === "CERRADO" ? "CERRADO" : "ACTIVO", id: String(f[10]) };
   });
 }
 function placasEscribir_(l) {
   const sh = hojaCat_(HOJA_PLC, PLC_HEAD);
-  catEscribir_(HOJA_PLC, PLC_HEAD, l.map(x => [x.placa, x.chofer, x.tipo_unidad, x.tipo_combustible || "", x.cod_sap || "", x.fundo || "", x.centro_costo || "", x.capacidad === undefined ? "" : x.capacidad, x.estado, x.id]));
-  sh.getRange("A:H").setNumberFormat("@");
+  catEscribir_(HOJA_PLC, PLC_HEAD, l.map(x => [x.placa, x.chofer, x.tipo_unidad, x.tipo_combustible || "", x.cod_sap || "", x.sub_fundo || "", x.area || "", x.centro_costo || "", x.capacidad === undefined ? "" : x.capacidad, x.estado, x.id]));
+  sh.getRange("A:I").setNumberFormat("@");
 }
 function placaGuardar_(f) {
   f = f || {};
@@ -960,25 +1016,30 @@ function placaGuardar_(f) {
   if (comb === null) return fallo_("Tipo de combustible no válido (usa: " + COMBUSTIBLES.join(", ") + ")");
   const capT = numTxt_(f.capacidad);
   const o = { placa: limpiar_(f.placa).toUpperCase(), chofer: limpiar_(f.chofer), tipo_unidad: limpiar_(f.tipo_unidad), tipo_combustible: comb,
-              cod_sap: limpiar_(f.cod_sap), fundo: limpiar_(f.fundo), capacidad: capT === "" ? "" : Number(capT), estado: canon_(f.estado || "ACTIVO", ESTADOS) };
+              cod_sap: limpiar_(f.cod_sap), sub_fundo: limpiar_(f.sub_fundo), area: limpiar_(f.area),
+              capacidad: capT === "" ? "" : Number(capT), estado: canon_(f.estado || "ACTIVO", ESTADOS) };
   const falta = [];
   if (!o.placa) falta.push("placa");
   if (!o.chofer) falta.push("chofer");
   if (!o.tipo_unidad) falta.push("tipo de unidad");
   if (!o.tipo_combustible) falta.push("tipo de combustible");
   if (!o.cod_sap) falta.push("código SAP del combustible");
-  if (!o.fundo) falta.push("fundo");
+  if (!o.sub_fundo) falta.push("sub fundo");
+  if (!o.area) falta.push("área");
   if (o.capacidad === "") falta.push("capacidad máxima");
   if (falta.length) return fallo_("Falta: " + falta.join(", "));
   if (normPlaca_(o.placa).length < 5) return fallo_("Placa no válida");
   if (!/^[A-Za-z0-9._\-\/]{1,20}$/.test(o.cod_sap)) return fallo_("Código SAP no válido (letras, números, guion o punto; máximo 20)");
   if (isNaN(o.capacidad) || o.capacidad <= 0 || o.capacidad > 2000) return fallo_("Capacidad máxima no válida (galones, mayor que 0)");
   if (!o.estado) return fallo_("Estado no válido (usa ACTIVO o CERRADO)");
-  const fu = fundos_().filter(x => x.fundo === o.fundo);
-  if (!fu.length) return fallo_("El fundo no existe: agrégalo primero en Agrícola > Fundos");
-  const cc = (fu.find(x => x.centro_costo) || {}).centro_costo || "";
-  if (!cc) return fallo_("El fundo " + o.fundo + " no tiene centro de costo: agrégalo en Agrícola > Fundos");
-  o.centro_costo = cc;
+  const fu = fundos_().find(x => normTxt_(x.sub_fundo) === normTxt_(o.sub_fundo));
+  if (!fu) return fallo_("El sub fundo no existe: agrégalo primero en Agrícola > Fundos");
+  o.sub_fundo = fu.sub_fundo;
+  if (!fu.centro_costo) return fallo_("El sub fundo " + fu.sub_fundo + " no tiene centro de costo: agrégalo en Agrícola > Fundos");
+  o.centro_costo = fu.centro_costo;
+  const ar = areas_().find(x => normTxt_(x.nombre) === normTxt_(o.area));
+  if (!ar) return fallo_("El área no existe: agrégala primero en Soporte > Áreas");
+  o.area = ar.nombre;
   if (lista.some(x => (!previa || x.id !== previa.id) && normPlaca_(x.placa) === normPlaca_(o.placa))) return fallo_("Ya existe esa placa");
   // Un mismo tipo de combustible tiene un único código SAP: al crear una placa o cambiar su combustible debe coincidir;
   // al cambiar el código sin cambiar el combustible, se actualiza en todas las placas de ese combustible.
@@ -1134,12 +1195,21 @@ function plantillaGuardar_(p) {
   if (previa) {
     sh.getRange(previa.fila, 1, 1, PLA_COLS.length)
       .setValues([[previa.id, v.nombre, previa.version + 1, activa, json, new Date(), mo.id]]);
+    if (previa.nombre !== v.nombre) renombrarHojaCartilla_(previa.id, mo, v.nombre);
     return { ok: true, id: previa.id, plantilla_version: previa.version + 1, version: subirVersion_() };
   }
   const id = Utilities.getUuid();
   asegurarTamano_(sh, sh.getLastRow() + 1, PLA_COLS.length);
   sh.appendRow([id, v.nombre, 1, activa, json, new Date(), mo.id]);
   return { ok: true, id: id, plantilla_version: 1, version: subirVersion_() };
+}
+
+// Activar o desactivar una cartilla sin tocar sus campos: los evaluadores dejan de verla, y lo ya registrado se sigue recibiendo.
+function plantillaEstado_(id, activa) {
+  const p = plantillas_().find(x => x.id === String(id || ""));
+  if (!p) return fallo_("La plantilla ya no existe");
+  hojaPlantillas_().getRange(p.fila, 4, 1, 1).setValues([[activa === false || activa === "false" ? "NO" : "SI"]]);
+  return { ok: true, version: subirVersion_() };
 }
 
 /* ============================ CONFIGURACIÓN PARA LOS CELULARES ============================ */
@@ -1151,17 +1221,18 @@ function configObtener_(d, us) {
   if (Number(d.version) === v) return { ok: true, cambio: false, version: v };
   let maestra = maestra_();
   let pl = plantillas_().concat([PLA_COMBUSTIBLE]).map(p => ({ id: p.id, nombre: p.nombre, version: p.version, activa: p.activa, campos: p.campos, mod_eval: p.mod_eval, fija: !!p.fija }));
-  let umb = [], fun = [], uni = [], vars = [], plc = [];
+  let umb = [], fun = [], vars = [], plc = [], are = [];
   if (us.rol === "admin") {
     umb = umbrales_();
     fun = fundos_();
-    uni = unidades_();
     vars = variedades_();
     plc = placas_();
+    are = areas_();
   } else {
-    if (us.plantillas.indexOf(COMB_ID) >= 0) {       // Soporte necesita las placas y los fundos con centro de costo
+    if (us.plantillas.indexOf(COMB_ID) >= 0) {       // Soporte necesita las placas, las áreas y los sub fundos con centro de costo
       plc = placas_().filter(x => x.estado === "ACTIVO");
-      fun = fundos_().filter(x => x.estado === "ACTIVO" && x.centro_costo).map(x => ({ fundo: x.fundo, sub_fundo: x.sub_fundo, sede: x.sede, centro_costo: x.centro_costo, id: x.id }));
+      are = areas_().filter(x => x.estado === "ACTIVO");
+      fun = fundos_().filter(x => x.estado === "ACTIVO" && x.centro_costo).map(x => ({ sede: x.sede, fundo: x.fundo, sub_fundo: x.sub_fundo, centro_costo: x.centro_costo, id: x.id }));
     }
     maestra = maestra.filter(x => x.estado === "ACTIVO" && us.subfundos.indexOf(x.sub_fundo) >= 0);
     pl = pl.filter(p => p.activa && us.plantillas.indexOf(p.id) >= 0).map(p => {
@@ -1169,7 +1240,7 @@ function configObtener_(d, us) {
       return p;
     });
   }
-  return { ok: true, cambio: true, version: v, maestra: maestra, plantillas: pl, umbrales: umb, fundos: fun, unidades: uni, variedades: vars, placas: plc };
+  return { ok: true, cambio: true, version: v, maestra: maestra, plantillas: pl, umbrales: umb, fundos: fun, variedades: vars, placas: plc, areas: are };
 }
 
 function accionAdmin_(d, admin) {
@@ -1196,11 +1267,12 @@ function accionAdmin_(d, admin) {
     case "maestra_importar":  return maestraImportar_(d.filas);
     case "lote_estado":       return loteEstado_(d);
     case "plantilla_guardar": return plantillaGuardar_(d.plantilla);
+    case "plantilla_estado":  return plantillaEstado_(d.id, d.activa);
     case "umbral_guardar":    return umbralGuardar_(d.umbral);
     case "umbral_importar":   return umbralImportar_(d.filas);
     case "umbral_eliminar":   return umbralEliminar_(d.id);
-    case "unidad_guardar":    return unidadGuardar_(d.fila);
-    case "unidad_eliminar":   return unidadEliminar_(d.id);
+    case "area_guardar":      return areaGuardar_(d.fila);
+    case "area_eliminar":     return areaEliminar_(d.id);
     case "fundo_guardar":     return fundoGuardar_(d.fila);
     case "fundo_eliminar":    return fundoEliminar_(d.id);
     case "variedad_guardar":  return variedadGuardar_(d.fila);
@@ -1230,20 +1302,68 @@ function hojaRegistros_(mod) {
   return sh;
 }
 
-// Cada registro va a la hoja del módulo de su plantilla (el servidor decide, no el celular).
+// Una hoja por cartilla: "<Módulo> - <nombre de la cartilla>". La hoja se recuerda por el id de la cartilla,
+// así que renombrar la cartilla desde la app renombra su hoja (no la renombres a mano).
+function nombreHojaCartilla_(mod, nombre) {
+  return (mod.nombre + " - " + nombre).replace(/[\[\]*?:\/\\]/g, " ").replace(/\s+/g, " ").trim().slice(0, 100);
+}
+function nombreHojaLibre_(ss, base, propia) {
+  let n = base, k = 2;
+  while (ss.getSheetByName(n) && ss.getSheetByName(n) !== propia) { n = base.slice(0, 94) + " (" + k + ")"; k++; }
+  return n;
+}
+function hojaCartilla_(p, mod) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const props = PropertiesService.getScriptProperties();
+  const guardada = props.getProperty("hoja_" + p.id);
+  if (guardada) { const sh0 = ss.getSheetByName(guardada); if (sh0) return sh0; }
+  const nombre = nombreHojaLibre_(ss, nombreHojaCartilla_(mod, p.nombre), null);
+  // Si el módulo tenía una sola hoja de la versión 8 y solo hay una cartilla, esa hoja pasa a ser la de la cartilla
+  let vieja = ss.getSheetByName(mod.hoja);
+  if (!vieja && mod.id === "fitosanidad") vieja = ss.getSheetByName(HOJA_VIEJA);
+  if (vieja && plantillas_().filter(x => x.mod_eval === mod.id).length === 1) {
+    vieja.setName(nombre);
+    props.setProperty("hoja_" + p.id, nombre);
+    return vieja;
+  }
+  const sh = ss.insertSheet(nombre);
+  asegurarTamano_(sh, 2, BASE.length);
+  sh.getRange(1, 1, 1, BASE.length).setValues([BASE]).setFontWeight("bold");
+  sh.setFrozenRows(1);
+  ["A:C", "H:S"].forEach(r => sh.getRange(r).setNumberFormat("@"));
+  props.setProperty("hoja_" + p.id, nombre);
+  return sh;
+}
+function renombrarHojaCartilla_(id, mod, nombreNuevo) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const props = PropertiesService.getScriptProperties();
+  const guardada = props.getProperty("hoja_" + id);
+  const sh = guardada ? ss.getSheetByName(guardada) : null;
+  if (!sh) return;
+  const n = nombreHojaLibre_(ss, nombreHojaCartilla_(mod, nombreNuevo), sh);
+  if (n !== guardada) { sh.setName(n); props.setProperty("hoja_" + id, n); }
+}
+
+// Cada registro va a la hoja de su cartilla (el servidor decide, no el celular).
 function sync_(d, us) {
   const regs = Array.isArray(d.registros) ? d.registros : [];
   const pls = {};
-  plantillas_().concat([PLA_COMBUSTIBLE]).forEach(p => pls[p.id] = p.mod_eval);
+  plantillas_().forEach(p => pls[p.id] = p);
   const grupos = {};
   regs.forEach(r => {
-    const m = modulo_(pls[String(r.plantilla_id || "")] || r.mod_eval) || MODULOS[0];
-    (grupos[m.id] = grupos[m.id] || { mod: m, regs: [] }).regs.push(r);
+    const pid = String(r.plantilla_id || "");
+    const p = pid === COMB_ID ? PLA_COMBUSTIBLE : (pls[pid] || null);
+    const m = modulo_(p ? p.mod_eval : r.mod_eval) || MODULOS[0];
+    const propia = p && !m.fija ? p : null;
+    const k = propia ? "p:" + propia.id : "m:" + m.id;
+    (grupos[k] = grupos[k] || { mod: m, p: propia, regs: [] }).regs.push(r);
   });
   const ids = [], rechazados = [];
   let nuevos = 0;
   Object.keys(grupos).forEach(k => {
-    const g = syncHoja_(hojaRegistros_(grupos[k].mod), grupos[k].regs, us, grupos[k].mod);
+    const gr = grupos[k];
+    const sh = gr.p ? hojaCartilla_(gr.p, gr.mod) : hojaRegistros_(gr.mod);
+    const g = syncHoja_(sh, gr.regs, us, gr.mod, gr.p ? gr.p.campos.map(c => c.clave) : []);
     g.ids.forEach(x => ids.push(x));
     g.rechazados.forEach(x => rechazados.push(x));
     nuevos += g.nuevos;
@@ -1252,7 +1372,7 @@ function sync_(d, us) {
   return { ok: true, ids: ids, nuevos: nuevos, rechazados: rechazados, token: crearToken_(us.usuario, us.rol) };
 }
 
-function syncHoja_(sh, regs, us, mod) {
+function syncHoja_(sh, regs, us, mod, claves) {
   const base = (mod && mod.base) || BASE;
   // IDs ya recibidos (para no duplicar si la app reintenta)
   const ultima = sh.getLastRow();
@@ -1265,6 +1385,7 @@ function syncHoja_(sh, regs, us, mod) {
   let cab = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
   const nuevas = [];
   base.forEach(c => { if (cab.indexOf(c) === -1 && nuevas.indexOf(c) === -1) nuevas.push(c); });
+  (claves || []).forEach(c => { if (cab.indexOf(c) === -1 && nuevas.indexOf(c) === -1) nuevas.push(c); });   // los campos de la cartilla, en su orden
   regs.forEach(r => Object.keys(r.valores || r.conteos || {}).forEach(p => {
     if (cab.indexOf(p) === -1 && nuevas.indexOf(p) === -1) nuevas.push(p);
   }));
@@ -1294,6 +1415,14 @@ function syncHoja_(sh, regs, us, mod) {
     existentes.add(String(r.id));
     if (mod && mod.id === "soporte") {              // reserva de combustible: columnas propias
       const nm = x => (x === undefined || x === null || x === "" || isNaN(Number(x))) ? (x === undefined ? "" : x) : Number(x);
+      // La fecha de abastecimiento no puede ser anterior a la fecha de registro
+      const ISO = /^\d{4}-\d{2}-\d{2}$/;
+      if (ISO.test(String(r.fecha || "")) && ISO.test(String(r.fecha_abastecimiento || "")) && String(r.fecha_abastecimiento) < String(r.fecha)) {
+        existentes.delete(String(r.id));
+        ids.pop();
+        rechazados.push({ id: r.id, motivo: "La fecha de abastecimiento (" + r.fecha_abastecimiento + ") no puede ser anterior a la fecha de registro (" + r.fecha + ")" });
+        return;
+      }
       // Una misma placa no puede tener dos reservas el mismo día (sin importar quién la registre ni desde qué celular)
       const clave = normPlaca_(r.placa) + "|" + String(r.fecha_abastecimiento || "");
       if (reservadas.has(clave)) {
@@ -1306,7 +1435,7 @@ function syncHoja_(sh, regs, us, mod) {
       const v = {
         id: r.id, fecha_registro: r.fecha, hora: r.hora, usuario: r.usuario || "", registrado_por: r.evaluador || "",
         placa: r.placa || "", conductor: r.conductor || "", tipo_unidad: r.tipo_unidad || "",
-        fundo: r.fundo || "", centro_costo: r.centro_costo || "", tipo_combustible: r.tipo_combustible || "", cod_sap: r.cod_sap || "",
+        sub_fundo: r.sub_fundo || "", area: r.area || "", centro_costo: r.centro_costo || "", tipo_combustible: r.tipo_combustible || "", cod_sap: r.cod_sap || "",
         km: nm(r.km),
         fecha_abastecimiento: r.fecha_abastecimiento || "", galones: nm(r.galones), observaciones: r.obs || "",
         alerta_permiso: (us.rol === "admin" || us.plantillas.indexOf(COMB_ID) >= 0) ? "" : "SI",

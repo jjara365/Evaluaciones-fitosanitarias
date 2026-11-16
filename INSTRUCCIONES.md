@@ -1,3 +1,33 @@
+# Puesta en marcha — versión 9 (fundo > sub fundo, áreas, una hoja por cartilla)
+
+## Qué trae la versión 9 (novedades sobre la 8)
+
+1. **Jerarquía Sede > Fundo > Sub fundo.** La **sede es la unidad de negocio** (se eliminó la pantalla y la hoja "Unidades de negocio"). En Agrícola > Fundos cada fila es un sub fundo dentro de su fundo
+   (ej. fundo POM con sub fundos POM1 y POM2) y lleva su **centro de costo**. Un sub fundo solo puede pertenecer a un fundo, y un fundo a una sola sede.
+2. **Placas:** el campo Fundo pasa a **Sub fundo** y se agrega **Área**. El centro de costo sale del sub fundo.
+3. **Áreas** (Soporte > Áreas): lista nueva con las áreas de trabajo (Cosecha, Riego…). Si renombras un área, las placas la siguen.
+4. **Reserva de combustible:** la fecha de abastecimiento **no puede ser anterior a hoy** (se valida en el celular y en el servidor); se elige **Sub fundo** (jala el centro de costo) y **Área**, que se puede cambiar
+   aunque la placa tenga otra asignada. La hoja `Reservas_Combustible` trae las columnas `sub_fundo` y `area`.
+5. **Desactivar cartillas:** en Administración > Plantillas cada cartilla tiene el botón **Desactivar / Activar**. Una cartilla inactiva deja de aparecer a los evaluadores; lo que ya registraron sigue llegando.
+6. **Programa (maestra):** Cultivo, Variedad, Fundo y Sub fundo son **listas desplegables** que salen de las maestras de Variedades y de Fundos (la variedad depende del cultivo; el sub fundo, del fundo; el fundo, de la sede).
+   El servidor también valida contra esas maestras (si ya hay datos cargados). **PEP = Fundo-Módulo-Lote** (con guion). En la hoja Maestra, Fundo va antes que Sub_Fundo.
+7. **Una hoja por cartilla:** cada cartilla guarda en su propia hoja, llamada `<Módulo> - <nombre de la cartilla>` (por ejemplo `Riego - Humedad del suelo`), creada sola con el primer registro y con solo las columnas de esa cartilla.
+   Si cambias el nombre de la cartilla en la app, su hoja cambia de nombre sola: **no renombres estas hojas a mano**.
+
+### Para actualizar (versión 9)
+1. Pega el nuevo `Code.gs` en Apps Script y publica **Nueva versión** (la URL no cambia).
+2. Al primer uso las hojas se convierten solas, y antes de hacerlo guardan una copia: `Maestra_respaldo_v8`, `Fundos_respaldo_v8`, `Placas_respaldo_v8`.
+   - **Maestra:** se intercambian las columnas Sub_Fundo y Fundo y se recalcula el PEP con guion.
+   - **Fundos:** se quita la unidad de negocio y queda la sede. Los fundos antiguos quedan con el nombre que tenían; si tu "Fundo" antiguo era en realidad un sub fundo (POM1), ajústalo en la pantalla Fundos.
+   - **Placas:** se conserva el valor antiguo de Fundo como sub fundo solo si coincide con un sub fundo existente; el **Área queda vacía**.
+   - **Registros ya enviados:** si el módulo tenía una sola cartilla, su hoja vieja pasa a ser la hoja de la cartilla (con sus datos). Si tenía varias, la hoja vieja se conserva como historial y las nuevas van a hojas separadas.
+3. Sube a GitHub `index.html` y `sw.js`, y revisa tu URL `/exec` en `const SYNC`.
+4. **Completa los datos, en este orden:** Fundos (sede, fundo, sub fundo, centro de costo) → Áreas → Placas (sub fundo y área de cada una). Las placas sin sub fundo o área no se pueden guardar ni aparecen bien en la reserva hasta completarlas.
+   Al editar un programa antiguo, si su fundo o sub fundo no está en la maestra de Fundos, la app lo marca "(fuera de la maestra)" y el servidor te pedirá corregirlo.
+5. Para Power BI / SQL: cada hoja de cartilla es una tabla con `id` único por registro, fechas en formato año-mes-día y columnas base iguales en todas las cartillas.
+
+---
+
 # Puesta en marcha — versión 8 (combustible con fundo, centro de costo y tipo de combustible)
 
 ## Qué trae la versión 8 (novedades sobre la 7)
