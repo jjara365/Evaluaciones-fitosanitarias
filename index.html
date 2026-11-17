@@ -17,7 +17,27 @@ header{background:var(--hdr);color:#fff;padding:10px 16px;position:sticky;top:0;
 header h1{font-size:18px;margin:0}
 #quien{font-size:12px;opacity:.9;margin-top:2px}
 .der{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-#estado{font-size:12px;padding:3px 10px;border-radius:12px;background:rgba(255,255,255,.2)}
+header{flex-wrap:wrap}
+#barra-estado{flex:1 0 100%;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.chip{border:0;font-family:inherit;font-size:13px;font-weight:600;line-height:1.1;padding:8px 12px;min-height:38px;border-radius:19px;background:rgba(255,255,255,.2);color:#fff;display:inline-flex;align-items:center}
+.chip.ok{background:rgba(255,255,255,.2)}
+.chip.alerta{background:#f5b400;color:#241a00}
+.chip.mal{background:#b3261e;color:#fff}
+#enviar-ya{border:0;font-family:inherit;font-size:14px;font-weight:700;padding:8px 14px;min-height:38px;border-radius:19px;background:#fff;color:#172a5c}
+#enviar-ya:disabled{opacity:.7}
+#clave-btn{border:1.5px solid rgba(255,255,255,.7);background:none;color:#fff;border-radius:10px;padding:5px 9px;font-size:16px;line-height:1}
+#nueva-version{flex:1 0 100%;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;color:#172a5c;border-radius:10px;padding:8px 12px;font-size:14px;font-weight:600}
+#nueva-version button{border:0;background:#1e3a8a;color:#fff;border-radius:10px;padding:9px 14px;font-size:14px;font-weight:700;min-height:40px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:30;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal .card{width:100%;max-width:420px;margin:0}
+#ck-msg{color:var(--rojo);font-size:14px;min-height:20px;font-weight:600}
+.reg{flex-wrap:wrap}
+.reg>div:first-child{flex:1 1 180px}
+.reg.anul .t{text-decoration:line-through;opacity:.6}
+.tile.dup{grid-column:1 / -1;border-style:solid;border-color:var(--pri)}
+.barra-guardar .fila{max-width:656px;margin:0 auto;gap:8px}
+.barra-guardar .fila .btn{margin:0;max-width:none;font-size:16px}
+#borrador{flex:0 0 36%}
 #salir{border:1.5px solid rgba(255,255,255,.7);background:none;color:#fff;border-radius:10px;padding:6px 12px;font-size:14px;font-weight:600}
 main{padding:12px;max-width:680px;margin:0 auto}
 section{display:none}
@@ -77,7 +97,7 @@ nav button.activa{color:var(--pri-osc);border-top:3px solid var(--pri)}
 .tag{font-size:11px;padding:2px 7px;border-radius:10px;background:var(--card)3cd;color:#7a5b00;margin-left:6px;white-space:nowrap}
 .tag.ok{background:var(--tag-ok);color:var(--pri-osc)}
 .tag.no{background:#fde0e0;color:var(--rojo)}
-#toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 18px;border-radius:20px;font-size:15px;opacity:0;transition:opacity .25s;z-index:20;pointer-events:none;max-width:90%;text-align:center}
+#toast{position:fixed;top:120px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 18px;border-radius:20px;font-size:15px;opacity:0;transition:opacity .25s;z-index:20;pointer-events:none;max-width:90%;text-align:center}
 #toast.ver{opacity:.95}
 .ayuda{font-size:13px;color:var(--tenue);margin:4px 0 0}
 .aviso{background:var(--card)8e1;border:1px solid #f0d98a;color:#6b5200;font-size:14px}
@@ -115,10 +135,17 @@ textarea{min-height:110px}
     <div id="quien"></div>
   </div>
   <div class="der">
-    <span id="estado">…</span>
     <button id="tema" aria-label="Cambiar entre modo claro y oscuro">🌙</button>
+    <button id="clave-btn" aria-label="Cambiar mi clave" title="Cambiar mi clave" hidden>🔑</button>
     <button id="salir" hidden>Salir</button>
   </div>
+  <div id="barra-estado" hidden>
+    <span id="estado" class="chip" role="status">…</span>
+    <span id="pend-chip" class="chip"></span>
+    <button id="enviar-ya" hidden>☁ Enviar ahora</button>
+    <button id="gps-chip" class="chip" aria-label="Ubicación GPS: tocar para volver a buscar">📍 GPS</button>
+  </div>
+  <div id="nueva-version" hidden><span>Hay una nueva versión de la app.</span><button id="nv-actualizar">Actualizar</button></div>
 </header>
 
 <!-- ================= INGRESO ================= -->
@@ -143,6 +170,7 @@ textarea{min-height:110px}
 <!-- ================= INICIO (módulos) ================= -->
 <section id="s-inicio" class="activa">
   <div class="card aviso" id="ini-aviso" hidden></div>
+  <button class="tile dup" id="ini-dup" hidden></button>
   <p class="ayuda" style="margin:2px 2px 0">Elige un módulo</p>
   <div class="tiles" id="tiles"></div>
 </section>
@@ -150,7 +178,11 @@ textarea{min-height:110px}
 <!-- ================= EVALUAR ================= -->
 <section id="s-evaluar">
   <div class="card aviso" id="aviso-cfg" hidden></div>
+  <div class="card aviso" id="borr-aviso" hidden></div>
+  <div class="card aviso" id="corr-aviso" hidden></div>
   <div class="card">
+    <button type="button" class="btn sec" id="dup-ultimo" style="margin:0 0 4px">⧉ Duplicar último registro</button>
+    <p class="ayuda" style="margin:0 0 10px">Copia dónde evaluaste (cartilla, fundo, lote, válvula). Los valores quedan en blanco.</p>
     <div id="wrap-plantilla"><label for="plantilla">Plantilla</label><select id="plantilla"></select></div>
     <label for="evaluador">Evaluador</label>
     <input id="evaluador" readonly>
@@ -187,8 +219,12 @@ textarea{min-height:110px}
 <!-- ================= RESERVA DE COMBUSTIBLE (módulo Soporte) ================= -->
 <section id="s-reserva">
   <div class="card aviso" id="rv-aviso" hidden></div>
+  <div class="card aviso" id="rv-borr" hidden></div>
+  <div class="card aviso" id="rv-corr" hidden></div>
   <div class="card">
     <label style="margin-bottom:0">Reserva de combustible</label>
+    <button type="button" class="btn sec" id="rv-dup" style="margin:8px 0 0">⧉ Duplicar último registro</button>
+    <p class="ayuda">Copia el sub fundo, el área y el combustible del último. Falta elegir la placa y los galones.</p>
     <label for="rv-placa">Placa</label><select id="rv-placa"></select>
     <label for="rv-conductor">Conductor</label><input id="rv-conductor" autocomplete="off">
     <label for="rv-tipo">Tipo de unidad</label><input id="rv-tipo" readonly placeholder="Se completa al elegir la placa">
@@ -203,7 +239,7 @@ textarea{min-height:110px}
     </div>
     <label for="rv-fecha">Fecha de abastecimiento <small>(hoy o posterior)</small></label><input id="rv-fecha" type="date">
     <label for="rv-obs">Observaciones</label><input id="rv-obs" autocomplete="off">
-    <button class="btn" id="rv-guardar" style="margin-top:14px">Guardar reserva</button>
+    <div class="fila" style="margin-top:14px"><button class="btn sec" id="rv-borrador" style="margin:0;flex:0 0 36%">💾 Borrador</button><button class="btn" id="rv-guardar" style="margin:0">Guardar reserva</button></div>
   </div>
 </section>
 
@@ -501,8 +537,28 @@ textarea{min-height:110px}
   </div>
 </section>
 
+<!-- ================= SUPERVISIÓN (administrador) ================= -->
+<section id="s-supervision">
+  <div class="card">
+    <label for="sv-rango" style="margin-top:0">Periodo</label>
+    <select id="sv-rango"><option value="hoy">Hoy</option><option value="ayer">Ayer</option><option value="7">Últimos 7 días</option></select>
+    <button class="btn" id="sv-act">Actualizar</button>
+    <p class="ayuda" id="sv-info"></p>
+  </div>
+  <div class="resumen" id="sv-res"></div>
+  <div class="card"><label style="margin:0 0 6px">Por evaluador</label><div id="sv-usr"></div></div>
+  <div class="card"><label style="margin:0 0 6px">Por cartilla</label><div id="sv-car"></div></div>
+  <div class="card" id="sv-sin-card" hidden><label style="margin:0 0 6px">Sin registros en el periodo</label><div id="sv-sin"></div></div>
+</section>
+
 <!-- ================= AJUSTES ================= -->
 <section id="s-ajustes">
+  <div class="card">
+    <label style="margin-bottom:0">Mi cuenta</label>
+    <p class="ayuda" id="aj-cuenta"></p>
+    <button class="btn sec" id="aj-clave">🔑 Cambiar mi clave</button>
+    <button class="btn peligro" id="aj-salir">Cerrar sesión</button>
+  </div>
   <div class="card">
     <label style="margin-bottom:0">Configuración descargada</label>
     <p class="ayuda" id="aj-info"></p>
@@ -520,16 +576,31 @@ textarea{min-height:110px}
       <option value="oscura">Oscura</option>
     </select>
   </div>
-  <p class="ayuda" style="text-align:center">Versión 9.0 · Los datos quedan en este celular hasta que se envían a la hoja central.</p>
+  <p class="ayuda" style="text-align:center">Versión 10.0 · Los datos quedan en este celular hasta que se envían a la hoja central.</p>
 </section>
 
 </main>
 
 <div class="barra-guardar">
-  <button class="btn" id="guardar">Guardar y pasar a la siguiente planta</button>
+  <div class="fila">
+    <button class="btn sec" id="borrador">💾 Borrador</button>
+    <button class="btn" id="guardar">Guardar y pasar a la siguiente planta</button>
+  </div>
 </div>
 
 <nav id="nav"></nav>
+</div>
+
+<div id="dlg-clave" class="modal" hidden role="dialog" aria-label="Cambiar mi clave">
+  <div class="card">
+    <h2 style="margin:0 0 4px">Cambiar mi clave</h2>
+    <label for="ck-act">Clave actual</label><input id="ck-act" type="password" autocomplete="current-password">
+    <label for="ck-nue">Clave nueva (mínimo 6 caracteres)</label><input id="ck-nue" type="password" autocomplete="new-password">
+    <label for="ck-rep">Repite la clave nueva</label><input id="ck-rep" type="password" autocomplete="new-password">
+    <p id="ck-msg"></p>
+    <div class="fila"><button class="btn sec" id="ck-cancel" style="margin:0">Cancelar</button><button class="btn" id="ck-ok" style="margin:0">Cambiar</button></div>
+    <p class="ayuda">Necesitas internet. Después podrás entrar sin señal con la clave nueva.</p>
+  </div>
 </div>
 
 <div id="toast"></div>
@@ -540,7 +611,7 @@ textarea{min-height:110px}
    Pega aquí la URL que te da Apps Script (termina en /exec).
    Sin esta URL nadie puede ingresar a la app. */
 const SYNC = {
-  url: "https://script.google.com/macros/s/AKfycbwww3I9xUCzQB6H5EODxcDwl-9NZbZzlCoVULoBgzoXq6dSm1jNym100zLT19RXE3EZ/exec"
+  url: ""
 };
 
 const ROLES = { admin:"Administrador", evaluador:"Evaluador" };
@@ -562,7 +633,8 @@ const TIPOS = {
 const TIPOS_CORTO = { conteo:"Conteo (+/−)", entero:"Número entero", decimal:"Número decimal", texto:"Texto", lista:"Lista de opciones", si_no:"Sí / No", fecha:"Fecha" };
 const RESERVADAS = ["id","fecha","hora","usuario","evaluador","plantilla","version_plantilla","campana","sede","cultivo","sub_fundo",
   "fundo","modulo","lote","turno","valvula","pep","variedad","etapa","planta","dias_desde_inicio_campana","latitud","longitud",
-  "precision_m","total_conteos","observaciones","alerta_permiso","enviado_por","recibido","maestra_id","plantilla_id"];
+  "precision_m","total_conteos","observaciones","alerta_permiso","enviado_por","recibido","maestra_id","plantilla_id",
+  "estado_registro","corrige_a","anulado_por","anulado_en","motivo_anulacion"];
 const MSG_SESION = "Tu sesión venció o tu usuario fue desactivado. Sal e ingresa de nuevo con internet.";
 
 const $ = id => document.getElementById(id);
@@ -625,6 +697,7 @@ let SES=null;                                   // {usuario, nombre, rol}
 let CFG={version:0,esquema:ESQUEMA,maestra:[],plantillas:[],umbrales:[],fundos:[],areas:[],variedades:[],placas:[]};   // configuración descargada del servidor
 let TRAB={plantilla:"",sel:{},plantas:{},rec:{}};
 let sesionVencida=false, nPend=0, filaPrevId="";
+let CORR=null;                                   // registro que se está corrigiendo: {tipo:"eval"|"rv", id, enviado,…}
 
 /* ---------- Almacenamiento local ---------- */
 function getSep(){ try{ return localStorage.getItem("sep")||","; }catch(e){ return ","; } }
@@ -641,7 +714,7 @@ function loadTrab(){
   return Object.assign({plantilla:"",sel:{},plantas:{},rec:{}}, t);
 }
 function saveTrab(){
-  if(!SES) return;
+  if(!SES||CORR) return;
   TRAB.plantilla=$("plantilla").value; TRAB.sel=selActual();
   const f=filaSel(); if(f) TRAB.plantas[f.id]=parseInt($("planta").value)||1;
   try{ localStorage.setItem("trab4_"+SES.usuario, JSON.stringify(TRAB)); }catch(e){}
@@ -749,8 +822,8 @@ $("l-entrar").onclick = async ()=>{
 };
 
 function mostrarLogin(){
-  SES=null; nPend=0; MODACT=""; setTitulo();
-  $("app").hidden=true; $("login").hidden=false; $("salir").hidden=true;
+  SES=null; nPend=0; MODACT=""; CORR=null; setTitulo();
+  $("app").hidden=true; $("login").hidden=false; $("salir").hidden=true; $("clave-btn").hidden=true; cerrarClave();
   $("quien").textContent=""; $("l-clave").value=""; $("l-clave").type="password"; $("l-ver").checked=false;
   actualizarRed();
 }
@@ -760,9 +833,11 @@ function iniciarSesion(u){
   try{ localStorage.setItem("sesion",u); }catch(e){}
   sesionVencida=false; cfgUlt=0; filaPrevId="";
   CFG=loadCfgSrv(u); TRAB=loadTrab(); ED=null;
-  $("login").hidden=true; $("app").hidden=false; $("salir").hidden=false;
+  CORR=null; sucioEval=false; sucioRv=false;
+  $("login").hidden=true; $("app").hidden=false; $("salir").hidden=false; $("clave-btn").hidden=false;
   $("quien").textContent=`${SES.nombre} · ${ROLES[SES.rol]||SES.rol}`;
-  $("evaluador").value=SES.nombre;
+  actualizarRed();
+  $("evaluador").value=SES.nombre; $("aj-cuenta").textContent=`${SES.nombre} (${SES.usuario}) · ${ROLES[SES.rol]||SES.rol}`;
   $("cfg-sep").value=getSep();
   $("mi-res").innerHTML=""; $("mi-texto").value="";
   MODACT=""; setTitulo();
@@ -781,29 +856,37 @@ $("salir").onclick = async ()=>{
 };
 
 /* ---------- GPS ---------- */
-let pos=null, gpsIniciado=false;
-function iniciarGPS(){
-  if(gpsIniciado) return; gpsIniciado=true;
+let pos=null, gpsIniciado=false, gpsId=null;
+function gpsChip(txt,cls){ const c=$("gps-chip"); c.textContent=txt; c.className="chip "+(cls||""); }
+function iniciarGPS(reiniciar){
+  if(gpsIniciado && !reiniciar) return; gpsIniciado=true;
   const g=$("gps");
-  if(!navigator.geolocation){ g.textContent="📍 Este equipo no tiene GPS"; g.className="gps mal"; return; }
-  navigator.geolocation.watchPosition(p=>{
+  if(!navigator.geolocation){ g.textContent="📍 Este equipo no tiene GPS"; g.className="gps mal"; gpsChip("📍 Sin GPS","mal"); return; }
+  if(gpsId!==null){ try{ navigator.geolocation.clearWatch(gpsId); }catch(e){} gpsId=null; }
+  gpsChip("📍 Buscando…","");
+  gpsId=navigator.geolocation.watchPosition(p=>{
     pos={lat:p.coords.latitude,lon:p.coords.longitude,prec:p.coords.accuracy};
     g.textContent=`📍 GPS listo (±${Math.round(p.coords.accuracy)} m)`; g.className="gps ok";
+    gpsChip(`📍 GPS ±${Math.round(p.coords.accuracy)} m`, p.coords.accuracy>50?"alerta":"ok");
   }, e=>{
     pos=null;
     g.textContent = e.code===1 ? "📍 Permiso de ubicación denegado (se guardará sin coordenadas)" : "📍 Sin señal GPS por ahora";
     g.className="gps mal";
+    gpsChip(e.code===1 ? "📍 GPS sin permiso" : "📍 Sin señal GPS","mal");
   }, {enableHighAccuracy:true, maximumAge:15000, timeout:20000});
 }
+$("gps-chip").onclick=()=>{ iniciarGPS(true); toast("Buscando tu ubicación…"); };
+$("gps").onclick=()=>{ iniciarGPS(true); };
 
 /* ---------- Navegación por módulo ---------- */
 function setTitulo(){
   const m=MODACT==="soporte" ? SOP : MODS.find(x=>x.id===MODACT);
-  $("h-titulo").innerHTML = MODACT==="agricola" ? "🗺️ Agrícola" : MODACT==="admin" ? "👥 Administración" : m ? `${m.i} ${esc(m.n)}` : "🌿 Evaluaciones";
+  $("h-titulo").innerHTML = MODACT==="agricola" ? "🗺️ Agrícola" : MODACT==="admin" ? "👥 Administración" : MODACT==="supervision" ? "📊 Supervisión" : m ? `${m.i} ${esc(m.n)}` : "🌿 Evaluaciones";
 }
 function pestanasMod(){
   if(MODACT==="agricola") return [["s-maestra","🗺️","Programa"],["s-fundos","🏞️","Fundos"],["s-variedades","🍇","Variedades"],["s-umbrales","🎯","Umbrales"]];
   if(MODACT==="admin") return [["s-plantilla","🧩","Plantillas"],["s-usuarios","👥","Usuarios"]];
+  if(MODACT==="supervision") return [["s-supervision","📊","Supervisión"]];
   if(MODACT==="soporte") return SES&&SES.rol==="admin" ? [["s-reserva","⛽","Reserva"],["s-registros","📋","Registros"],["s-placas","🚚","Placas"],["s-areas","🧭","Áreas"]] : [["s-reserva","⛽","Reserva"],["s-registros","📋","Registros"]];
   if(esEval(MODACT)) return [["s-evaluar","📝","Evaluar"],["s-registros","📋","Registros"]];
   return [];
@@ -827,10 +910,12 @@ function irA(id){
   document.querySelector(".barra-guardar").style.display = id==="s-evaluar" ? "" : "none";
   if(id==="s-inicio") renderInicio();
   if(id==="s-registros") refrescarRegistros();
+  if(id==="s-evaluar") mostrarBorradorEval();
+  if(id==="s-supervision") renderSupervision();
   if(id==="s-usuarios"){ renderAccesos(); cargarUsuarios(); }
   if(id==="s-maestra") renderMaestra();
   if(id==="s-fundos") renderFundos();
-  if(id==="s-reserva") renderReserva();
+  if(id==="s-reserva"){ renderReserva(); mostrarBorradorRv(); }
   if(id==="s-placas") renderPlacas();
   if(id==="s-variedades") renderVariedades();
   if(id==="s-areas") renderAreas();
@@ -843,8 +928,18 @@ async function renderInicio(){
   if(!SES) return;
   const adm=SES.rol==="admin";
   const pend={};
-  try{ visibles(await dbAll()||[]).filter(r=>!resuelto(r)).forEach(r=>{ const m=modReg(r); pend[m]=(pend[m]||0)+1; }); }catch(e){}
+  let ult=null;
+  try{
+    const mios=visibles(await dbAll()||[]);
+    mios.filter(r=>!resuelto(r)).forEach(r=>{ const m=modReg(r); pend[m]=(pend[m]||0)+1; });
+    ult=mios.filter(r=>r.usuario===SES.usuario&&!r.anulado).sort((a,b)=>b.ts-a.ts)[0]||null;
+  }catch(e){}
   if(!SES || MODACT) return;
+  const dp=$("ini-dup");
+  if(ult && (adm || modulosDisponibles().includes(modReg(ult)))){
+    dp.innerHTML=`<b>⧉ Repetir último registro</b><small>${modReg(ult)==="soporte" ? `Reserva · ${esc(ult.sub_fundo||"")} · ${esc(ult.area||"")}` : `${esc(modNombre(modReg(ult)))} · ${esc(ult.fundo)} · ${esc(ult.lote)} · V${esc(ult.valvula||"")}`} (solo el encabezado)</small>`;
+    dp.hidden=false;
+  } else dp.hidden=true;
   const t=[];
   MODS.forEach(m=>{
     const n=CFG.plantillas.filter(p=>p.activa&&modPl(p)===m.id).length;
@@ -859,6 +954,7 @@ async function renderInicio(){
   if(adm){
     t.push(`<button class="tile adm" data-mod="agricola"><span class="ic">🗺️</span><b>Agrícola</b><small>${abiertas().length} válvulas activas · ${(CFG.umbrales||[]).length} umbrales · ${(CFG.fundos||[]).length} fundos · ${(CFG.variedades||[]).length} variedades</small></button>`);
     t.push(`<button class="tile adm" data-mod="admin"><span class="ic">👥</span><b>Administración</b><small>Usuarios y plantillas</small></button>`);
+    t.push(`<button class="tile adm" data-mod="supervision"><span class="ic">📊</span><b>Supervisión</b><small>Quién registró hoy y cuánto</small></button>`);
   }
   $("tiles").innerHTML=t.join("");
   const av=$("ini-aviso");
@@ -1095,14 +1191,15 @@ $("guardar").onclick = async ()=>{
   }
   if(atipico && !confirm(`${atipico} tiene un conteo mayor a 100. ¿Es correcto?`)) return;
   if(fila.plantas!=="" && planta>fila.plantas && !confirm(`Esta válvula tiene ${num(fila.plantas)} plantas y estás registrando la N° ${planta}. ¿Es correcto?`)) return;
-  const hoy=hoyISO();
-  const dup=(await dbAll()||[]).some(r=>r.usuario===SES.usuario&&r.maestra_id===fila.id&&r.plantilla_id===p.id&&r.planta===planta&&r.fecha===hoy);
+  const corr=CORR&&CORR.tipo==="eval"?CORR:null;
+  const hoy=corr?corr.fecha:hoyISO();
+  const dup=!corr&&(await dbAll()||[]).some(r=>r.usuario===SES.usuario&&!r.anulado&&r.maestra_id===fila.id&&r.plantilla_id===p.id&&r.planta===planta&&r.fecha===hoy);
   if(dup && !confirm(`Ya registraste hoy la planta N° ${planta} de esta válvula. ¿Guardar otra vez?`)) return;
 
   const ahora=new Date();
   const reg={
-    id:uuid(), fecha:hoy,
-    hora:`${pad(ahora.getHours())}:${pad(ahora.getMinutes())}:${pad(ahora.getSeconds())}`,
+    id:(corr&&!corr.enviado)?corr.id:uuid(), fecha:hoy,
+    hora:corr?corr.hora:`${pad(ahora.getHours())}:${pad(ahora.getMinutes())}:${pad(ahora.getSeconds())}`,
     ts:ahora.getTime(),
     usuario:SES.usuario, evaluador:SES.nombre,
     plantilla_id:p.id, plantilla_nombre:p.nombre, plantilla_version:p.version, mod_eval:modPl(p),
@@ -1114,12 +1211,21 @@ $("guardar").onclick = async ()=>{
     valores, total_conteos:total, obs:$("obs").value.trim(), exportado:false, enviado:false
   };
   try{
+    if(corr&&corr.enviado) reg.corrige_a=corr.id;
     await dbPut(reg);
-    toast(`Planta ${planta} guardada`+(total?` · total ${total}`:""));
-    TRAB.rec=TRAB.rec||{};
-    p.campos.forEach(c=>{ if(c.recordar&&c.clave in valores) TRAB.rec[c.clave]=valores[c.clave]; });
-    $("planta").value=planta+1; saveTrab();
-    $("obs").value=""; renderForm(null);
+    if(corr&&corr.enviado){
+      const o=(await dbAll()||[]).find(y=>y.id===corr.id);
+      if(o){ o.anulado=true; o.anul_motivo="Corregido"; o.anul_ts=Date.now(); o.anul_enviado=false; o.reemplazado_por=reg.id; await dbPut(o); }
+    }
+    borrBorrar(MODACT); sucioEval=false; mostrarBorradorEval();
+    if(corr){ finCorreccion(); toast("Corrección guardada"); }
+    else {
+      toast(`Planta ${planta} guardada`+(total?` · total ${total}`:"")+(pos?"":" · sin GPS"));
+      TRAB.rec=TRAB.rec||{};
+      p.campos.forEach(c=>{ if(c.recordar&&c.clave in valores) TRAB.rec[c.clave]=valores[c.clave]; });
+      $("planta").value=planta+1; saveTrab();
+      $("obs").value=""; renderForm(null);
+    }
     window.scrollTo({top:0,behavior:"smooth"});
     await refrescarRegistros();
     sincronizar(false);
@@ -1128,7 +1234,7 @@ $("guardar").onclick = async ()=>{
 
 /* ---------- Registros ---------- */
 const visibles = todos => (SES && SES.rol==="admin") ? todos : todos.filter(r=>SES && r.usuario===SES.usuario);
-const resuelto = r => !!r.rechazado || (SYNC.url ? !!r.enviado : !!r.exportado);
+const resuelto = r => !!r.rechazado || (SYNC.url ? (!!r.enviado && (!r.anulado || !!r.anul_enviado)) : !!r.exportado);
 
 async function refrescarRegistros(){
   if(!SES) return;
@@ -1141,19 +1247,15 @@ async function refrescarRegistros(){
   actualizarRed();
   if(!MODACT) renderInicio();
   $("lista-reg").innerHTML = vm.slice(0,50).map(r=>`
-    <div class="reg">
+    <div class="reg${r.anulado?" anul":""}">
       <div>
         <span class="t">${modReg(r)==="soporte" ? `${esc(r.placa)} · ${esc(r.galones)} gal` : `${esc(r.fundo)} · ${esc(r.modulo||"")} · ${esc(r.lote)} · V${esc(r.valvula||"")} · Pl. ${esc(r.planta)}`}</span>
-        <span class="tag ${r.rechazado?"no":resuelto(r)?"ok":""}">${r.rechazado?"rechazado":SYNC.url?(r.enviado?"enviado":"sin enviar"):(r.exportado?"exportado":"pendiente")}</span>
+        <span class="tag ${r.rechazado||r.anulado?"no":resuelto(r)?"ok":""}">${r.anulado?(r.anul_enviado?"anulado":"anulando…"):r.rechazado?"rechazado":SYNC.url?(r.enviado?"enviado":"sin enviar"):(r.exportado?"exportado":"pendiente")}</span>
         <small>${modReg(r)==="soporte" ? `${esc(r.fecha_abastecimiento)} · ${r.km===""||r.km===undefined?"sin km":esc(r.km)+" km"} · ${esc(r.conductor)}` : `${esc(r.fecha)} ${esc(String(r.hora||"").slice(0,5))}${r.total_conteos!==undefined?" · total "+esc(r.total_conteos):""}`}${SES.rol==="admin"&&r.evaluador?" · "+esc(r.evaluador):""}</small>${r.rechazado?`<small style="color:var(--rojo)">${esc(r.motivo_rechazo||"Rechazado por el servidor")}. Elimínalo y regístralo de nuevo si corresponde.</small>`:""}
       </div>
-      <button class="x" data-id="${esc(r.id)}" aria-label="Eliminar">🗑</button>
+      <div class="acc">${r.anulado?"":`<button data-acc="corr" data-id="${esc(r.id)}">✏ Corregir</button><button class="rojo" data-acc="${r.rechazado?"del":"anul"}" data-id="${esc(r.id)}">${r.rechazado?"Eliminar":"Anular"}</button>`}</div>
     </div>`).join("") || "<p class='ayuda'>Aún no hay registros.</p>";
 }
-$("lista-reg").addEventListener("click", async e=>{
-  const b=e.target.closest("button"); if(!b) return;
-  if(confirm("¿Eliminar este registro?")){ await dbDel(b.dataset.id); refrescarRegistros(); }
-});
 
 /* ---------- Exportar CSV (respaldo) ---------- */
 function csvCell(v,sep){
@@ -1165,10 +1267,10 @@ function csvTexto(cab, filas){
   return "﻿"+[cab,...filas].map(f=>f.map(c=>csvCell(c,sep)).join(sep)).join("\r\n");   // BOM: Excel respeta tildes y ñ
 }
 function construirCSV(regs){
-  regs=regs.filter(r=>!r.rechazado);
+  regs=regs.filter(r=>!r.rechazado&&!r.anulado);
   if(MODACT==="soporte"){
-    const cab=["id","fecha_registro","hora","usuario","registrado_por","placa","conductor","tipo_unidad","sub_fundo","area","centro_costo","tipo_combustible","cod_sap","km","fecha_abastecimiento","galones","observaciones"];
-    return csvTexto(cab,regs.map(r=>[r.id,r.fecha,r.hora,r.usuario,r.evaluador,r.placa,r.conductor,r.tipo_unidad,r.sub_fundo||"",r.area||"",r.centro_costo||"",r.tipo_combustible||"",r.cod_sap||"",r.km,r.fecha_abastecimiento,r.galones,r.obs||""]));
+    const cab=["id","fecha_registro","hora","usuario","registrado_por","placa","conductor","tipo_unidad","sub_fundo","area","centro_costo","tipo_combustible","cod_sap","km","fecha_abastecimiento","galones","observaciones","latitud","longitud","precision_m"];
+    return csvTexto(cab,regs.map(r=>[r.id,r.fecha,r.hora,r.usuario,r.evaluador,r.placa,r.conductor,r.tipo_unidad,r.sub_fundo||"",r.area||"",r.centro_costo||"",r.tipo_combustible||"",r.cod_sap||"",r.km,r.fecha_abastecimiento,r.galones,r.obs||"",r.lat===undefined?"":r.lat,r.lon===undefined?"":r.lon,r.prec===undefined?"":r.prec]));
   }
   const claves=[];
   CFG.plantillas.filter(p=>!esEval(MODACT)||modPl(p)===MODACT).forEach(p=>p.campos.forEach(c=>{ if(!claves.includes(c.clave)) claves.push(c.clave); }));
@@ -1215,7 +1317,7 @@ $("exp-pend").onclick=()=>exportar(true);
 $("exp-todo").onclick=()=>exportar(false);
 
 $("borrar-exp").onclick=async ()=>{
-  const regs=visibles(await dbAll()||[]).filter(r=>r.enviado||r.exportado);
+  const regs=visibles(await dbAll()||[]).filter(r=>(r.enviado||r.exportado)&&!(r.anulado&&!r.anul_enviado));
   if(!regs.length){ toast("No hay registros enviados o exportados"); return; }
   if(!confirm(`Se borrarán ${regs.length} registros que ya fueron enviados o exportados. Los que no se han enviado NO se tocan. ¿Continuar?`)) return;
   for(const r of regs) await dbDel(r.id);
@@ -1230,14 +1332,25 @@ async function sincronizar(manual){
   if(!SYNC.url){ if(manual) toast("El envío automático no está configurado"); return; }
   if(sincronizando) return;
   if(!navigator.onLine){ if(manual) toast("Sin señal: se enviará solo cuando haya conexión"); return; }
-  sincronizando=true;
+  sincronizando=true; actualizarRed();
   try{
-    const pend=(await dbAll()||[]).filter(r=>!r.enviado&&!r.rechazado).sort((a,b)=>a.ts-b.ts);
-    if(!pend.length){ if(manual) toast("Todo está enviado ✔"); return; }
-    let enviados=0, rechazadas=0;
-    for(let i=0;i<pend.length;i+=50){
-      const grupo=pend.slice(i,i+50);
-      const j=await srv("sync",{registros:grupo},60000);
+    const todos=await dbAll()||[];
+    const pend=todos.filter(r=>!r.enviado&&!r.rechazado&&!r.anulado).sort((a,b)=>a.ts-b.ts);
+    const anuls=todos.filter(r=>r.anulado&&r.enviado&&!r.anul_enviado);
+    if(!pend.length&&!anuls.length){ if(manual) toast("Todo está enviado ✔"); return; }
+    let enviados=0, rechazadas=0, anuladas=0;
+    const lotes=[]; for(let i=0;i<pend.length;i+=50) lotes.push(pend.slice(i,i+50));
+    if(!lotes.length) lotes.push([]);
+    for(let k=0;k<lotes.length;k++){
+      const grupo=lotes[k];
+      const j=await srv("sync",{registros:grupo, anulaciones:k===0?anuls.map(r=>({id:r.id,plantilla_id:r.plantilla_id,mod_eval:modReg(r),motivo:r.anul_motivo||""})):[]},60000);
+      if(k===0){
+        const okA=new Set(j.anuladas||[]), malA=new Map((j.anul_rechazadas||[]).map(x=>[x.id,x.motivo]));
+        for(const r of anuls){
+          if(okA.has(r.id)){ r.anul_enviado=true; await dbPut(r); anuladas++; }
+          else if(malA.has(r.id)){ r.anul_enviado=true; r.anul_error=malA.get(r.id); await dbPut(r); toast("No se pudo anular: "+malA.get(r.id)); }
+        }
+      }
       const okIds=new Set(j.ids||[]);
       const rech=new Map((j.rechazados||[]).map(x=>[x.id,x.motivo]));
       for(const r of grupo){
@@ -1246,7 +1359,7 @@ async function sincronizar(manual){
       }
     }
     sesionVencida=false;
-    if(manual||enviados) toast(`${enviados} registros enviados ✔`);
+    if(manual||enviados||anuladas) toast(`${enviados} registros enviados ✔`+(anuladas?` · ${anuladas} anulados`:""));
     if(rechazadas) toast(`${rechazadas} reserva(s) rechazada(s): ya existía una para esa placa y fecha. Revisa Registros.`);
   }catch(e){
     if(e&&e.message==="sesion") toast(MSG_SESION);
@@ -2004,21 +2117,30 @@ $("rv-guardar").onclick=async ()=>{
   if(!(gal>0)){ toast("Cantidad en galones no válida"); $("rv-gal").focus(); return; }
   if(gal>500){ toast("La cantidad parece demasiado alta (máximo 500 galones)"); $("rv-gal").focus(); return; }
   if(x.capacidad!==""&&x.capacidad!==undefined&&gal>Number(x.capacidad)){ toast(`Supera la capacidad máxima de ${x.placa}: ${num(x.capacidad)} galones`); $("rv-gal").focus(); return; }
-  const previos=(await dbAll()||[]).filter(r=>modReg(r)==="soporte"&&r.placa===x.placa&&!r.rechazado);
+  const corr=CORR&&CORR.tipo==="rv"?CORR:null;
+  const previos=(await dbAll()||[]).filter(r=>modReg(r)==="soporte"&&r.placa===x.placa&&!r.rechazado&&!r.anulado&&!(corr&&r.id===corr.id));
   if(previos.some(r=>r.fecha_abastecimiento===fecha)){ toast(`La placa ${x.placa} ya tiene una reserva para el ${fecha}. Solo se permite una por día.`); return; }
   const mayor=previos.reduce((m,r)=>Math.max(m,Number(r.km)||0),0);
   if(km!=="" && mayor && km<mayor && !confirm(`El último kilometraje registrado de ${x.placa} en este celular es ${num(mayor)} km y estás ingresando ${num(km)}. ¿Es correcto?`)) return;
   const ahora=new Date();
   const reg={
-    id:uuid(), fecha:hoyISO(), hora:`${pad(ahora.getHours())}:${pad(ahora.getMinutes())}:${pad(ahora.getSeconds())}`, ts:ahora.getTime(),
+    id:(corr&&!corr.enviado)?corr.id:uuid(), fecha:hoyISO(), hora:`${pad(ahora.getHours())}:${pad(ahora.getMinutes())}:${pad(ahora.getSeconds())}`, ts:ahora.getTime(),
     usuario:SES.usuario, evaluador:SES.nombre,
     plantilla_id:"combustible", plantilla_nombre:"Reserva de combustible", plantilla_version:1, mod_eval:"soporte",
     placa:x.placa, conductor, tipo_unidad:x.tipo_unidad, sub_fundo, area, centro_costo:cc, tipo_combustible:comb, cod_sap:sapDe(comb), km, fecha_abastecimiento:fecha, galones:gal, obs:$("rv-obs").value.trim(),
+    lat:pos?pos.lat:"", lon:pos?pos.lon:"", prec:pos?Math.round(pos.prec):"",
     exportado:false, enviado:false
   };
   try{
+    if(corr&&corr.enviado) reg.corrige_a=corr.id;
     await dbPut(reg);
-    toast(`Reserva guardada: ${x.placa} · ${num(gal)} gal`);
+    if(corr&&corr.enviado){
+      const o=(await dbAll()||[]).find(y=>y.id===corr.id);
+      if(o){ o.anulado=true; o.anul_motivo="Corregido"; o.anul_ts=Date.now(); o.anul_enviado=false; o.reemplazado_por=reg.id; await dbPut(o); }
+    }
+    if(corr) finCorreccionRv();
+    sucioRv=false; borrBorrar("soporte"); mostrarBorradorRv();
+    toast((corr?"Corrección guardada: ":"Reserva guardada: ")+`${x.placa} · ${num(gal)} gal`+(pos?"":" · sin GPS"));
     $("rv-placa").value=""; $("rv-conductor").value=""; $("rv-tipo").value=""; $("rv-sub").value=""; $("rv-area").value=""; $("rv-cc").value=""; $("rv-comb").value=""; $("rv-cap").textContent=""; $("rv-km").value=""; $("rv-gal").value=""; $("rv-obs").value=""; $("rv-fecha").value=hoyISO();
     window.scrollTo({top:0,behavior:"smooth"});
     await refrescarRegistros();
@@ -2172,13 +2294,310 @@ $("cfg-sep").onchange=()=>{ try{ localStorage.setItem("sep",$("cfg-sep").value);
 /* ---------- Estado de red ---------- */
 function actualizarRed(){
   const e=$("estado");
-  e.textContent = (navigator.onLine ? "● En línea" : "○ Sin señal")
-    + (SES && nPend ? ` · ${nPend} ${SYNC.url?"sin enviar":"sin exportar"}` : "")
-    + (SES && sesionVencida ? " · ⚠ reingresar" : "");
+  e.textContent = (navigator.onLine ? "🟢 En línea" : "🔴 Sin señal") + (SES && sesionVencida ? " · ⚠ reingresar" : "");
+  e.className = "chip" + (navigator.onLine ? "" : " mal");
+  $("barra-estado").hidden = !SES;
+  if(!SES) return;
+  const pc=$("pend-chip"), env=$("enviar-ya");
+  pc.textContent = nPend ? `${nPend} ${SYNC.url?"sin enviar":"sin exportar"}` : "✔ Todo al día";
+  pc.className = "chip " + (nPend ? "alerta" : "ok");
+  env.hidden = !(SYNC.url && nPend);
+  env.disabled = !!sincronizando;
+  env.textContent = sincronizando ? "Enviando…" : "☁ Enviar ahora";
 }
+$("enviar-ya").onclick=()=>sincronizar(true);
 addEventListener("online",()=>{ actualizarRed(); sincronizar(false); cargarConfig(false,true); });
 addEventListener("offline",actualizarRed);
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ sincronizar(false); cargarConfig(false,true); } });
+
+/* =====================================================================
+   VERSIÓN 10: cabecera con estado, cambio de clave, borradores, duplicar,
+   corregir / anular registros, supervisión y aviso de nueva versión
+   ===================================================================== */
+const APP_VERSION="10.0";
+const TXT_GUARDAR="Guardar y pasar a la siguiente planta";
+const hhmm = ts => { const d=new Date(ts); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+
+/* ---- Cambiar mi clave ---- */
+function abrirClave(){ ["ck-act","ck-nue","ck-rep"].forEach(i=>{ $(i).value=""; }); $("ck-msg").textContent=""; $("dlg-clave").hidden=false; $("ck-act").focus(); }
+function cerrarClave(){ $("dlg-clave").hidden=true; }
+$("clave-btn").onclick=abrirClave; $("aj-clave").onclick=abrirClave; $("ck-cancel").onclick=cerrarClave;
+$("aj-salir").onclick=()=>$("salir").click();
+$("ck-ok").onclick=async ()=>{
+  if(!SES) return;
+  const a=$("ck-act").value, n=$("ck-nue").value, r=$("ck-rep").value, m=$("ck-msg");
+  m.textContent="";
+  if(!a){ m.textContent="Escribe tu clave actual"; return; }
+  if(n.length<6){ m.textContent="La clave nueva debe tener al menos 6 caracteres"; return; }
+  if(n!==r){ m.textContent="La clave nueva y su repetición no coinciden"; return; }
+  if(n===a){ m.textContent="La clave nueva debe ser distinta de la actual"; return; }
+  if(!navigator.onLine){ m.textContent="Necesitas internet para cambiar la clave"; return; }
+  $("ck-ok").disabled=true;
+  try{
+    await srv("clave_cambiar",{clave_actual:a,clave_nueva:n});
+    const cr=credLoad(), c=cr[SES.usuario];
+    if(c){ c.salt=saltAleatoria(); c.hash=await pbkdf2(n,c.salt); credSave(cr); }     // para seguir entrando sin señal con la clave nueva
+    cerrarClave(); toast("Clave cambiada ✔");
+  }catch(e){ m.textContent = e.message==="sesion" ? MSG_SESION : e.message; }
+  finally{ $("ck-ok").disabled=false; }
+};
+
+/* ---- Borradores: una evaluación a medias (o una reserva) se guarda sola en el celular ---- */
+const borrK=()=>"borr_"+(SES?SES.usuario:"");
+function borrAll(){ try{ return JSON.parse(localStorage.getItem(borrK())||"{}")||{}; }catch(e){ return {}; } }
+function borrPut(k,v){
+  const a=borrAll(); if(v) a[k]=v; else delete a[k];
+  try{ localStorage.setItem(borrK(),JSON.stringify(a)); return true; }catch(e){ return false; }
+}
+const borrBorrar=k=>borrPut(k,null);
+let sucioEval=false, sucioRv=false, tBorr=null;
+function snapEval(){
+  const p=plantillaActual(); if(!p||!esEval(MODACT)) return null;
+  return {plantilla:p.id, sel:selActual(), planta:parseInt($("planta").value)||1, valores:leerValoresCrudos(), obs:$("obs").value, ts:Date.now()};
+}
+function snapRv(){
+  return {placa:$("rv-placa").value, conductor:$("rv-conductor").value, tipo:$("rv-tipo").value, sub:$("rv-sub").value, area:$("rv-area").value,
+          comb:$("rv-comb").value, km:$("rv-km").value, gal:$("rv-gal").value, fecha:$("rv-fecha").value, obs:$("rv-obs").value, ts:Date.now()};
+}
+function volcarBorradores(){
+  if(!SES||CORR) return;
+  if(sucioEval && esEval(MODACT)){ const s=snapEval(); if(s) borrPut(MODACT,s); }
+  if(sucioRv && MODACT==="soporte") borrPut("soporte",snapRv());
+}
+function programarBorrador(){ clearTimeout(tBorr); tBorr=setTimeout(volcarBorradores,600); }
+$("form-dinamico").addEventListener("input",()=>{ sucioEval=true; programarBorrador(); });
+$("form-dinamico").addEventListener("change",()=>{ sucioEval=true; programarBorrador(); });
+$("form-dinamico").addEventListener("click",e=>{ if(e.target.closest("button[data-k]")){ sucioEval=true; programarBorrador(); } });
+$("obs").addEventListener("input",()=>{ sucioEval=true; programarBorrador(); });
+$("s-reserva").addEventListener("input",()=>{ sucioRv=true; programarBorrador(); });
+$("s-reserva").addEventListener("change",()=>{ sucioRv=true; programarBorrador(); });
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) volcarBorradores(); });
+addEventListener("pagehide",volcarBorradores);
+
+function mostrarBorradorEval(){
+  const a=$("borr-aviso");
+  const b=SES&&esEval(MODACT)&&!CORR ? borrAll()[MODACT] : null;
+  if(!b){ a.hidden=true; a.innerHTML=""; return; }
+  const f=b.sel||{};
+  a.innerHTML=`<b>Tienes una evaluación a medias</b> (${esc(hhmm(b.ts))}): ${esc([f.fundo,f.lote,f.valvula?"V"+f.valvula:"","Pl. "+b.planta].filter(Boolean).join(" · "))}
+    <div class="fila" style="margin-top:8px"><button class="btn" data-borr="retomar" style="margin:0">Retomar</button><button class="btn sec" data-borr="descartar" style="margin:0">Descartar</button></div>`;
+  a.hidden=false;
+}
+function retomarEval(){
+  const b=borrAll()[MODACT]; if(!b) return;
+  const p=CFG.plantillas.find(x=>x.id===b.plantilla&&x.activa&&modPl(x)===MODACT);
+  if(!p){ toast("La cartilla del borrador ya no está activa"); return; }
+  $("plantilla").value=p.id;
+  renderCascada(b.sel||{}); filaPrevId=""; onValvulaCambio(false);
+  if(!filaSel()) toast("El lote o la válvula del borrador ya no está disponible. Elige de nuevo.");
+  $("planta").value=b.planta||1;
+  renderForm(b.valores||{}); $("obs").value=b.obs||"";
+  sucioEval=false; saveTrab(); $("borr-aviso").hidden=true; toast("Borrador recuperado");
+}
+$("borr-aviso").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-borr]"); if(!b) return;
+  if(b.dataset.borr==="retomar") retomarEval();
+  else { borrBorrar(MODACT); sucioEval=false; mostrarBorradorEval(); toast("Borrador descartado"); }
+});
+$("borrador").onclick=()=>{
+  if(CORR){ toast("Durante una corrección no se guarda borrador"); return; }
+  const s=snapEval(); if(!s){ toast("No hay una plantilla activa"); return; }
+  if(borrPut(MODACT,s)){ sucioEval=false; toast("Borrador guardado. Lo podrás retomar al volver."); } else toast("No se pudo guardar el borrador");
+};
+function mostrarBorradorRv(){
+  const a=$("rv-borr");
+  const b=SES&&MODACT==="soporte"&&!CORR ? borrAll().soporte : null;
+  if(!b){ a.hidden=true; a.innerHTML=""; return; }
+  a.innerHTML=`<b>Tienes una reserva a medias</b> (${esc(hhmm(b.ts))})${b.placa?`: ${esc(b.placa)}`:""}
+    <div class="fila" style="margin-top:8px"><button class="btn" data-borr="retomar" style="margin:0">Retomar</button><button class="btn sec" data-borr="descartar" style="margin:0">Descartar</button></div>`;
+  a.hidden=false;
+}
+function retomarRv(){
+  const b=borrAll().soporte; if(!b) return;
+  renderReserva();
+  if(b.placa) ponerSel("rv-placa",b.placa);
+  $("rv-conductor").value=b.conductor||""; $("rv-tipo").value=b.tipo||"";
+  ponerSel("rv-sub",b.sub); $("rv-cc").value=(subCC().get($("rv-sub").value)||{}).centro_costo||"";
+  ponerSel("rv-area",b.area); $("rv-comb").value=b.comb||"";
+  $("rv-km").value=b.km||""; $("rv-gal").value=b.gal||""; $("rv-obs").value=b.obs||"";
+  $("rv-fecha").value = b.fecha && b.fecha>=hoyISO() ? b.fecha : hoyISO();
+  const x=(CFG.placas||[]).find(p=>p.placa===$("rv-placa").value);
+  $("rv-cap").textContent=x&&x.capacidad!==""&&x.capacidad!==undefined?`Capacidad máxima de ${x.placa}: ${num(x.capacidad)} galones`:"";
+  sucioRv=false; $("rv-borr").hidden=true; toast("Borrador recuperado");
+}
+$("rv-borr").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-borr]"); if(!b) return;
+  if(b.dataset.borr==="retomar") retomarRv();
+  else { borrBorrar("soporte"); sucioRv=false; mostrarBorradorRv(); toast("Borrador descartado"); }
+});
+$("rv-borrador").onclick=()=>{
+  if(CORR){ toast("Durante una corrección no se guarda borrador"); return; }
+  if(borrPut("soporte",snapRv())){ sucioRv=false; toast("Borrador guardado. Lo podrás retomar al volver."); } else toast("No se pudo guardar el borrador");
+};
+
+/* ---- Duplicar el último registro (solo el encabezado: los valores quedan en blanco) ---- */
+async function ultimoPropio(mod){
+  const l=(await dbAll()||[]).filter(r=>r.usuario===SES.usuario&&!r.anulado&&(!mod||modReg(r)===mod)).sort((a,b)=>b.ts-a.ts);
+  return l[0]||null;
+}
+async function duplicarUltimo(){
+  if(!SES) return;
+  if(CORR){ toast("Termina o cancela la corrección primero"); return; }
+  const mod=MODACT, r=await ultimoPropio(mod);
+  if(!r){ toast("Aún no tienes registros para duplicar"); return; }
+  if(mod==="soporte"){
+    renderReserva();
+    ponerSel("rv-sub",r.sub_fundo); $("rv-cc").value=(subCC().get($("rv-sub").value)||{}).centro_costo||"";
+    ponerSel("rv-area",r.area); $("rv-comb").value=r.tipo_combustible||"";
+    sucioRv=true; programarBorrador();
+    toast("Copiados sub fundo, área y combustible. Falta elegir la placa y los galones.");
+    return;
+  }
+  const p=CFG.plantillas.find(x=>x.id===r.plantilla_id&&x.activa&&modPl(x)===mod);
+  if(!p){ toast("La cartilla del último registro ya no está activa"); return; }
+  $("plantilla").value=p.id;
+  renderCascada({campana:r.campana,sub_fundo:r.sub_fundo,fundo:r.fundo,modulo:r.modulo,lote:r.lote,turno:r.turno,valvula:r.valvula});
+  filaPrevId=""; onValvulaCambio(false);
+  if(!filaSel()){ toast("El lote o la válvula del último registro ya no está disponible. Elige de nuevo."); saveTrab(); return; }
+  renderForm(null); $("obs").value=""; saveTrab();
+  toast(`Encabezado copiado: ${r.fundo} · ${r.lote} · V${r.valvula} · siguiente planta ${$("planta").value}`);
+}
+$("dup-ultimo").onclick=duplicarUltimo;
+$("rv-dup").onclick=duplicarUltimo;
+$("ini-dup").onclick=async ()=>{
+  const r=await ultimoPropio(""); if(!r) return;
+  entrarModulo(modReg(r));
+  await duplicarUltimo();
+};
+
+/* ---- Corregir y anular registros ---- */
+function finCorreccion(){
+  CORR=null; $("corr-aviso").hidden=true; $("guardar").textContent=TXT_GUARDAR;
+  renderForm(null); $("obs").value="";
+  const f=filaSel(); filaPrevId=f?f.id:""; $("planta").value=f?(TRAB.plantas[f.id]||1):1;
+}
+function finCorreccionRv(){
+  CORR=null; $("rv-corr").hidden=true; $("rv-guardar").textContent="Guardar reserva";
+}
+function bannerCorreccion(el,txt,enviado){
+  el.innerHTML=`<b>Corrigiendo un registro</b> ${esc(txt)}
+    <p class="ayuda" style="margin:4px 0 8px">${enviado?"Ya se envió: al guardar, el original queda ANULADO en la hoja y este lo reemplaza.":"Aún no se envió: al guardar, este reemplaza al del celular."}</p>
+    <button class="btn sec" data-corr="cancelar" style="margin:0">Cancelar corrección</button>`;
+  el.hidden=false;
+}
+function cancelarCorreccion(){
+  if(!CORR) return;
+  if(CORR.tipo==="rv"){ finCorreccionRv(); ["rv-placa","rv-conductor","rv-tipo","rv-sub","rv-area","rv-cc","rv-comb","rv-km","rv-gal","rv-obs"].forEach(i=>{ $(i).value=""; }); $("rv-cap").textContent=""; $("rv-fecha").value=hoyISO(); }
+  else finCorreccion();
+  toast("Corrección cancelada");
+}
+$("corr-aviso").addEventListener("click",e=>{ if(e.target.closest("button[data-corr]")) cancelarCorreccion(); });
+$("rv-corr").addEventListener("click",e=>{ if(e.target.closest("button[data-corr]")) cancelarCorreccion(); });
+
+function corregirReserva(r){
+  CORR={tipo:"rv",id:r.id,enviado:!!r.enviado};
+  irA("s-reserva");
+  ponerSel("rv-placa",r.placa); $("rv-conductor").value=r.conductor||""; $("rv-tipo").value=r.tipo_unidad||"";
+  ponerSel("rv-sub",r.sub_fundo); $("rv-cc").value=(subCC().get($("rv-sub").value)||{}).centro_costo||r.centro_costo||"";
+  ponerSel("rv-area",r.area); $("rv-comb").value=r.tipo_combustible||"";
+  $("rv-km").value=r.km===undefined?"":r.km; $("rv-gal").value=r.galones===undefined?"":r.galones; $("rv-obs").value=r.obs||"";
+  $("rv-fecha").value = r.fecha_abastecimiento && r.fecha_abastecimiento>=hoyISO() ? r.fecha_abastecimiento : hoyISO();
+  $("rv-cap").textContent="";
+  $("rv-guardar").textContent="Guardar corrección";
+  $("rv-borr").hidden=true;
+  bannerCorreccion($("rv-corr"),`(${r.placa} · ${num(r.galones)} gal)`,!!r.enviado);
+  window.scrollTo(0,0);
+}
+function iniciarCorreccion(r){
+  if(r.anulado) return;
+  if(modReg(r)==="soporte"){ corregirReserva(r); return; }
+  const p=CFG.plantillas.find(x=>x.id===r.plantilla_id&&x.activa);
+  if(!p){ toast("Esa cartilla ya no está activa: no se puede corregir"); return; }
+  CORR={tipo:"eval",id:r.id,enviado:!!r.enviado,fecha:r.fecha,hora:r.hora};
+  irA("s-evaluar");
+  $("plantilla").value=p.id;
+  renderCascada({campana:r.campana,sub_fundo:r.sub_fundo,fundo:r.fundo,modulo:r.modulo,lote:r.lote,turno:r.turno,valvula:r.valvula});
+  filaPrevId=""; onValvulaCambio(true);
+  if(!filaSel()){ CORR=null; toast("Ese lote o válvula ya no está activo: no se puede corregir"); return; }
+  filaPrevId=filaSel().id;
+  $("planta").value=r.planta;
+  const v={}; Object.keys(r.valores||{}).forEach(k=>{ v[k]=String(r.valores[k]); });
+  renderForm(v); $("obs").value=r.obs||"";
+  $("guardar").textContent="Guardar corrección";
+  $("borr-aviso").hidden=true;
+  bannerCorreccion($("corr-aviso"),`(${r.fundo} · ${r.lote} · V${r.valvula||""} · Pl. ${r.planta})`,!!r.enviado);
+  window.scrollTo(0,0);
+}
+async function anularRegistro(r){
+  if(r.anulado) return;
+  if(!r.enviado){
+    if(!confirm("¿Anular este registro? Aún no se envió: se quitará del celular.")) return;
+    await dbDel(r.id); toast("Registro anulado"); refrescarRegistros(); return;
+  }
+  const m=(prompt("Este registro ya se envió. Escribe el motivo de la anulación (obligatorio):")||"").trim();
+  if(!m){ toast("Sin motivo no se anula el registro"); return; }
+  r.anulado=true; r.anul_motivo=m.slice(0,200); r.anul_ts=Date.now(); r.anul_enviado=false;
+  await dbPut(r);
+  toast("Registro anulado. Se marcará como ANULADO en la hoja al enviar.");
+  await refrescarRegistros(); sincronizar(false);
+}
+$("lista-reg").addEventListener("click", async e=>{
+  const b=e.target.closest("button[data-acc]"); if(!b) return;
+  const r=(await dbAll()||[]).find(x=>x.id===b.dataset.id); if(!r) return;
+  if(b.dataset.acc==="corr") iniciarCorreccion(r);
+  else if(b.dataset.acc==="anul") await anularRegistro(r);
+  else if(b.dataset.acc==="del"){ if(confirm("¿Eliminar este registro rechazado del celular?")){ await dbDel(r.id); refrescarRegistros(); } }
+});
+
+/* ---- Supervisión (administrador) ---- */
+function rangoSv(){
+  const v=$("sv-rango").value, h=new Date();
+  const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  if(v==="ayer"){ const d=new Date(h.getTime()-864e5); return {desde:iso(d),hasta:iso(d)}; }
+  if(v==="7") return {desde:iso(new Date(h.getTime()-6*864e5)),hasta:iso(h)};
+  return {desde:iso(h),hasta:iso(h)};
+}
+async function renderSupervision(){
+  if(!SES||SES.rol!=="admin") return;
+  const info=$("sv-info");
+  if(!navigator.onLine){ info.textContent="Necesitas internet para ver la supervisión."; return; }
+  info.textContent="Cargando…";
+  try{
+    const j=await apiAdmin("supervision",rangoSv());
+    const caja=(n,t)=>`<div><b>${esc(n)}</b><small>${esc(t)}</small></div>`;
+    $("sv-res").innerHTML=caja(j.total,"Registros")+caja(`${j.por_usuario.length} de ${j.evaluadores_activos}`,"Evaluadores activos")+caja(j.anulados,"Anulados");
+    $("sv-usr").innerHTML=j.por_usuario.map(u=>`<div class="reg"><div><span class="t">${esc(u.nombre||u.usuario)}</span><small>${esc(u.registros)} registros · último ${esc(u.ultima)}</small><small>${Object.keys(u.cartillas).map(k=>esc(k)+": "+esc(u.cartillas[k])).join(" · ")}</small></div></div>`).join("") || "<p class='ayuda'>Sin registros en este periodo.</p>";
+    $("sv-car").innerHTML=j.por_cartilla.map(c=>`<div class="reg"><div><span class="t">${esc(c.cartilla)}</span></div><b>${esc(c.registros)}</b></div>`).join("") || "<p class='ayuda'>Sin registros en este periodo.</p>";
+    $("sv-sin-card").hidden=!j.sin_actividad.length;
+    $("sv-sin").innerHTML=j.sin_actividad.map(u=>`<div class="reg"><div><span class="t">${esc(u.nombre)}</span><small>${esc(u.usuario)}</small></div></div>`).join("");
+    info.textContent=`Del ${j.desde} al ${j.hasta} · actualizado ${hhmm(Date.now())}`+(j.alertas?` · ${j.alertas} registros con alerta de permiso`:"")+(j.truncado?" · hay registros antiguos que no se leyeron":"");
+  }catch(e){ info.textContent=e.message; }
+}
+$("sv-act").onclick=renderSupervision;
+$("sv-rango").onchange=renderSupervision;
+
+/* ---- Aviso de nueva versión de la app ---- */
+let swReg=null, actualizandoApp=false;
+function registrarSW(){
+  if(!("serviceWorker" in navigator)) return;
+  navigator.serviceWorker.register("sw.js").then(reg=>{
+    swReg=reg;
+    if(reg.waiting && navigator.serviceWorker.controller) $("nueva-version").hidden=false;
+    reg.addEventListener("updatefound",()=>{
+      const nw=reg.installing; if(!nw) return;
+      nw.addEventListener("statechange",()=>{ if(nw.state==="installed" && navigator.serviceWorker.controller) $("nueva-version").hidden=false; });
+    });
+  }).catch(()=>{});
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{ if(actualizandoApp) location.reload(); });
+}
+$("nv-actualizar").onclick=()=>{
+  volcarBorradores(); actualizandoApp=true;                      // lo que escribiste queda como borrador
+  if(swReg && swReg.waiting) swReg.waiting.postMessage({type:"SKIP_WAITING"}); else location.reload();
+};
+function buscarVersion(){ if(swReg && swReg.update) swReg.update().catch(()=>{}); }
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) buscarVersion(); });
+addEventListener("online",buscarVersion);
+setInterval(buscarVersion,30*60*1000);
 
 /* ---------- Inicio ---------- */
 function poblarListas(){
@@ -2191,7 +2610,7 @@ function poblarListas(){
 (function init(){
   poblarListas();
   actualizarRed();
-  if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+  registrarSW();
   let u=null;
   try{ u=localStorage.getItem("sesion"); }catch(e){}
   if(u && credLoad()[u]) iniciarSesion(u); else mostrarLogin();

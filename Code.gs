@@ -1,5 +1,5 @@
 /**
- * RECEPTOR CENTRAL de evaluaciones de campo (versión 9: fundo > sub fundo, áreas, una hoja por cartilla).
+ * RECEPTOR CENTRAL de evaluaciones de campo (versión 10: cambio de clave, anular/corregir registros, supervisión, GPS en reservas).
  * Se pega en Google Sheets: Extensiones > Apps Script.
  *
  * Hojas que maneja (se crean solas):
@@ -34,7 +34,8 @@ const HOJA_PLC  = "Placas";
 // El administrador la asigna a los usuarios igual que cualquier plantilla.
 const COMB_ID = "combustible";
 const COMB_BASE = ["id","fecha_registro","hora","usuario","registrado_por","placa","conductor","tipo_unidad","sub_fundo","area","centro_costo",
-                   "tipo_combustible","cod_sap","km","fecha_abastecimiento","galones","observaciones","alerta_permiso","enviado_por","recibido"];
+                   "tipo_combustible","cod_sap","km","fecha_abastecimiento","galones","observaciones","alerta_permiso","enviado_por","recibido",
+                   "latitud","longitud","precision_m","estado_registro","corrige_a","anulado_por","anulado_en","motivo_anulacion"];
 const COMB_TEXTO = ["placa","conductor","tipo_unidad","sub_fundo","area","centro_costo","tipo_combustible","cod_sap"];   // siempre como texto (ceros a la izquierda)
 const PLA_COMBUSTIBLE = { id: COMB_ID, nombre: "Reserva de combustible", version: 1, activa: true, campos: [], mod_eval: "soporte", fija: true };
 
@@ -64,7 +65,8 @@ const COMBUSTIBLES = ["Gasolina regular", "Gasolina 95", "Petróleo diesel 2"];
 const BASE = ["id","fecha","hora","usuario","evaluador","plantilla","version_plantilla","campana",
               "sede","cultivo","fundo","sub_fundo","modulo","lote","turno","valvula","pep","variedad","etapa",
               "planta","dias_desde_inicio_campana","latitud","longitud","precision_m","total_conteos",
-              "observaciones","alerta_permiso","enviado_por","recibido"];
+              "observaciones","alerta_permiso","enviado_por","recibido",
+              "estado_registro","corrige_a","anulado_por","anulado_en","motivo_anulacion"];
 const RESERVADAS = BASE.concat(["maestra_id","plantilla_id"]);
 
 // Usuarios: DNI, nombre completo, rol, usuario abreviado, clave (salt+hash), estatus, accesos
@@ -156,6 +158,8 @@ function doPost(e) {
         return salida(sync_(d, us));
       case "config_obtener":
         return salida(configObtener_(d, us));
+      case "clave_cambiar":
+        return salida(claveCambiar_(d, us));
       case "usuario_listar":
       case "usuario_guardar":
       case "usuario_estado":
@@ -175,6 +179,7 @@ function doPost(e) {
       case "variedad_eliminar":
       case "placa_guardar":
       case "placa_eliminar":
+      case "supervision":
         if (us.rol !== "admin") return salida({ ok: false, error: "No tienes permiso para esta acción" });
         return salida(accionAdmin_(d, us));
       default:
@@ -427,6 +432,24 @@ function login_(d) {
   }
   cache.remove(kf);
   return { ok: true, usuario: us.usuario, nombre: us.nombre, rol: us.rol, token: crearToken_(us.usuario, us.rol) };
+}
+
+// Cambio de clave por el propio usuario (necesita su clave actual). Los intentos fallidos cuentan para el bloqueo.
+function claveCambiar_(d, us) {
+  const actual = String(d.clave_actual || ""), nueva = String(d.clave_nueva || "");
+  const cache = CacheService.getScriptCache();
+  const kf = "fallos_" + us.usuario;
+  if (Number(cache.get(kf) || 0) >= MAX_FALLOS) return fallo_("Demasiados intentos. Espera 10 minutos.");
+  if (!us.hash || hashClave_(actual, us.salt) !== us.hash) {
+    cache.put(kf, String(Number(cache.get(kf) || 0) + 1), BLOQUEO_SEG);
+    return fallo_("La clave actual no es correcta");
+  }
+  if (nueva.length < MIN_CLAVE) return fallo_("La clave nueva debe tener al menos " + MIN_CLAVE + " caracteres");
+  if (nueva === actual) return fallo_("La clave nueva debe ser distinta de la actual");
+  cache.remove(kf);
+  const salt = Utilities.getUuid().replace(/-/g, "");
+  hojaUsuarios_().getRange(us.fila, 5, 1, 2).setValues([[salt, hashClave_(nueva, salt)]]);
+  return { ok: true, token: crearToken_(us.usuario, us.rol) };
 }
 
 /* ============================ MAESTRA (PROGRAMA DE PRODUCCIÓN) ============================ */
@@ -1279,6 +1302,7 @@ function accionAdmin_(d, admin) {
     case "variedad_eliminar": return variedadEliminar_(d.id);
     case "placa_guardar":     return placaGuardar_(d.fila);
     case "placa_eliminar":    return placaEliminar_(d.id);
+    case "supervision":       return supervision_(d);
   }
   return fallo_("acción desconocida");
 }
@@ -1344,8 +1368,68 @@ function renombrarHojaCartilla_(id, mod, nombreNuevo) {
   if (n !== guardada) { sh.setName(n); props.setProperty("hoja_" + id, n); }
 }
 
+// Hoja donde está (o estaría) una cartilla, sin crearla.
+function hojaExistente_(p, mod) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (p && !mod.fija) {
+    const g = PropertiesService.getScriptProperties().getProperty("hoja_" + p.id);
+    const sh0 = g ? ss.getSheetByName(g) : null;
+    if (sh0) return sh0;
+  }
+  let sh = ss.getSheetByName(mod.hoja);
+  if (!sh && mod.id === "fitosanidad") sh = ss.getSheetByName(HOJA_VIEJA);
+  return sh || null;
+}
+
+// Agrega a una hoja las columnas que le falten y devuelve los encabezados actuales.
+function asegurarColumnas_(sh, cols) {
+  let cab = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+  const nuevas = cols.filter(c => cab.indexOf(c) === -1);
+  if (nuevas.length) {
+    asegurarTamano_(sh, 2, cab.length + nuevas.length);
+    sh.getRange(1, cab.length + 1, 1, nuevas.length).setValues([nuevas]).setFontWeight("bold");
+    cab = cab.concat(nuevas);
+  }
+  return cab;
+}
+
+// Anula registros ya enviados: la fila NO se borra, queda marcada como ANULADO con quién, cuándo y por qué.
+// Un evaluador solo puede anular los suyos; el administrador, cualquiera.
+function anular_(lista, us) {
+  const pls = {};
+  plantillas_().forEach(p => pls[p.id] = p);
+  const hechas = [], rechazadas = [];
+  const ahora = new Date();
+  (Array.isArray(lista) ? lista : []).forEach(a => {
+    const id = String(a.id || "");
+    if (!id) return;
+    const pid = String(a.plantilla_id || "");
+    const p = pid === COMB_ID ? PLA_COMBUSTIBLE : (pls[pid] || null);
+    const m = modulo_(p ? p.mod_eval : a.mod_eval) || MODULOS[0];
+    const sh = hojaExistente_(p && !m.fija ? p : null, m);
+    if (!sh || sh.getLastRow() < 2) { hechas.push(id); return; }          // no existe en el servidor: nada que anular
+    const n = sh.getLastRow();
+    const ids = sh.getRange(2, 1, n - 1, 1).getValues();
+    let fila = 0;
+    for (let i = 0; i < ids.length; i++) if (String(ids[i][0]) === id) { fila = i + 2; break; }
+    if (!fila) { hechas.push(id); return; }
+    const cab = asegurarColumnas_(sh, (m.base || BASE));
+    const col = c => cab.indexOf(c) + 1;
+    const dueno = String(sh.getRange(fila, col("usuario"), 1, 1).getValues()[0][0]).trim().toLowerCase();
+    if (us.rol !== "admin" && dueno !== us.usuario) { rechazadas.push({ id: id, motivo: "Solo puedes anular tus propios registros" }); return; }
+    if (String(sh.getRange(fila, col("estado_registro"), 1, 1).getValues()[0][0]) === "ANULADO") { hechas.push(id); return; }
+    sh.getRange(fila, col("estado_registro")).setValue("ANULADO");
+    sh.getRange(fila, col("anulado_por")).setValue(us.usuario);
+    sh.getRange(fila, col("anulado_en")).setValue(ahora);
+    sh.getRange(fila, col("motivo_anulacion")).setValue(limpiar_(a.motivo).slice(0, 200));
+    hechas.push(id);
+  });
+  return { anuladas: hechas, anul_rechazadas: rechazadas };
+}
+
 // Cada registro va a la hoja de su cartilla (el servidor decide, no el celular).
 function sync_(d, us) {
+  const an = anular_(d.anulaciones, us);       // primero las anulaciones: así una corrección puede reemplazar a su original
   const regs = Array.isArray(d.registros) ? d.registros : [];
   const pls = {};
   plantillas_().forEach(p => pls[p.id] = p);
@@ -1369,7 +1453,7 @@ function sync_(d, us) {
     nuevos += g.nuevos;
   });
   // Token renovado: mientras el celular envíe datos, la sesión no vence
-  return { ok: true, ids: ids, nuevos: nuevos, rechazados: rechazados, token: crearToken_(us.usuario, us.rol) };
+  return { ok: true, ids: ids, nuevos: nuevos, rechazados: rechazados, anuladas: an.anuladas, anul_rechazadas: an.anul_rechazadas, token: crearToken_(us.usuario, us.rol) };
 }
 
 function syncHoja_(sh, regs, us, mod, claves) {
@@ -1402,11 +1486,11 @@ function syncHoja_(sh, regs, us, mod, claves) {
   // Reservas ya registradas (placa + fecha de abastecimiento), solo para el módulo Soporte
   const reservadas = new Set();
   if (mod && mod.id === "soporte" && ultima > 1) {
-    const ip = cab.indexOf("placa"), ifa = cab.indexOf("fecha_abastecimiento");
+    const ip = cab.indexOf("placa"), ifa = cab.indexOf("fecha_abastecimiento"), ier = cab.indexOf("estado_registro");
     if (ip >= 0 && ifa >= 0) {
       const tz = Session.getScriptTimeZone();
       const fx = v => v instanceof Date ? Utilities.formatDate(v, tz, "yyyy-MM-dd") : String(v);
-      sh.getRange(2, 1, ultima - 1, cab.length).getValues().forEach(f => reservadas.add(normPlaca_(f[ip]) + "|" + fx(f[ifa])));
+      sh.getRange(2, 1, ultima - 1, cab.length).getValues().forEach(f => { if (ier < 0 || String(f[ier]) !== "ANULADO") reservadas.add(normPlaca_(f[ip]) + "|" + fx(f[ifa])); });
     }
   }
   regs.forEach(r => {
@@ -1438,6 +1522,7 @@ function syncHoja_(sh, regs, us, mod, claves) {
         sub_fundo: r.sub_fundo || "", area: r.area || "", centro_costo: r.centro_costo || "", tipo_combustible: r.tipo_combustible || "", cod_sap: r.cod_sap || "",
         km: nm(r.km),
         fecha_abastecimiento: r.fecha_abastecimiento || "", galones: nm(r.galones), observaciones: r.obs || "",
+        latitud: r.lat === undefined ? "" : r.lat, longitud: r.lon === undefined ? "" : r.lon, precision_m: r.prec === undefined ? "" : r.prec, corrige_a: r.corrige_a || "",
         alerta_permiso: (us.rol === "admin" || us.plantillas.indexOf(COMB_ID) >= 0) ? "" : "SI",
         enviado_por: us.usuario, recibido: ahora
       };
@@ -1459,7 +1544,8 @@ function syncHoja_(sh, regs, us, mod, claves) {
       dias_desde_inicio_campana: r.dias_campana === undefined ? "" : r.dias_campana,
       latitud: r.lat, longitud: r.lon, precision_m: r.prec,
       total_conteos: r.total_conteos !== undefined ? r.total_conteos : (r.total === undefined ? "" : r.total),
-      observaciones: r.obs, alerta_permiso: permitido ? "" : "SI", enviado_por: us.usuario, recibido: ahora
+      observaciones: r.obs, alerta_permiso: permitido ? "" : "SI", enviado_por: us.usuario, recibido: ahora,
+      corrige_a: r.corrige_a || ""
     };
     Object.keys(vals).forEach(p => valores[p] = vals[p]);
     filas.push(cab.map(c => valores[c] === undefined ? "" : valores[c]));
@@ -1474,4 +1560,66 @@ function syncHoja_(sh, regs, us, mod, claves) {
     sh.getRange(desde, 1, filas.length, cab.length).setValues(filas);
   }
   return { ids: ids, nuevos: filas.length, rechazados: rechazados };
+}
+
+/* ============================ SUPERVISIÓN ============================ */
+
+// Resumen de actividad entre dos fechas (por defecto, hoy): quién registró, cuánto, a qué hora y en qué cartilla.
+// Lee solo el final de cada hoja (las últimas 4000 filas) para no demorar.
+function supervision_(d) {
+  const hoy = hoy_();
+  const desde = fechaValida_(String(d.desde || "")) ? String(d.desde) : hoy;
+  let hasta = fechaValida_(String(d.hasta || "")) ? String(d.hasta) : hoy;
+  if (hasta < desde) hasta = desde;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const props = PropertiesService.getScriptProperties();
+  const fuentes = [];
+  const agregar = (sh, mod) => { if (sh && !fuentes.some(x => x.sh === sh)) fuentes.push({ sh: sh, mod: mod }); };
+  plantillas_().forEach(p => {
+    const g = props.getProperty("hoja_" + p.id);
+    if (g) agregar(ss.getSheetByName(g), modulo_(p.mod_eval) || MODULOS[0]);
+  });
+  MODULOS.forEach(m => {
+    let sh = ss.getSheetByName(m.hoja);
+    if (!sh && m.id === "fitosanidad") sh = ss.getSheetByName(HOJA_VIEJA);
+    agregar(sh, m);
+  });
+  const porUsuario = {}, porCartilla = {};
+  let total = 0, anulados = 0, alertas = 0, truncado = false;
+  fuentes.forEach(fu => {
+    const sh = fu.sh, n = sh.getLastRow();
+    if (n < 2) return;
+    const cab = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+    const ix = c => cab.indexOf(c);
+    const sop = fu.mod.id === "soporte";
+    const iF = ix(sop ? "fecha_registro" : "fecha"), iU = ix("usuario"), iN = ix(sop ? "registrado_por" : "evaluador");
+    const iH = ix("hora"), iE = ix("estado_registro"), iP = ix("plantilla"), iA = ix("alerta_permiso");
+    if (iF < 0 || iU < 0) return;
+    const ini = Math.max(2, n - 3999);
+    const filas = sh.getRange(ini, 1, n - ini + 1, cab.length).getValues();
+    if (ini > 2 && filas.length && fechaTxt_(filas[0][iF]) > desde) truncado = true;
+    filas.forEach(f => {
+      const fe = fechaTxt_(f[iF]);
+      if (fe < desde || fe > hasta) return;
+      if (iE >= 0 && String(f[iE]) === "ANULADO") { anulados++; return; }
+      const u = String(f[iU]).trim().toLowerCase();
+      const cart = fu.mod.nombre + " - " + (sop ? "Reserva de combustible" : (iP >= 0 && f[iP] ? String(f[iP]) : "Sin cartilla"));
+      const x = porUsuario[u] = porUsuario[u] || { usuario: u, nombre: iN >= 0 ? String(f[iN]) : u, registros: 0, ultima: "", cartillas: {} };
+      x.registros++;
+      x.cartillas[cart] = (x.cartillas[cart] || 0) + 1;
+      const marca = fe + " " + (iH >= 0 ? String(f[iH]).slice(0, 5) : "");
+      if (marca > x.ultima) x.ultima = marca;
+      porCartilla[cart] = (porCartilla[cart] || 0) + 1;
+      if (iA >= 0 && String(f[iA]) === "SI") alertas++;
+      total++;
+    });
+  });
+  const activos = usuarios_().filter(u => u.activo && u.rol === "evaluador");
+  return {
+    ok: true, desde: desde, hasta: hasta, total: total, anulados: anulados, alertas: alertas, truncado: truncado,
+    por_usuario: Object.keys(porUsuario).map(k => porUsuario[k]).sort((a, b) => b.registros - a.registros),
+    por_cartilla: Object.keys(porCartilla).map(k => ({ cartilla: k, registros: porCartilla[k] })).sort((a, b) => b.registros - a.registros),
+    sin_actividad: activos.filter(u => !porUsuario[u.usuario]).map(u => ({ usuario: u.usuario, nombre: u.nombre })),
+    evaluadores_activos: activos.length
+  };
 }

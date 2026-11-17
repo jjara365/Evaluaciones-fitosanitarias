@@ -1,3 +1,29 @@
+# Puesta en marcha — versión 10 (botones y control de calidad de la data)
+
+## Qué trae la versión 10 (novedades sobre la 9)
+
+1. **Cabecera siempre visible:** 🟢 En línea / 🔴 Sin señal, "3 sin enviar" (o "✔ Todo al día"), el botón **☁ Enviar ahora** (aparece cuando hay pendientes) y el chip de **📍 GPS** (toca para volver a buscar la ubicación).
+2. **🔑 Cambiar mi clave y Salir** en la cabecera (y también en Ajustes > Mi cuenta). Pide la clave actual, necesita internet y después se puede entrar sin señal con la clave nueva. Un usuario solo cambia la suya.
+3. **Duplicar último registro:** copia solo el encabezado (cartilla, fundo, lote, válvula; en reservas: sub fundo, área y combustible). Los valores quedan en blanco. También hay una tarjeta "Repetir último registro" en Inicio.
+4. **Borradores:** lo que escribes en una evaluación o reserva se guarda solo en el celular (también al cerrar la app o si se acaba la batería). Al volver aparece "Tienes una evaluación a medias: Retomar / Descartar". Botón **💾 Borrador** para guardar a pedido.
+5. **GPS:** además de las evaluaciones, las reservas guardan latitud, longitud y precisión (columnas nuevas en `Reservas_Combustible`). Si se guarda sin GPS, la app lo avisa.
+6. **Aviso de nueva versión:** cuando subas una versión nueva a GitHub (cambia el número en `sw.js`, p. ej. evalcampo-v11), los celulares muestran "Hay una nueva versión – Actualizar". Los borradores se conservan.
+7. **Corregir o anular registros** (Registros > botones en cada registro):
+   - Sin enviar: Corregir lo edita en su lugar; Anular lo quita del celular.
+   - Ya enviado: Corregir crea el nuevo registro (columna `corrige_a`) y el original queda **ANULADO**; Anular pide un motivo obligatorio.
+   - **Las filas nunca se borran de la hoja:** quedan con `estado_registro = ANULADO`, `anulado_por`, `anulado_en` y `motivo_anulacion`. Un evaluador solo anula los suyos; el administrador, cualquiera.
+   - **Para Power BI / SQL: filtra `estado_registro` distinto de "ANULADO".**
+   - Una reserva anulada libera la regla "una reserva por placa y día".
+8. **Supervisión** (solo administrador): mosaico nuevo en Inicio. Muestra registros por evaluador (último registro), por cartilla, anulados y evaluadores **sin actividad**, para hoy, ayer o 7 días.
+
+### Para actualizar (versión 10)
+1. Pega el nuevo `Code.gs` en Apps Script y publica **Nueva versión** (la URL no cambia). Las hojas ganan solas las columnas nuevas al primer envío.
+2. Sube a GitHub `index.html` y `sw.js` (revisa tu URL `/exec` en `const SYNC`). Los celulares verán el aviso de nueva versión.
+3. Nota: cambiar la clave no cierra las sesiones ya abiertas en otros celulares del mismo usuario; si alguien sospecha que su clave se filtró, usa Administración > Usuarios para poner una clave nueva.
+
+---
+
+## (versión anterior)
 # Puesta en marcha — versión 9 (fundo > sub fundo, áreas, una hoja por cartilla)
 
 ## Qué trae la versión 9 (novedades sobre la 8)
