@@ -34,7 +34,6 @@ header{flex-wrap:wrap}
 .reg{flex-wrap:wrap}
 .reg>div:first-child{flex:1 1 180px}
 .reg.anul .t{text-decoration:line-through;opacity:.6}
-.tile.dup{grid-column:1 / -1;border-style:solid;border-color:var(--pri)}
 .barra-guardar .fila{max-width:656px;margin:0 auto;gap:8px}
 .barra-guardar .fila .btn{margin:0;max-width:none;font-size:16px}
 #borrador{flex:0 0 36%}
@@ -170,7 +169,6 @@ textarea{min-height:110px}
 <!-- ================= INICIO (módulos) ================= -->
 <section id="s-inicio" class="activa">
   <div class="card aviso" id="ini-aviso" hidden></div>
-  <button class="tile dup" id="ini-dup" hidden></button>
   <p class="ayuda" style="margin:2px 2px 0">Elige un módulo</p>
   <div class="tiles" id="tiles"></div>
 </section>
@@ -181,8 +179,6 @@ textarea{min-height:110px}
   <div class="card aviso" id="borr-aviso" hidden></div>
   <div class="card aviso" id="corr-aviso" hidden></div>
   <div class="card">
-    <button type="button" class="btn sec" id="dup-ultimo" style="margin:0 0 4px">⧉ Duplicar último registro</button>
-    <p class="ayuda" style="margin:0 0 10px">Copia dónde evaluaste (cartilla, fundo, lote, válvula). Los valores quedan en blanco.</p>
     <div id="wrap-plantilla"><label for="plantilla">Plantilla</label><select id="plantilla"></select></div>
     <label for="evaluador">Evaluador</label>
     <input id="evaluador" readonly>
@@ -223,9 +219,11 @@ textarea{min-height:110px}
   <div class="card aviso" id="rv-corr" hidden></div>
   <div class="card">
     <label style="margin-bottom:0">Reserva de combustible</label>
-    <button type="button" class="btn sec" id="rv-dup" style="margin:8px 0 0">⧉ Duplicar último registro</button>
-    <p class="ayuda">Copia el sub fundo, el área y el combustible del último. Falta elegir la placa y los galones.</p>
-    <label for="rv-placa">Placa</label><select id="rv-placa"></select>
+    <label for="rv-ftipo">Filtrar por tipo de unidad</label>
+    <select id="rv-ftipo"></select>
+    <label for="rv-busca">Buscar placa o conductor</label>
+    <input id="rv-busca" type="search" autocomplete="off" placeholder="Escribe parte de la placa o del conductor">
+    <label for="rv-placa">Placa <span class="ayuda" id="rv-nplacas" style="font-weight:400"></span></label><select id="rv-placa"></select>
     <label for="rv-conductor">Conductor</label><input id="rv-conductor" autocomplete="off">
     <label for="rv-tipo">Tipo de unidad</label><input id="rv-tipo" readonly placeholder="Se completa al elegir la placa">
     <label for="rv-sub">Sub fundo</label><select id="rv-sub"></select>
@@ -330,7 +328,9 @@ textarea{min-height:110px}
 <section id="s-umbrales">
   <div class="card">
     <label id="um-titulo" style="margin-bottom:0">Agregar umbral</label>
-    <p class="ayuda">Cada fila es un umbral para un grupo, variable, ítem y órgano en una semana de cultivo de una campaña.</p>
+    <p class="ayuda">Cada fila es un umbral de un cultivo, para un grupo, variable, ítem y órgano en una semana de cultivo de una campaña.</p>
+    <label for="um-cultivo">Cultivo</label>
+    <select id="um-cultivo"></select>
     <div class="grid2">
       <div><label for="um-grupo">Grupo</label><select id="um-grupo"></select></div>
       <div><label for="um-organo">Órgano evaluado</label><select id="um-organo"></select></div>
@@ -348,12 +348,12 @@ textarea{min-height:110px}
 
   <div class="card">
     <label style="margin-bottom:0">Importar umbrales desde Excel</label>
-    <p class="ayuda">Descarga el formato, borra las filas de ejemplo, llénalo y pega las filas con los títulos (o sube el CSV). Si el umbral ya existe (mismo grupo, variable, ítem, órgano, semana y campaña), se actualiza.</p>
+    <p class="ayuda">Descarga el formato, borra las filas de ejemplo, llénalo y pega las filas con los títulos (o sube el CSV). Si el umbral ya existe (mismo cultivo, grupo, variable, ítem, órgano, semana y campaña), se actualiza.</p>
     <button class="btn sec" id="um-formato">Descargar formato (CSV)</button>
     <label for="um-archivo">Archivo CSV</label>
     <input id="um-archivo" type="file" accept=".csv,.txt,text/csv,text/plain">
     <label for="um-texto">…o pega aquí desde Excel</label>
-    <textarea id="um-texto" placeholder="Grupo&#9;Variable&#9;Ítem&#9;Umbral&#9;Órgano evaluado&#9;Semana de cultivo&#9;Campaña"></textarea>
+    <textarea id="um-texto" placeholder="Cultivo&#9;Grupo&#9;Variable&#9;Ítem&#9;Umbral&#9;Órgano evaluado&#9;Semana de cultivo&#9;Campaña"></textarea>
     <button class="btn" id="um-importar">Revisar e importar</button>
     <div class="res-imp" id="um-res"></div>
   </div>
@@ -548,6 +548,18 @@ textarea{min-height:110px}
   <div class="resumen" id="sv-res"></div>
   <div class="card"><label style="margin:0 0 6px">Por evaluador</label><div id="sv-usr"></div></div>
   <div class="card"><label style="margin:0 0 6px">Por cartilla</label><div id="sv-car"></div></div>
+  <div class="card" id="dl-card">
+    <label style="margin:0 0 4px">Descargar una cartilla por fechas</label>
+    <p class="ayuda" style="margin:0 0 8px">Baja directamente del servidor los registros de una cartilla entre dos fechas (con todos los celulares ya sincronizados). Necesita internet.</p>
+    <label for="dl-cartilla">Cartilla</label><select id="dl-cartilla"></select>
+    <div class="grid2">
+      <div><label for="dl-desde">Desde</label><input id="dl-desde" type="date"></div>
+      <div><label for="dl-hasta">Hasta</label><input id="dl-hasta" type="date"></div>
+    </div>
+    <label class="chk" style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="dl-anul" style="width:auto;margin:0"> Incluir registros anulados</label>
+    <button class="btn" id="dl-bajar">⬇ Descargar CSV</button>
+    <p class="ayuda" id="dl-info"></p>
+  </div>
   <div class="card" id="sv-sin-card" hidden><label style="margin:0 0 6px">Sin registros en el periodo</label><div id="sv-sin"></div></div>
 </section>
 
@@ -576,7 +588,7 @@ textarea{min-height:110px}
       <option value="oscura">Oscura</option>
     </select>
   </div>
-  <p class="ayuda" style="text-align:center">Versión 10.0 · Los datos quedan en este celular hasta que se envían a la hoja central.</p>
+  <p class="ayuda" style="text-align:center">Versión 11.0 · Los datos quedan en este celular hasta que se envían a la hoja central.</p>
 </section>
 
 </main>
@@ -611,7 +623,7 @@ textarea{min-height:110px}
    Pega aquí la URL que te da Apps Script (termina en /exec).
    Sin esta URL nadie puede ingresar a la app. */
 const SYNC = {
-  url: "https://script.google.com/macros/s/AKfycbwww3I9xUCzQB6H5EODxcDwl-9NZbZzlCoVULoBgzoXq6dSm1jNym100zLT19RXE3EZ/exec"
+  url: ""
 };
 
 const ROLES = { admin:"Administrador", evaluador:"Evaluador" };
@@ -620,7 +632,7 @@ const NIV_TXT = { campana:"Campaña", sub_fundo:"Sub fundo", fundo:"Fundo", modu
 const SEDES = ["CARAZ","ICA","NEPEÑA","NAZCA","CASCAS"];
 const GRUPOS = ["Benéficos","Plagas","Enfermedades"];
 const ORGANOS = ["Brote","Planta","Flores","Baya","Cobertura"];
-const ESQUEMA = 9;      // cambia cuando cambia la forma de la configuración descargada
+const ESQUEMA = 10;     // cambia cuando cambia la forma de la configuración descargada
 const TIPOS = {
   conteo:"Conteo: número entero desde 0, con botones + y −. Se suma en «total_conteos».",
   entero:"Número entero (se puede limitar con mínimo y máximo).",
@@ -911,7 +923,7 @@ function irA(id){
   if(id==="s-inicio") renderInicio();
   if(id==="s-registros") refrescarRegistros();
   if(id==="s-evaluar") mostrarBorradorEval();
-  if(id==="s-supervision") renderSupervision();
+  if(id==="s-supervision"){ poblarDescarga(); renderSupervision(); }
   if(id==="s-usuarios"){ renderAccesos(); cargarUsuarios(); }
   if(id==="s-maestra") renderMaestra();
   if(id==="s-fundos") renderFundos();
@@ -935,11 +947,6 @@ async function renderInicio(){
     ult=mios.filter(r=>r.usuario===SES.usuario&&!r.anulado).sort((a,b)=>b.ts-a.ts)[0]||null;
   }catch(e){}
   if(!SES || MODACT) return;
-  const dp=$("ini-dup");
-  if(ult && (adm || modulosDisponibles().includes(modReg(ult)))){
-    dp.innerHTML=`<b>⧉ Repetir último registro</b><small>${modReg(ult)==="soporte" ? `Reserva · ${esc(ult.sub_fundo||"")} · ${esc(ult.area||"")}` : `${esc(modNombre(modReg(ult)))} · ${esc(ult.fundo)} · ${esc(ult.lote)} · V${esc(ult.valvula||"")}`} (solo el encabezado)</small>`;
-    dp.hidden=false;
-  } else dp.hidden=true;
   const t=[];
   MODS.forEach(m=>{
     const n=CFG.plantillas.filter(p=>p.activa&&modPl(p)===m.id).length;
@@ -1651,10 +1658,10 @@ $("mi-importar").onclick=()=>{
    ===================================================================== */
 const UF={editId:"",campana:null,grupo:"",q:""};
 const COLS_UMBRAL = {
-  grupo:["grupo"], variable:["variable"], item:["item","items"], umbral:["umbral"],
+  cultivo:["cultivo"], grupo:["grupo"], variable:["variable"], item:["item","items"], umbral:["umbral"],
   organo:["organo evaluado","organo"], semana:["semana de cultivo","semana"], campana:["campana"]
 };
-const REQ_UMBRAL=["grupo","variable","item","umbral","organo","semana","campana"];
+const REQ_UMBRAL=["cultivo","grupo","variable","item","umbral","organo","semana","campana"];
 
 function renderUmbrales(){
   if(!SES||SES.rol!=="admin") return;
@@ -1663,15 +1670,19 @@ function renderUmbrales(){
   if(UF.campana===null || (UF.campana!=="" && !camps.includes(UF.campana))) UF.campana=camps[0]||"";
   $("um-f-camp").innerHTML=`<option value="">Todas</option>`+camps.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
   $("um-f-camp").value=UF.campana; $("um-f-grupo").value=UF.grupo;
+  const cultivos=[...new Set([...(CFG.variedades||[]).map(v=>v.cultivo),...U.map(u=>u.cultivo)].filter(Boolean))].sort(coll);
+  const cc=$("um-cultivo").value;
+  $("um-cultivo").innerHTML=`<option value="">Selecciona…</option>`+cultivos.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  $("um-cultivo").value=cc;
   const dl=(id,k)=>{ $(id).innerHTML=[...new Set(U.map(u=>u[k]).filter(Boolean))].sort(coll).map(v=>`<option value="${esc(v)}">`).join(""); };
   dl("dl-um-variable","variable"); dl("dl-um-item","item"); dl("dl-um-campana","campana");
   const q=norm(UF.q);
-  const lista=U.filter(u=>(!UF.campana||u.campana===UF.campana)&&(!UF.grupo||u.grupo===UF.grupo)&&(!q||norm(u.variable+" "+u.item).includes(q)))
-    .sort((a,b)=>coll(a.grupo,b.grupo)||coll(a.variable,b.variable)||coll(a.item,b.item)||coll(a.organo,b.organo)||(a.semana-b.semana));
+  const lista=U.filter(u=>(!UF.campana||u.campana===UF.campana)&&(!UF.grupo||u.grupo===UF.grupo)&&(!q||norm(u.cultivo+" "+u.variable+" "+u.item).includes(q)))
+    .sort((a,b)=>coll(a.cultivo,b.cultivo)||coll(a.grupo,b.grupo)||coll(a.variable,b.variable)||coll(a.item,b.item)||coll(a.organo,b.organo)||(a.semana-b.semana));
   const MAX=100;
   $("um-lista").innerHTML = lista.slice(0,MAX).map(u=>`
     <div class="reg"><div>
-      <span class="t">${esc(u.grupo)} · ${esc(u.variable)} · ${esc(u.item)}</span>
+      <span class="t">${u.cultivo?esc(u.cultivo):"<i>(sin cultivo)</i>"} · ${esc(u.grupo)} · ${esc(u.variable)} · ${esc(u.item)}</span>
       <small>Umbral ${num(u.umbral)} · ${esc(u.organo)} · semana ${esc(u.semana)} · campaña ${esc(u.campana)}</small></div>
       <div class="acc"><button data-acc="editar" data-id="${esc(u.id)}">Editar</button><button class="rojo" data-acc="borrar" data-id="${esc(u.id)}">Eliminar</button></div></div>`).join("")
     + (lista.length>MAX ? `<p class="ayuda">Mostrando ${MAX} de ${lista.length}: usa los filtros para acotar.</p>` : "")
@@ -1688,7 +1699,7 @@ function limpiarFormUmbral(){
 }
 $("um-cancelar").onclick=()=>{ limpiarFormUmbral(); $("um-campana").value=""; };
 $("um-guardar").onclick=async ()=>{
-  const u={id:UF.editId||undefined, grupo:$("um-grupo").value, variable:$("um-variable").value, item:$("um-item").value,
+  const u={id:UF.editId||undefined, cultivo:$("um-cultivo").value, grupo:$("um-grupo").value, variable:$("um-variable").value, item:$("um-item").value,
     umbral:$("um-umbral").value.replace(",","."), organo:$("um-organo").value, semana:$("um-semana").value, campana:$("um-campana").value};
   $("um-guardar").disabled=true;
   try{
@@ -1708,7 +1719,7 @@ $("um-lista").addEventListener("click", async e=>{
   try{
     if(b.dataset.acc==="editar"){
       UF.editId=u.id;
-      $("um-grupo").value=u.grupo; $("um-variable").value=u.variable; $("um-item").value=u.item; $("um-umbral").value=u.umbral;
+      $("um-cultivo").value=u.cultivo||""; $("um-grupo").value=u.grupo; $("um-variable").value=u.variable; $("um-item").value=u.item; $("um-umbral").value=u.umbral;
       $("um-organo").value=u.organo; $("um-semana").value=u.semana; $("um-campana").value=u.campana;
       $("um-titulo").textContent="Editando umbral"; $("um-guardar").textContent="Guardar cambios"; $("um-cancelar").hidden=false;
       window.scrollTo(0,0);
@@ -1722,10 +1733,10 @@ $("um-lista").addEventListener("click", async e=>{
 });
 $("um-archivo").onchange=()=>leerArchivoEn($("um-archivo"),$("um-texto"));
 $("um-formato").onclick=async ()=>{
-  const cab=["Grupo","Variable","Ítem","Umbral","Órgano evaluado","Semana de cultivo","Campaña"];
-  const ej=[["Plagas","EJEMPLO variable 1","EJEMPLO ítem","5","Brote","10","2026-27"],
-            ["Benéficos","EJEMPLO variable 2","EJEMPLO ítem","2","Planta","12","2026-27"],
-            ["Enfermedades","EJEMPLO variable 3","EJEMPLO ítem","10","Baya","14","2026-27"]];
+  const cab=["Cultivo","Grupo","Variable","Ítem","Umbral","Órgano evaluado","Semana de cultivo","Campaña"];
+  const ej=[["EJEMPLO cultivo","Plagas","EJEMPLO variable 1","EJEMPLO ítem","5","Brote","10","2026-27"],
+            ["EJEMPLO cultivo","Benéficos","EJEMPLO variable 2","EJEMPLO ítem","2","Planta","12","2026-27"],
+            ["EJEMPLO cultivo","Enfermedades","EJEMPLO variable 3","EJEMPLO ítem","10","Baya","14","2026-27"]];
   await entregarArchivo("formato_umbrales.csv", csvTexto(cab,ej));
 };
 $("um-importar").onclick=()=>{
@@ -2061,12 +2072,30 @@ $("fu-lista").addEventListener("click",async e=>{
 const COMBUSTIBLES=["Gasolina regular","Gasolina 95","Petróleo diesel 2"];
 const subCC=()=>{ const m=new Map(); (CFG.fundos||[]).forEach(f=>{ if(f.sub_fundo) m.set(f.sub_fundo,f); }); return m; };
 const sapDe=c=>{ const p=(CFG.placas||[]).find(x=>x.tipo_combustible===c&&x.cod_sap); return p?p.cod_sap:""; };
+/* Lista de placas según el tipo de unidad y el texto buscado (la placa elegida nunca desaparece de la lista) */
+function filtrarPlacasRv(){
+  const cur=$("rv-placa").value, ft=$("rv-ftipo").value, q=norm($("rv-busca").value||"").replace(/ /g,"");
+  const todas=(CFG.placas||[]).filter(x=>x.estado==="ACTIVO").sort((a,b)=>coll(a.placa,b.placa));
+  const pl=todas.filter(x=>(!ft||x.tipo_unidad===ft)&&(!q||norm([x.placa,x.chofer].join(" ")).replace(/ /g,"").includes(q)));
+  $("rv-placa").innerHTML=`<option value="">Selecciona…</option>`+pl.map(x=>`<option value="${esc(x.placa)}">${esc(x.placa)}${ft?"":" · "+esc(x.tipo_unidad)}${x.chofer?" · "+esc(x.chofer):""}</option>`).join("");
+  $("rv-placa").value=cur;
+  if(cur && $("rv-placa").value!==cur){ // la placa elegida quedó fuera del filtro: se mantiene visible
+    const x=todas.find(p=>p.placa===cur);
+    if(x){ $("rv-placa").insertAdjacentHTML("beforeend",`<option value="${esc(x.placa)}">${esc(x.placa)} · ${esc(x.tipo_unidad)}</option>`); $("rv-placa").value=cur; }
+  }
+  $("rv-nplacas").textContent=`(${pl.length} de ${todas.length})`;
+}
+$("rv-ftipo").onchange=filtrarPlacasRv;
+$("rv-busca").oninput=filtrarPlacasRv;
+function limpiarFiltroPlacas(){ $("rv-ftipo").value=""; $("rv-busca").value=""; filtrarPlacasRv(); }
 function renderReserva(){
   if(!SES) return;
   const pl=(CFG.placas||[]).filter(x=>x.estado==="ACTIVO").sort((a,b)=>coll(a.placa,b.placa));
-  const cur=$("rv-placa").value;
-  $("rv-placa").innerHTML=`<option value="">Selecciona…</option>`+pl.map(x=>`<option value="${esc(x.placa)}">${esc(x.placa)} · ${esc(x.tipo_unidad)}</option>`).join("");
-  $("rv-placa").value=cur;
+  const tipos=[...new Set(pl.map(x=>x.tipo_unidad).filter(Boolean))].sort(coll);
+  const ft=$("rv-ftipo"), ftCur=ft.value;
+  ft.innerHTML=`<option value="">Todos los tipos</option>`+tipos.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("");
+  ft.value=tipos.includes(ftCur)?ftCur:"";
+  filtrarPlacasRv();
   const scur=$("rv-sub").value, acur=$("rv-area").value, ccur=$("rv-comb").value;
   $("rv-sub").innerHTML=`<option value="">Selecciona…</option>`+[...subCC().values()].sort((a,b)=>coll(a.fundo,b.fundo)||coll(a.sub_fundo,b.sub_fundo)).map(f=>`<option value="${esc(f.sub_fundo)}">${esc(f.sub_fundo)} (${esc(f.fundo)})</option>`).join("");
   $("rv-sub").value=scur;
@@ -2314,7 +2343,7 @@ document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ sincron
    VERSIÓN 10: cabecera con estado, cambio de clave, borradores, duplicar,
    corregir / anular registros, supervisión y aviso de nueva versión
    ===================================================================== */
-const APP_VERSION="10.0";
+const APP_VERSION="11.0";
 const TXT_GUARDAR="Guardar y pasar a la siguiente planta";
 const hhmm = ts => { const d=new Date(ts); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 
@@ -2414,7 +2443,7 @@ function mostrarBorradorRv(){
 }
 function retomarRv(){
   const b=borrAll().soporte; if(!b) return;
-  renderReserva();
+  renderReserva(); limpiarFiltroPlacas();
   if(b.placa) ponerSel("rv-placa",b.placa);
   $("rv-conductor").value=b.conductor||""; $("rv-tipo").value=b.tipo||"";
   ponerSel("rv-sub",b.sub); $("rv-cc").value=(subCC().get($("rv-sub").value)||{}).centro_costo||"";
@@ -2433,41 +2462,6 @@ $("rv-borr").addEventListener("click",e=>{
 $("rv-borrador").onclick=()=>{
   if(CORR){ toast("Durante una corrección no se guarda borrador"); return; }
   if(borrPut("soporte",snapRv())){ sucioRv=false; toast("Borrador guardado. Lo podrás retomar al volver."); } else toast("No se pudo guardar el borrador");
-};
-
-/* ---- Duplicar el último registro (solo el encabezado: los valores quedan en blanco) ---- */
-async function ultimoPropio(mod){
-  const l=(await dbAll()||[]).filter(r=>r.usuario===SES.usuario&&!r.anulado&&(!mod||modReg(r)===mod)).sort((a,b)=>b.ts-a.ts);
-  return l[0]||null;
-}
-async function duplicarUltimo(){
-  if(!SES) return;
-  if(CORR){ toast("Termina o cancela la corrección primero"); return; }
-  const mod=MODACT, r=await ultimoPropio(mod);
-  if(!r){ toast("Aún no tienes registros para duplicar"); return; }
-  if(mod==="soporte"){
-    renderReserva();
-    ponerSel("rv-sub",r.sub_fundo); $("rv-cc").value=(subCC().get($("rv-sub").value)||{}).centro_costo||"";
-    ponerSel("rv-area",r.area); $("rv-comb").value=r.tipo_combustible||"";
-    sucioRv=true; programarBorrador();
-    toast("Copiados sub fundo, área y combustible. Falta elegir la placa y los galones.");
-    return;
-  }
-  const p=CFG.plantillas.find(x=>x.id===r.plantilla_id&&x.activa&&modPl(x)===mod);
-  if(!p){ toast("La cartilla del último registro ya no está activa"); return; }
-  $("plantilla").value=p.id;
-  renderCascada({campana:r.campana,sub_fundo:r.sub_fundo,fundo:r.fundo,modulo:r.modulo,lote:r.lote,turno:r.turno,valvula:r.valvula});
-  filaPrevId=""; onValvulaCambio(false);
-  if(!filaSel()){ toast("El lote o la válvula del último registro ya no está disponible. Elige de nuevo."); saveTrab(); return; }
-  renderForm(null); $("obs").value=""; saveTrab();
-  toast(`Encabezado copiado: ${r.fundo} · ${r.lote} · V${r.valvula} · siguiente planta ${$("planta").value}`);
-}
-$("dup-ultimo").onclick=duplicarUltimo;
-$("rv-dup").onclick=duplicarUltimo;
-$("ini-dup").onclick=async ()=>{
-  const r=await ultimoPropio(""); if(!r) return;
-  entrarModulo(modReg(r));
-  await duplicarUltimo();
 };
 
 /* ---- Corregir y anular registros ---- */
@@ -2496,7 +2490,7 @@ $("rv-corr").addEventListener("click",e=>{ if(e.target.closest("button[data-corr
 
 function corregirReserva(r){
   CORR={tipo:"rv",id:r.id,enviado:!!r.enviado};
-  irA("s-reserva");
+  irA("s-reserva"); limpiarFiltroPlacas();
   ponerSel("rv-placa",r.placa); $("rv-conductor").value=r.conductor||""; $("rv-tipo").value=r.tipo_unidad||"";
   ponerSel("rv-sub",r.sub_fundo); $("rv-cc").value=(subCC().get($("rv-sub").value)||{}).centro_costo||r.centro_costo||"";
   ponerSel("rv-area",r.area); $("rv-comb").value=r.tipo_combustible||"";
@@ -2573,6 +2567,31 @@ async function renderSupervision(){
     info.textContent=`Del ${j.desde} al ${j.hasta} · actualizado ${hhmm(Date.now())}`+(j.alertas?` · ${j.alertas} registros con alerta de permiso`:"")+(j.truncado?" · hay registros antiguos que no se leyeron":"");
   }catch(e){ info.textContent=e.message; }
 }
+/* ---- Descargar una cartilla por rango de fechas (administrador) ---- */
+function poblarDescarga(){
+  const cur=$("dl-cartilla").value;
+  const nm=p=>{ const m=modPl(p), t=m==="soporte"?"Soporte":modNombre(m); return `${t} · ${p.nombre}${p.activa?"":" (inactiva)"}`; };
+  const l=(CFG.plantillas||[]).filter(p=>!p.fija&&p.id!=="combustible").slice().sort((a,b)=>coll(nm(a),nm(b)));
+  $("dl-cartilla").innerHTML=`<option value="">Selecciona…</option>`+l.map(p=>`<option value="${esc(p.id)}">${esc(nm(p))}</option>`).join("")+`<option value="combustible">Soporte · Reserva de combustible</option>`;
+  $("dl-cartilla").value=cur;
+  if(!$("dl-desde").value){ const h=new Date(); $("dl-hasta").value=hoyISO(); $("dl-desde").value=(d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`)(new Date(h.getTime()-6*864e5)); }
+}
+$("dl-bajar").onclick=async ()=>{
+  const info=$("dl-info"), id=$("dl-cartilla").value, desde=$("dl-desde").value, hasta=$("dl-hasta").value;
+  if(!id){ info.textContent="Elige la cartilla."; return; }
+  if(!desde||!hasta){ info.textContent="Indica las fechas desde y hasta."; return; }
+  if(hasta<desde){ info.textContent="La fecha hasta no puede ser anterior a la fecha desde."; return; }
+  if(!navigator.onLine){ info.textContent="Necesitas internet para descargar desde el servidor."; return; }
+  $("dl-bajar").disabled=true; info.textContent="Descargando…";
+  try{
+    const j=await apiAdmin("exportar",{plantilla_id:id,desde,hasta,anulados:$("dl-anul").checked});
+    if(!j.filas.length){ info.textContent=`No hay registros de «${j.cartilla}» entre el ${desde} y el ${hasta}.`; return; }
+    const nom=(j.modulo+"_"+j.cartilla).normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"");
+    const ok=await entregarArchivo(`${nom}_${desde}_a_${hasta}.csv`, csvTexto(j.cabecera,j.filas));
+    info.textContent=ok?`${j.total} registros descargados de «${j.cartilla}» (${desde} al ${hasta})`+(j.anulados_omitidos?` · ${j.anulados_omitidos} anulados no incluidos`:"")+".":"Descarga cancelada.";
+  }catch(e){ info.textContent=e.message; }
+  finally{ $("dl-bajar").disabled=false; }
+};
 $("sv-act").onclick=renderSupervision;
 $("sv-rango").onchange=renderSupervision;
 

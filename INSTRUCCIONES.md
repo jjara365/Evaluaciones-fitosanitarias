@@ -1,3 +1,26 @@
+# Puesta en marcha — versión 11 (umbrales por cultivo, descarga por fechas, cartilla de poda)
+
+## Qué trae la versión 11 (novedades sobre la 10)
+
+1. **Se quitó "Duplicar último registro"** (botón en evaluación, en reserva y tarjeta de Inicio).
+2. **Reserva de combustible: filtrar placas.** Arriba de la lista de placas hay un selector **Filtrar por tipo de unidad** y un cuadro **Buscar placa o conductor** (no distingue mayúsculas, espacios ni guiones). Muestra cuántas placas quedan "(2 de 5)". Si ya elegiste una placa, no desaparece aunque cambies el filtro.
+3. **Umbrales con CULTIVO.** La hoja `Umbrales` ahora tiene **Cultivo** como primera columna. El cultivo se elige de la maestra de Variedades. El mismo umbral puede repetirse en cultivos distintos. En la importación masiva, el formato también empieza con Cultivo.
+   - Al actualizar, la hoja vieja se migra sola y queda una copia en `Umbrales_respaldo_v10`. Si en Variedades hay **un solo cultivo**, se asigna a los umbrales existentes; si hay varios, quedan **sin cultivo** y debes completarlos (Agrícola > Umbrales > editar).
+4. **Descargar una cartilla por fechas (administrador).** Inicio > Supervisión > tarjeta "Descargar una cartilla por fechas": eliges la cartilla (incluye Reserva de combustible), desde, hasta, y si quieres incluir anulados. Baja un CSV directo del servidor (necesita internet y que los celulares ya hayan enviado). Por defecto no incluye los ANULADOS y avisa cuántos omitió. Máximo 20 000 registros por descarga.
+5. **Nueva cartilla "Eval. de Poda"** en el módulo **Calidad**, con los datos de la imagen:
+   - Datos generales (texto): Supervisor, Podador. Fecha, cultivo, campaña, sub fundo, módulo, lote y válvula salen del encabezado de la app.
+   - 17 datos a evaluar, todos **numéricos enteros (mínimo 0) y obligatorios**: N° de ramas, < 6 mm, > 16 mm, lignificadas, herbáceas, cruzadas, con altura indicada, debajo / encima de la altura indicada, c/3 flujos, tirasavias, con daño por corte, con corte recto, con mal corte, Categoría, con altura de 30 a 35, con altura menor a 30.
+   - Se crea sola **una vez** al abrir la app con el servidor nuevo. Es una plantilla normal: puedes editarla, ocultar campos o desactivarla en Plantillas, y no se vuelve a crear.
+   - **Asígnala a los evaluadores** en Usuarios > Accesos (el administrador la ve sin asignar). Sus registros van a la hoja `Calidad - Eval. de Poda`.
+
+### Para actualizar (versión 11)
+1. Pega el nuevo `Code.gs` en Apps Script y publica **Nueva versión** (la URL no cambia).
+2. Sube a GitHub `index.html` y `sw.js` (revisa tu URL `/exec` en `const SYNC`: el archivo viene vacío). Los celulares verán "Hay una nueva versión – Actualizar".
+3. Entra como administrador, abre Agrícola > Umbrales y completa el cultivo de los umbrales que queden sin cultivo.
+
+---
+
+## (versión anterior)
 # Puesta en marcha — versión 10 (botones y control de calidad de la data)
 
 ## Qué trae la versión 10 (novedades sobre la 9)

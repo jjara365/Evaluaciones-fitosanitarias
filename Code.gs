@@ -5,7 +5,7 @@
  * Hojas que maneja (se crean solas):
  *   - "Usuarios":   DNI, nombre, rol, usuario, clave cifrada, estatus y accesos (sub fundos y plantillas)
  *   - "Maestra":    programa de producción (sede, cultivo, sub fundo, fundo, módulo, lote, turno, válvula...)
- *   - "Umbrales":   maestra de umbrales (grupo, variable, ítem, umbral, órgano, semana de cultivo, campaña)
+ *   - "Umbrales":   maestra de umbrales (cultivo, grupo, variable, ítem, umbral, órgano, semana de cultivo, campaña)
  *   - "Plantillas": formularios de evaluación definidos por el administrador (cada uno pertenece a un módulo)
  *   - "Fundos" (sede, fundo, sub fundo, centro de costo) y "Variedades": catálogos del módulo Agrícola
  *   - "Placas" y "Áreas": catálogos del módulo Soporte
@@ -85,7 +85,7 @@ const ETAPAS  = ["M","I"];
 const ESTADOS = ["ACTIVO","CERRADO"];
 
 // Umbrales
-const UMB_HEAD = ["Grupo","Variable","Ítem","Umbral","Órgano evaluado","Semana de cultivo","Campaña","id"];
+const UMB_HEAD = ["Cultivo","Grupo","Variable","Ítem","Umbral","Órgano evaluado","Semana de cultivo","Campaña","id"];
 const GRUPOS   = ["Benéficos","Plagas","Enfermedades"];
 const ORGANOS  = ["Brote","Planta","Flores","Baya","Cobertura"];
 
@@ -180,6 +180,7 @@ function doPost(e) {
       case "placa_guardar":
       case "placa_eliminar":
       case "supervision":
+      case "exportar":
         if (us.rol !== "admin") return salida({ ok: false, error: "No tienes permiso para esta acción" });
         return salida(accionAdmin_(d, us));
       default:
@@ -687,9 +688,9 @@ function loteEstado_(d) {
 /* ============================ UMBRALES ============================ */
 
 function formatoUmbrales_(sh) {
-  sh.getRange("A:C").setNumberFormat("@");
-  sh.getRange("E:E").setNumberFormat("@");
-  sh.getRange("G:H").setNumberFormat("@");
+  sh.getRange("A:D").setNumberFormat("@");
+  sh.getRange("F:F").setNumberFormat("@");
+  sh.getRange("H:I").setNumberFormat("@");
   sh.getRange(1, 1, 1, UMB_HEAD.length).setValues([UMB_HEAD]).setFontWeight("bold");
   sh.setFrozenRows(1);
 }
@@ -700,8 +701,27 @@ function hojaUmbrales_() {
   if (!sh) {
     sh = ss.insertSheet(HOJA_UMB);
     formatoUmbrales_(sh);
+  } else if (String(sh.getRange(1, 1, 1, 1).getValues()[0][0]) === "Grupo") {
+    migrarUmbralesV11_(sh);
   }
   return sh;
+}
+
+// Hasta la versión 10 la hoja no tenía la columna Cultivo (la primera era Grupo).
+// Se guarda una copia de respaldo. Si la maestra de Variedades tiene un solo cultivo, se asigna a los umbrales existentes;
+// si tiene varios (o ninguno), quedan en blanco y el administrador los completa al editarlos.
+function migrarUmbralesV11_(sh) {
+  const n = sh.getLastRow();
+  const viejas = n > 1 ? sh.getRange(2, 1, n - 1, 8).getValues().filter(f => String(f[7]) !== "") : [];
+  const cult = [...new Set(variedades_().map(x => x.cultivo).filter(Boolean))];
+  const unico = cult.length === 1 ? cult[0] : "";
+  respaldo_(sh, "Umbrales_respaldo_v10");
+  const nuevas = viejas.map(f => [unico, f[0], f[1], f[2], f[3], f[4], f[5], f[6], f[7]]);
+  sh.clear();
+  formatoUmbrales_(sh);
+  asegurarTamano_(sh, Math.max(nuevas.length + 1, 2), UMB_HEAD.length);
+  if (nuevas.length) sh.getRange(2, 1, nuevas.length, UMB_HEAD.length).setValues(nuevas);
+  subirVersion_();
 }
 
 function umbrales_() {
@@ -709,11 +729,11 @@ function umbrales_() {
   const n = sh.getLastRow();
   if (n < 2) return [];
   return sh.getRange(2, 1, n - 1, UMB_HEAD.length).getValues()
-    .filter(f => String(f[7]) !== "")
+    .filter(f => String(f[8]) !== "")
     .map(f => ({
-      grupo: limpiar_(f[0]), variable: limpiar_(f[1]), item: limpiar_(f[2]),
-      umbral: f[3] === "" ? "" : Number(f[3]), organo: limpiar_(f[4]),
-      semana: f[5] === "" ? "" : Number(f[5]), campana: limpiar_(f[6]), id: String(f[7])
+      cultivo: limpiar_(f[0]), grupo: limpiar_(f[1]), variable: limpiar_(f[2]), item: limpiar_(f[3]),
+      umbral: f[4] === "" ? "" : Number(f[4]), organo: limpiar_(f[5]),
+      semana: f[6] === "" ? "" : Number(f[6]), campana: limpiar_(f[7]), id: String(f[8])
     }));
 }
 
@@ -721,14 +741,14 @@ function umbralesEscribir_(lista) {
   const sh = hojaUmbrales_();
   const previas = Math.max(sh.getLastRow() - 1, 0);
   asegurarTamano_(sh, Math.max(lista.length, previas) + 1, UMB_HEAD.length);
-  const m = lista.map(o => [o.grupo, o.variable, o.item, o.umbral, o.organo, o.semana, o.campana, o.id]);
+  const m = lista.map(o => [o.cultivo, o.grupo, o.variable, o.item, o.umbral, o.organo, o.semana, o.campana, o.id]);
   // si hay menos filas que antes (se eliminó alguna), se limpian las que sobran
-  for (let i = lista.length; i < previas; i++) m.push(["", "", "", "", "", "", "", ""]);
+  for (let i = lista.length; i < previas; i++) m.push(["", "", "", "", "", "", "", "", ""]);
   if (m.length) sh.getRange(2, 1, m.length, UMB_HEAD.length).setValues(m);
 }
 
 function claveUmb_(o) {
-  return [o.grupo, o.variable, o.item, o.organo, o.semana, o.campana].map(x => limpiar_(x).toLowerCase()).join("|");
+  return [o.cultivo, o.grupo, o.variable, o.item, o.organo, o.semana, o.campana].map(x => limpiar_(x).toLowerCase()).join("|");
 }
 
 function validarUmbral_(o) {
@@ -736,9 +756,10 @@ function validarUmbral_(o) {
   if (grupo === null) return { error: "Grupo no válido (usa: " + GRUPOS.join(", ") + ")" };
   const organo = canon_(o.organo, ORGANOS);
   if (organo === null) return { error: "Órgano evaluado no válido (usa: " + ORGANOS.join(", ") + ")" };
-  const f = { grupo: grupo, variable: limpiar_(o.variable), item: limpiar_(o.item), organo: organo, campana: limpiar_(o.campana) };
+  const f = { cultivo: limpiar_(o.cultivo), grupo: grupo, variable: limpiar_(o.variable), item: limpiar_(o.item), organo: organo, campana: limpiar_(o.campana) };
   const um = numTxt_(o.umbral), se = numTxt_(o.semana);
   const falta = [];
+  if (!f.cultivo) falta.push("cultivo");
   if (!f.grupo) falta.push("grupo");
   if (!f.variable) falta.push("variable");
   if (!f.item) falta.push("ítem");
@@ -747,6 +768,13 @@ function validarUmbral_(o) {
   if (se === "") falta.push("semana de cultivo");
   if (!f.campana) falta.push("campaña");
   if (falta.length) return { error: "Falta: " + falta.join(", ") };
+  // el cultivo debe existir en la maestra de Variedades (si ya hay variedades cargadas)
+  const catV = variedades_();
+  if (catV.length) {
+    const rc = catV.find(x => normTxt_(x.cultivo) === normTxt_(f.cultivo));
+    if (!rc) return { error: "El cultivo «" + f.cultivo + "» no existe en la maestra de Variedades" };
+    f.cultivo = rc.cultivo;
+  }
   f.umbral = Number(um);
   if (isNaN(f.umbral) || f.umbral < 0) return { error: "Umbral no válido (debe ser un número desde 0)" };
   f.semana = Number(se);
@@ -762,7 +790,7 @@ function umbralGuardar_(o) {
   const v = validarUmbral_(o);
   if (v.error) return fallo_(v.error);
   const f = v.fila, k = claveUmb_(f);
-  if (lista.some(x => (!previo || x.id !== previo.id) && claveUmb_(x) === k)) return fallo_("Ya existe un umbral igual (mismo grupo, variable, ítem, órgano, semana y campaña)");
+  if (lista.some(x => (!previo || x.id !== previo.id) && claveUmb_(x) === k)) return fallo_("Ya existe un umbral igual (mismo cultivo, grupo, variable, ítem, órgano, semana y campaña)");
   if (previo) { f.id = previo.id; lista[lista.findIndex(x => x.id === previo.id)] = f; }
   else { f.id = Utilities.getUuid(); lista.push(f); }
   umbralesEscribir_(lista);
@@ -1235,11 +1263,55 @@ function plantillaEstado_(id, activa) {
   return { ok: true, version: subirVersion_() };
 }
 
+/* ============================ CARTILLA "Eval. de Poda" (módulo Calidad) ============================ */
+
+// Se crea una sola vez (la marca queda en las propiedades del script). Si luego la desactivas o la editas, no se vuelve a crear.
+// Fecha, cultivo, campaña, sub fundo, módulo, lote y válvula ya vienen del encabezado de la app.
+const PODA_NOMBRE = "Eval. de Poda";
+const PODA_CAMPOS = [
+  ["supervisor", "Supervisor", "texto", "Datos generales"],
+  ["podador", "Podador", "texto", "Datos generales"],
+  ["n_ramas", "N° de ramas", "entero", "Datos a evaluar"],
+  ["n_ramas_menor_6mm", "N° ramas < 6 mm", "entero", "Datos a evaluar"],
+  ["n_ramas_mayor_16mm", "N° ramas > 16 mm", "entero", "Datos a evaluar"],
+  ["n_ramas_lignificadas", "N° ramas lignificadas", "entero", "Datos a evaluar"],
+  ["n_ramas_herbaceas", "N° ramas herbáceas", "entero", "Datos a evaluar"],
+  ["n_ramas_cruzadas", "N° ramas cruzadas", "entero", "Datos a evaluar"],
+  ["n_ramas_altura_indicada", "N° ramas con altura indicada", "entero", "Datos a evaluar"],
+  ["n_ramas_debajo_altura", "N° ramas debajo de altura indicada", "entero", "Datos a evaluar"],
+  ["n_ramas_encima_altura", "N° ramas encima de altura indicada", "entero", "Datos a evaluar"],
+  ["n_ramas_3_flujos", "N° ramas c/3 flujos", "entero", "Datos a evaluar"],
+  ["n_tirasavias", "N° tirasavias", "entero", "Datos a evaluar"],
+  ["n_ramas_dano_corte", "N° ramas con daño por corte", "entero", "Datos a evaluar"],
+  ["n_ramas_corte_recto", "N° ramas con corte recto", "entero", "Datos a evaluar"],
+  ["n_ramas_mal_corte", "N° ramas con mal corte", "entero", "Datos a evaluar"],
+  ["categoria", "Categoría", "entero", "Datos a evaluar"],
+  ["n_ramas_altura_30_35", "N° ramas con altura de 30 a 35", "entero", "Datos a evaluar"],
+  ["n_ramas_altura_menor_30", "N° ramas con altura menor a 30", "entero", "Datos a evaluar"]
+];
+function sembrarPlantillaPoda_() {
+  const pr = PropertiesService.getScriptProperties();
+  if (pr.getProperty("SEMILLA_PODA_V11")) return;
+  const hay = plantillas_().some(x => x.nombre.toLowerCase() === PODA_NOMBRE.toLowerCase());
+  if (!hay) {
+    const campos = PODA_CAMPOS.map(c => normCampo_({
+      clave: c[0], nombre: c[1], tipo: c[2], grupo: c[3],
+      obligatorio: true, min: c[2] === "entero" ? 0 : "", activo: true
+    }));
+    const sh = hojaPlantillas_();
+    asegurarTamano_(sh, sh.getLastRow() + 1, PLA_COLS.length);
+    sh.appendRow([Utilities.getUuid(), PODA_NOMBRE, 1, "SI", JSON.stringify(campos), new Date(), "calidad"]);
+    subirVersion_();
+  }
+  pr.setProperty("SEMILLA_PODA_V11", "1");
+}
+
 /* ============================ CONFIGURACIÓN PARA LOS CELULARES ============================ */
 
 // El administrador recibe todo. El evaluador recibe solo las válvulas ACTIVAS de los sub fundos
 // que se le asignaron y solo las plantillas activas que se le asignaron.
 function configObtener_(d, us) {
+  sembrarPlantillaPoda_();
   const v = versionCfg_();
   if (Number(d.version) === v) return { ok: true, cambio: false, version: v };
   let maestra = maestra_();
@@ -1303,6 +1375,7 @@ function accionAdmin_(d, admin) {
     case "placa_guardar":     return placaGuardar_(d.fila);
     case "placa_eliminar":    return placaEliminar_(d.id);
     case "supervision":       return supervision_(d);
+    case "exportar":          return exportar_(d);
   }
   return fallo_("acción desconocida");
 }
@@ -1560,6 +1633,67 @@ function syncHoja_(sh, regs, us, mod, claves) {
     sh.getRange(desde, 1, filas.length, cab.length).setValues(filas);
   }
   return { ids: ids, nuevos: filas.length, rechazados: rechazados };
+}
+
+/* ============================ DESCARGA POR RANGO DE FECHAS ============================ */
+
+// Devuelve las filas de UNA cartilla entre dos fechas (inclusive) para que la app arme el CSV.
+// d: { plantilla_id, desde, hasta, anulados (true para incluir las ANULADAS) }
+const MAX_EXPORTAR = 20000;
+function valorExportar_(v) {
+  if (v instanceof Date) {
+    return v.getFullYear() < 1950 ? Utilities.formatDate(v, tz_(), "HH:mm:ss") : Utilities.formatDate(v, tz_(), "yyyy-MM-dd");
+  }
+  return v === null || v === undefined ? "" : String(v);
+}
+function exportar_(d) {
+  d = d || {};
+  const desde = fechaValida_(String(d.desde || "")) ? String(d.desde) : "";
+  const hasta = fechaValida_(String(d.hasta || "")) ? String(d.hasta) : "";
+  if (!desde || !hasta) return fallo_("Indica la fecha desde y hasta");
+  if (hasta < desde) return fallo_("La fecha hasta no puede ser anterior a la fecha desde");
+  const pid = String(d.plantilla_id || "");
+  const p = pid === COMB_ID ? PLA_COMBUSTIBLE : (plantillas_().find(x => x.id === pid) || null);
+  if (!p) return fallo_("La cartilla ya no existe");
+  const mod = modulo_(p.mod_eval) || MODULOS[0];
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = null, propia = false;
+  if (!mod.fija) {
+    const g = PropertiesService.getScriptProperties().getProperty("hoja_" + p.id);
+    sh = g ? ss.getSheetByName(g) : null;
+    propia = !!sh;
+  }
+  if (!sh) sh = hojaExistente_(p, mod);
+  if (!sh || sh.getLastRow() < 2) return { ok: true, cabecera: [], filas: [], total: 0, cartilla: p.nombre, modulo: mod.nombre, desde: desde, hasta: hasta, sin_hoja: !sh };
+  const n = sh.getLastRow(), nc = sh.getLastColumn();
+  const cab = sh.getRange(1, 1, 1, nc).getValues()[0].map(String);
+  const sop = mod.id === "soporte";
+  const iF = cab.indexOf(sop ? "fecha_registro" : "fecha");
+  if (iF < 0) return fallo_("La hoja de la cartilla no tiene columna de fecha");
+  const iE = cab.indexOf("estado_registro"), iP = cab.indexOf("plantilla");
+  // 1) se lee solo la columna de fechas para ubicar las filas del rango
+  const fechas = sh.getRange(2, iF + 1, n - 1, 1).getValues();
+  let a = -1, b = -1;
+  for (let i = 0; i < fechas.length; i++) {
+    const fe = fechaTxt_(fechas[i][0]);
+    if (fe >= desde && fe <= hasta) { if (a < 0) a = i; b = i; }
+  }
+  if (a < 0) return { ok: true, cabecera: cab, filas: [], total: 0, cartilla: p.nombre, modulo: mod.nombre, desde: desde, hasta: hasta };
+  // 2) se leen solo las filas entre la primera y la última coincidencia
+  const bloque = sh.getRange(2 + a, 1, b - a + 1, nc).getValues();
+  const filas = [];
+  let anulados = 0;
+  for (let i = 0; i < bloque.length; i++) {
+    const f = bloque[i], fe = fechaTxt_(f[iF]);
+    if (fe < desde || fe > hasta) continue;
+    if (!propia && !sop && iP >= 0 && f[iP] !== "" && normTxt_(f[iP]) !== normTxt_(p.nombre)) continue;   // hoja compartida por varias cartillas (versión 8)
+    if (iE >= 0 && String(f[iE]) === "ANULADO") { anulados++; if (!d.anulados) continue; }
+    filas.push(f.map(valorExportar_));
+  }
+  const truncado = filas.length > MAX_EXPORTAR;
+  if (truncado) return fallo_("El rango tiene " + filas.length + " registros (máximo " + MAX_EXPORTAR + " por descarga). Elige un rango más corto.");
+  return { ok: true, cabecera: cab, filas: filas, total: filas.length, anulados_omitidos: d.anulados ? 0 : anulados,
+           cartilla: p.nombre, modulo: mod.nombre, desde: desde, hasta: hasta };
 }
 
 /* ============================ SUPERVISIÓN ============================ */
