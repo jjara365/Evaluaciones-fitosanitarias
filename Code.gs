@@ -1,5 +1,5 @@
 /**
- * RECEPTOR CENTRAL de evaluaciones de campo (versión 10: cambio de clave, anular/corregir registros, supervisión, GPS en reservas).
+ * RECEPTOR CENTRAL de evaluaciones de campo (versión 12: cartillas por capas, recepción de envíos, caché de configuración).
  * Se pega en Google Sheets: Extensiones > Apps Script.
  *
  * Hojas que maneja (se crean solas):
@@ -64,7 +64,7 @@ const COMBUSTIBLES = ["Gasolina regular", "Gasolina 95", "Petróleo diesel 2"];
 // Columnas fijas de Registros. Los campos de la plantilla se agregan solos a la derecha.
 const BASE = ["id","fecha","hora","usuario","evaluador","plantilla","version_plantilla","campana",
               "sede","cultivo","fundo","sub_fundo","modulo","lote","turno","valvula","pep","variedad","etapa",
-              "planta","dias_desde_inicio_campana","latitud","longitud","precision_m","total_conteos",
+              "planta","dias_desde_inicio_campana","semana_cultivo","latitud","longitud","precision_m","total_conteos",
               "observaciones","alerta_permiso","enviado_por","recibido",
               "estado_registro","corrige_a","anulado_por","anulado_en","motivo_anulacion"];
 const RESERVADAS = BASE.concat(["maestra_id","plantilla_id"]);
@@ -91,8 +91,11 @@ const ORGANOS  = ["Brote","Planta","Flores","Baya","Cobertura"];
 
 // Plantillas
 let _VAR = null;   // variedades leídas en esta ejecución
-const PLA_COLS = ["id","nombre","version","activa","campos","actualizado","Módulo de evaluación"];
-const TIPOS = ["conteo","entero","decimal","texto","lista","si_no","fecha"];
+const PLA_COLS = ["id","nombre","version","activa","campos","actualizado","Módulo de evaluación","Configuración"];
+const PLA_COL_MOD = 7, PLA_COL_CFG = 8;      // la columna de configuración (encabezado, capas…) se agregó en la versión 12
+const TIPOS = ["conteo","entero","decimal","texto","lista","si_no","fecha","calculado"];
+const OPS_FORMULA = ["suma","resta","producto","division","porcentaje","promedio"];
+const HOJA_REC = "Recepcion";
 
 const DIAS_TOKEN  = 30;     // la sesión se renueva sola cada vez que el celular envía datos
 const MAX_FALLOS  = 5;      // intentos fallidos antes de bloquear
@@ -107,6 +110,7 @@ function onOpen() {
     .createMenu("Evaluaciones")
     .addItem("Crear administrador", "crearAdministrador")
     .addItem("Forzar actualización en los celulares", "forzarActualizacion")
+    .addItem("Procesar recepción ahora", "procesarRecepcionAhora")
     .addToUi();
 }
 
@@ -311,7 +315,7 @@ function leerToken_(token) {
 function autenticar_(token) {
   const t = leerToken_(token);
   if (!t) return null;
-  const us = usuarios_().find(x => x.usuario === t.u);
+  const us = usuariosAuth_().find(x => x.usuario === t.u);
   return us && us.activo ? us : null;
 }
 
@@ -437,6 +441,7 @@ function login_(d) {
 
 // Cambio de clave por el propio usuario (necesita su clave actual). Los intentos fallidos cuentan para el bloqueo.
 function claveCambiar_(d, us) {
+  us = usuarios_().find(x => x.usuario === us.usuario) || us;      // la copia de autenticar_ no trae la clave cifrada: se lee fresca
   const actual = String(d.clave_actual || ""), nueva = String(d.clave_nueva || "");
   const cache = CacheService.getScriptCache();
   const kf = "fallos_" + us.usuario;
@@ -1149,16 +1154,24 @@ function hojaPlantillas_() {
     sh.getRange("A:E").setNumberFormat("@");
     sh.appendRow(["fitosanidad", "Evaluación fitosanitaria - Plagas", 1, "SI",
                   JSON.stringify(plantillaInicial_()), new Date(), "fitosanidad"]);
-  } else if (String(sh.getRange(1, PLA_COLS.length, 1, 1).getValues()[0][0]) === "") {
-    // Hoja de la versión 5: se agrega la columna del módulo y todo lo existente es de Fitosanidad
-    const n = sh.getLastRow();
-    sh.getRange(1, PLA_COLS.length, 1, 1).setValues([[PLA_COLS[PLA_COLS.length - 1]]]).setFontWeight("bold");
-    if (n > 1) {
-      const col = [];
-      for (let i = 2; i <= n; i++) col.push(["fitosanidad"]);
-      sh.getRange(2, PLA_COLS.length, n - 1, 1).setValues(col);
+  } else {
+    if (String(sh.getRange(1, PLA_COL_MOD, 1, 1).getValues()[0][0]) === "") {
+      // Hoja de la versión 5: se agrega la columna del módulo y todo lo existente es de Fitosanidad
+      const n = sh.getLastRow();
+      sh.getRange(1, PLA_COL_MOD, 1, 1).setValues([[PLA_COLS[PLA_COL_MOD - 1]]]).setFontWeight("bold");
+      if (n > 1) {
+        const col = [];
+        for (let i = 2; i <= n; i++) col.push(["fitosanidad"]);
+        sh.getRange(2, PLA_COL_MOD, n - 1, 1).setValues(col);
+      }
+      subirVersion_();
     }
-    subirVersion_();
+    if (sh.getMaxColumns() < PLA_COL_CFG) asegurarTamano_(sh, 1, PLA_COL_CFG);
+    if (String(sh.getRange(1, PLA_COL_CFG, 1, 1).getValues()[0][0]) === "") {
+      // Hoja de la versión 11 o anterior: columna de configuración (vacía = encabezado completo hasta válvula, sin capas)
+      sh.getRange(1, PLA_COL_CFG, 1, 1).setValues([[PLA_COLS[PLA_COL_CFG - 1]]]).setFontWeight("bold");
+      subirVersion_();
+    }
   }
   return sh;
 }
@@ -1173,9 +1186,11 @@ function plantillas_() {
       let campos = [];
       try { campos = JSON.parse(String(f[4])); } catch (e) { campos = []; }
       const m = modulo_(f[6]);
+      let cfg = {};
+      try { cfg = f[7] ? JSON.parse(String(f[7])) : {}; } catch (e) { cfg = {}; }
       return { fila: i + 2, id: String(f[0]), nombre: String(f[1]), version: Number(f[2]) || 1,
                activa: String(f[3]).trim().toUpperCase() === "SI", campos: campos,
-               mod_eval: m ? m.id : "fitosanidad" };
+               mod_eval: m ? m.id : "fitosanidad", cfg: normCfg_(cfg) };
     });
 }
 
@@ -1187,8 +1202,46 @@ function normCampo_(c) {
     min: numero(c.min), max: numero(c.max),
     defecto: (c.defecto === undefined || c.defecto === null) ? "" : c.defecto,
     opciones: (Array.isArray(c.opciones) ? c.opciones : []).map(limpiar_).filter(Boolean),
-    ayuda: limpiar_(c.ayuda), unidad: limpiar_(c.unidad), recordar: !!c.recordar, activo: c.activo !== false
+    ayuda: limpiar_(c.ayuda), unidad: limpiar_(c.unidad), recordar: !!c.recordar, activo: c.activo !== false,
+    capa: limpiar_(c.capa), contador: !!c.contador,
+    formula: c.formula && typeof c.formula === "object"
+      ? { op: String(c.formula.op || ""), campos: (Array.isArray(c.formula.campos) ? c.formula.campos : []).map(x => String(x)) }
+      : null
   };
+}
+
+// Configuración de la cartilla: hasta qué nivel llega el encabezado, fecha editable, semana de cultivo y capas de evaluación.
+function normCfg_(c) {
+  c = c || {};
+  const nivel = ["lote", "turno", "valvula"].indexOf(c.nivel) >= 0 ? c.nivel : "valvula";
+  let turno = ["no", "opcional", "si"].indexOf(c.turno) >= 0 ? c.turno : "si";
+  if (nivel === "lote") turno = "no";
+  if (nivel === "turno" && turno === "no") turno = "si";
+  const capas = [];
+  (Array.isArray(c.capas) ? c.capas : []).forEach(x => { const t = limpiar_(x); if (t && capas.indexOf(t) < 0) capas.push(t); });
+  return { nivel: nivel, turno: turno, fecha_editable: !!c.fecha_editable, semana_cultivo: !!c.semana_cultivo, capas: capas.slice(0, 4) };
+}
+
+// Fórmulas de los campos calculados (la app hace la misma cuenta en el celular; el servidor la repite para que el dato sea confiable)
+function calcFormula_(f, vals) {
+  if (!f || OPS_FORMULA.indexOf(f.op) < 0 || !Array.isArray(f.campos) || !f.campos.length) return "";
+  const xs = [];
+  for (let i = 0; i < f.campos.length; i++) {
+    const v = vals[f.campos[i]];
+    if (v === "" || v === undefined || v === null) { if (f.op === "suma") { xs.push(0); continue; } return ""; }
+    if (isNaN(Number(v))) return "";
+    xs.push(Number(v));
+  }
+  let r;
+  switch (f.op) {
+    case "suma": r = xs.reduce((a, b) => a + b, 0); break;
+    case "resta": r = xs.slice(1).reduce((a, b) => a - b, xs[0]); break;
+    case "producto": r = xs.reduce((a, b) => a * b, 1); break;
+    case "promedio": r = xs.reduce((a, b) => a + b, 0) / xs.length; break;
+    case "division": if (!xs[1]) return ""; r = xs[0] / xs[1]; break;
+    default: if (!xs[1]) return ""; r = xs[0] / xs[1] * 100;     // porcentaje
+  }
+  return Math.round(r * 100) / 100;
 }
 
 function validarPlantilla_(p, previa) {
@@ -1196,6 +1249,8 @@ function validarPlantilla_(p, previa) {
   if (!nombre) return { error: "Falta el nombre de la plantilla" };
   const campos = (Array.isArray(p.campos) ? p.campos : []).map(normCampo_);
   if (!campos.length) return { error: "La plantilla debe tener al menos un campo" };
+  const cfg = normCfg_(p.cfg);
+  const contadores = {};
   const vistas = {};
   for (let i = 0; i < campos.length; i++) {
     const c = campos[i];
@@ -1211,17 +1266,43 @@ function validarPlantilla_(p, previa) {
     if (c.min !== "" && c.max !== "" && c.min > c.max) return { error: "En «" + c.nombre + "» el mínimo es mayor que el máximo" };
     if (c.defecto !== "" && (c.tipo === "conteo" || c.tipo === "entero" || c.tipo === "decimal") && isNaN(Number(c.defecto)))
       return { error: "Valor por defecto no válido en «" + c.nombre + "»" };
-    if (previa) {
-      const a = previa.campos.find(x => x.clave === c.clave);
-      if (a && a.tipo !== c.tipo) return { error: "No se puede cambiar el tipo de «" + c.nombre + "»: ocúltalo y crea un campo nuevo" };
+    // El tipo de dato se puede cambiar: lo ya guardado no se toca y los registros nuevos usan el tipo nuevo.
+    if (cfg.capas.length) {
+      if (c.capa && cfg.capas.indexOf(c.capa) < 0) return { error: "«" + c.nombre + "» está en una capa que no existe: " + c.capa };
+    } else { c.capa = ""; c.contador = false; }
+    if (c.contador) {
+      if (!c.capa) return { error: "«" + c.nombre + "»: el contador debe pertenecer a una capa" };
+      if (c.tipo !== "conteo" && c.tipo !== "entero") return { error: "«" + c.nombre + "»: el contador de una capa debe ser de tipo conteo o número entero" };
+      if (contadores[c.capa]) return { error: "La capa «" + c.capa + "» tiene dos contadores; deja solo uno" };
+      contadores[c.capa] = 1;
     }
+    if (c.tipo === "calculado") {
+      const f = c.formula;
+      if (!f || OPS_FORMULA.indexOf(f.op) < 0) return { error: "Elige la operación del campo calculado «" + c.nombre + "»" };
+      const dos = f.op === "resta" || f.op === "division" || f.op === "porcentaje";
+      if ((dos && f.campos.length !== 2) || (!dos && f.campos.length < 2)) return { error: "El cálculo de «" + c.nombre + "» necesita " + (dos ? "exactamente 2" : "al menos 2") + " campos" };
+      c.obligatorio = false; c.min = ""; c.max = ""; c.defecto = ""; c.recordar = false; c.contador = false;
+    } else c.formula = null;
+  }
+  for (let i = 0; i < campos.length; i++) {
+    const c = campos[i];
+    if (c.tipo !== "calculado") continue;
+    for (let k = 0; k < c.formula.campos.length; k++) {
+      const r = campos.find(x => x.clave === c.formula.campos[k]);
+      if (!r || r.clave === c.clave) return { error: "El cálculo de «" + c.nombre + "» usa un campo que no existe" };
+      if (["conteo", "entero", "decimal"].indexOf(r.tipo) < 0) return { error: "El cálculo de «" + c.nombre + "» solo puede usar campos numéricos (" + r.nombre + " no lo es)" };
+    }
+  }
+  if (cfg.capas.length) {
+    const prof = cfg.capas[cfg.capas.length - 1];
+    if (!campos.some(c => c.activo && c.capa === prof && c.tipo !== "calculado")) return { error: "La última capa («" + prof + "») debe tener al menos un campo para llenar" };
   }
   if (previa) {
     const faltan = previa.campos.filter(a => !campos.some(c => c.clave === a.clave));
     if (faltan.length) return { error: "No se pueden eliminar campos ya guardados (ocúltalos): " + faltan.map(x => x.nombre).join(", ") };
   }
   if (!campos.some(c => c.activo)) return { error: "Debe haber al menos un campo visible" };
-  return { nombre: nombre, campos: campos };
+  return { nombre: nombre, campos: campos, cfg: cfg };
 }
 
 function plantillaGuardar_(p) {
@@ -1245,13 +1326,13 @@ function plantillaGuardar_(p) {
   const json = JSON.stringify(v.campos);
   if (previa) {
     sh.getRange(previa.fila, 1, 1, PLA_COLS.length)
-      .setValues([[previa.id, v.nombre, previa.version + 1, activa, json, new Date(), mo.id]]);
+      .setValues([[previa.id, v.nombre, previa.version + 1, activa, json, new Date(), mo.id, JSON.stringify(v.cfg)]]);
     if (previa.nombre !== v.nombre) renombrarHojaCartilla_(previa.id, mo, v.nombre);
     return { ok: true, id: previa.id, plantilla_version: previa.version + 1, version: subirVersion_() };
   }
   const id = Utilities.getUuid();
   asegurarTamano_(sh, sh.getLastRow() + 1, PLA_COLS.length);
-  sh.appendRow([id, v.nombre, 1, activa, json, new Date(), mo.id]);
+  sh.appendRow([id, v.nombre, 1, activa, json, new Date(), mo.id, JSON.stringify(v.cfg)]);
   return { ok: true, id: id, plantilla_version: 1, version: subirVersion_() };
 }
 
@@ -1306,16 +1387,212 @@ function sembrarPlantillaPoda_() {
   pr.setProperty("SEMILLA_PODA_V11", "1");
 }
 
+/* ============================ CARTILLA "Eval. Axilas" (módulo Fenología) ============================ */
+
+// Evaluación por capas: Planta > Rama > Brote. Cada brote es una fila; la planta y la rama se repiten en sus filas.
+// Se crea una sola vez (la marca queda en las propiedades del script); después se puede editar o desactivar.
+const AXILAS_NOMBRE = "Eval. Axilas";
+function sembrarPlantillaAxilas_() {
+  const pr = PropertiesService.getScriptProperties();
+  if (pr.getProperty("SEMILLA_AXILAS_V12")) return;
+  if (!plantillas_().some(x => x.nombre.toLowerCase() === AXILAS_NOMBRE.toLowerCase())) {
+    const G = "Datos generales";
+    const conteo = (clave, nombre, capa, defecto, extra) => Object.assign({ clave: clave, nombre: nombre, tipo: "conteo", grupo: capa || G, capa: capa, obligatorio: true, min: 0, defecto: defecto, activo: true }, extra || {});
+    const campos = [
+      { clave: "tipo_poda", nombre: "Tipo de poda", tipo: "lista", grupo: G, capa: "", obligatorio: true, opciones: ["Normal", "Adelanta", "Traspaso", "Siembra", "Ensayo", "Otro"], activo: true },
+      conteo("num_planta", "N° de planta", "Planta", 1, { min: 1, contador: true }),
+      { clave: "categoria_planta", nombre: "Categoría de la planta", tipo: "lista", grupo: "Planta", capa: "Planta", obligatorio: true, opciones: ["Normal", "Pequeña", "Enferma"], activo: true },
+      conteo("n_ramas", "N° de rama", "Rama", 1, { min: 1, contador: true }),
+      conteo("num_brote", "N° de brote", "Brote", 1, { min: 1, contador: true }),
+      conteo("axilas_vegetativo", "Axilas vegetativo", "Brote", 0),
+      conteo("axilas_veg_organos", "Axilas veg. órganos", "Brote", 0),
+      conteo("axilas_yemas", "Axilas yemas", "Brote", 0),
+      conteo("axilas_productivos", "Axilas productivos", "Brote", 0),
+      conteo("axilas_falso_cargador", "Axilas falso cargador", "Brote", 0),
+      { clave: "total_axilas", nombre: "Total axilas", tipo: "calculado", grupo: "Brote", capa: "Brote", obligatorio: false,
+        formula: { op: "suma", campos: ["axilas_vegetativo", "axilas_veg_organos", "axilas_yemas", "axilas_productivos", "axilas_falso_cargador"] }, activo: true }
+    ].map(normCampo_);
+    const cfg = normCfg_({ nivel: "valvula", turno: "opcional", fecha_editable: true, semana_cultivo: true, capas: ["Planta", "Rama", "Brote"] });
+    const sh = hojaPlantillas_();
+    asegurarTamano_(sh, sh.getLastRow() + 1, PLA_COLS.length);
+    sh.appendRow([Utilities.getUuid(), AXILAS_NOMBRE, 1, "SI", JSON.stringify(campos), new Date(), "fenologia", JSON.stringify(cfg)]);
+    subirVersion_();
+  }
+  pr.setProperty("SEMILLA_AXILAS_V12", "1");
+}
+
+/* ============================ CACHÉ (para que 80 celulares no lean las hojas una y otra vez) ============================ */
+
+// Guarda en la memoria de Google el resultado de leer una hoja. La clave incluye la versión de la configuración:
+// cualquier cambio hecho desde la app sube la versión y la copia vieja deja de usarse sola.
+// Si editas las hojas a mano, usa el menú Evaluaciones > Forzar actualización (o espera unos minutos).
+const CACHE_SEG = 600;
+function cacheJson_(clave, fn) {
+  const cache = CacheService.getScriptCache();
+  const k = clave + ":" + versionCfg_();
+  try {
+    const n = cache.get(k + ":n");
+    if (n !== null && n !== undefined) {
+      let txt = "", ok = true;
+      for (let i = 0; i < Number(n); i++) {
+        const p = cache.get(k + ":" + i);
+        if (p === null || p === undefined) { ok = false; break; }
+        txt += p;
+      }
+      if (ok) return JSON.parse(txt);
+    }
+  } catch (e) {}
+  const v = fn();
+  try {
+    const txt = JSON.stringify(v), TAM = 30000, partes = Math.ceil(txt.length / TAM) || 1;
+    if (partes <= 40) {
+      for (let i = 0; i < partes; i++) cache.put(k + ":" + i, txt.substr(i * TAM, TAM), CACHE_SEG);
+      cache.put(k + ":n", String(partes), CACHE_SEG);
+    }
+  } catch (e) {}
+  return v;
+}
+function plantillasCache_() { return cacheJson_("pl", plantillas_); }
+function maestraCache_()    { return cacheJson_("ma", maestra_); }
+function fundosCache_()     { return cacheJson_("fu", fundos_); }
+function areasCache_()      { return cacheJson_("ar", areas_); }
+function placasCache_()     { return cacheJson_("pc", () => placas_()); }
+// Usuarios sin la clave cifrada: solo para reconocer quién envía (el login sigue leyendo la hoja)
+function usuariosAuth_() {
+  return cacheJson_("ua", () => usuarios_().map(u => { const c = Object.assign({}, u); delete c.salt; delete c.hash; return c; }));
+}
+
+/* ============================ HOJA DE RECEPCIÓN ============================ */
+
+// Los envíos de evaluaciones caen primero en la hoja «Recepcion» (rápido, sin leer las hojas grandes) y un proceso
+// los pasa por lotes a la hoja de cada cartilla. Las reservas de combustible siguen guardándose al instante.
+const REC_COLS = ["id", "recibido", "usuario", "plantilla_id", "modulo", "json"];
+const REC_MAX_POR_CORRIDA = 1500;
+const REC_ESPERA_MS = 90000;
+
+function recepcionActiva_() { return PropertiesService.getScriptProperties().getProperty("RECEPCION") !== "NO"; }
+
+function hojaRecepcion_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(HOJA_REC);
+  if (!sh) {
+    sh = ss.insertSheet(HOJA_REC);
+    asegurarTamano_(sh, 2, REC_COLS.length);
+    sh.getRange(1, 1, 1, REC_COLS.length).setValues([REC_COLS]).setFontWeight("bold");
+    sh.setFrozenRows(1);
+    sh.getRange("A:A").setNumberFormat("@");
+  }
+  return sh;
+}
+
+function recepcionAgregar_(regs, us, modId) {
+  const sh = hojaRecepcion_();
+  const ultima = sh.getLastRow();
+  const ya = new Set();
+  if (ultima > 1) sh.getRange(2, 1, ultima - 1, 1).getValues().forEach(f => ya.add(String(f[0])));
+  const ids = [], filas = [];
+  const ahora = new Date().toISOString();
+  const quien = { usuario: us.usuario, rol: us.rol, subfundos: us.subfundos || [], plantillas: us.plantillas || [] };
+  regs.forEach(r => {
+    ids.push(r.id);                         // se confirma siempre (si ya está pendiente o ya se procesó, se descarta al procesar)
+    if (ya.has(String(r.id))) return;
+    ya.add(String(r.id));
+    filas.push([String(r.id), ahora, us.usuario, String(r.plantilla_id || ""), modId, JSON.stringify({ r: r, us: quien })]);
+  });
+  if (filas.length) {
+    const desde = ultima + 1;
+    asegurarTamano_(sh, desde + filas.length - 1, REC_COLS.length);
+    sh.getRange(desde, 1, filas.length, REC_COLS.length).setValues(filas);
+  }
+  return { ids: ids, nuevos: filas.length };
+}
+
+function recepcionEstado_() {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_REC);
+  if (!sh) return { n: 0, masVieja: 0 };
+  const ultima = sh.getLastRow();
+  if (ultima < 2) return { n: 0, masVieja: 0 };
+  const t = Date.parse(String(sh.getRange(2, 2, 1, 1).getValues()[0][0]));
+  return { n: ultima - 1, masVieja: isNaN(t) ? 0 : t };
+}
+
+// Pasa lo recibido a las hojas de cada cartilla. Debe llamarse con el candado tomado.
+function procesarRecepcion_(max) {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJA_REC);
+  if (!sh) return { procesados: 0, pendientes: 0 };
+  const ultima = sh.getLastRow();
+  if (ultima < 2) return { procesados: 0, pendientes: 0 };
+  const n = Math.min(ultima - 1, max || REC_MAX_POR_CORRIDA);
+  const filas = sh.getRange(2, 1, n, REC_COLS.length).getValues();
+  const pls = {};
+  plantillasCache_().forEach(p => pls[p.id] = p);
+  const grupos = {}, ilegibles = [];
+  filas.forEach((f, i) => {
+    let o = null;
+    try { o = JSON.parse(String(f[5])); } catch (e) { o = null; }
+    if (!o || !o.r) { ilegibles.push(f); return; }
+    const pid = String(o.r.plantilla_id || "");
+    const p = pls[pid] || null;
+    const m = modulo_(p ? p.mod_eval : o.r.mod_eval) || MODULOS[0];
+    const k = p ? "p:" + p.id : "m:" + m.id;
+    const g = (grupos[k] = grupos[k] || { mod: m, p: p, regs: [], filas: [] });
+    const r = o.r;
+    r._us = o.us; r._recibido = String(f[1]);
+    g.regs.push(r); g.filas.push(f);
+  });
+  const fallidas = [];
+  let procesados = 0;
+  Object.keys(grupos).forEach(k => {
+    const g = grupos[k];
+    try {
+      const hoja = g.p ? hojaCartilla_(g.p, g.mod) : hojaRegistros_(g.mod);
+      const us0 = g.regs[0]._us;
+      syncHoja_(hoja, g.regs, us0, g.mod, g.p ? g.p.campos.map(c => c.clave) : [], g.p ? g.p.campos : []);
+      procesados += g.regs.length;
+    } catch (e) {
+      g.filas.forEach(f => fallidas.push(f));
+    }
+  });
+  if (ilegibles.length) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let eh = ss.getSheetByName("Recepcion_errores");
+    if (!eh) { eh = ss.insertSheet("Recepcion_errores"); asegurarTamano_(eh, 2, REC_COLS.length); eh.getRange(1, 1, 1, REC_COLS.length).setValues([REC_COLS]); }
+    const d = eh.getLastRow() + 1;
+    asegurarTamano_(eh, d + ilegibles.length - 1, REC_COLS.length);
+    eh.getRange(d, 1, ilegibles.length, REC_COLS.length).setValues(ilegibles);
+  }
+  const resto = ultima - 1 > n ? sh.getRange(n + 2, 1, ultima - 1 - n, REC_COLS.length).getValues() : [];
+  const quedan = fallidas.concat(resto);
+  sh.getRange(2, 1, ultima - 1, REC_COLS.length).clearContent();
+  if (quedan.length) sh.getRange(2, 1, quedan.length, REC_COLS.length).setValues(quedan);
+  return { procesados: procesados, pendientes: quedan.length };
+}
+
+// Para el activador de tiempo (cada minuto): Apps Script > Activadores > Añadir > procesarRecepcionAuto
+function procesarRecepcionAuto() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(25000)) return;
+  try { _VAR = null; procesarRecepcion_(); } finally { lock.releaseLock(); }
+}
+function procesarRecepcionAhora() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  let r;
+  try { _VAR = null; r = procesarRecepcion_(); } finally { lock.releaseLock(); }
+  SpreadsheetApp.getUi().alert("Procesados: " + r.procesados + ". Pendientes en recepción: " + r.pendientes + ".");
+}
+
 /* ============================ CONFIGURACIÓN PARA LOS CELULARES ============================ */
 
 // El administrador recibe todo. El evaluador recibe solo las válvulas ACTIVAS de los sub fundos
 // que se le asignaron y solo las plantillas activas que se le asignaron.
 function configObtener_(d, us) {
   sembrarPlantillaPoda_();
+  sembrarPlantillaAxilas_();
   const v = versionCfg_();
   if (Number(d.version) === v) return { ok: true, cambio: false, version: v };
-  let maestra = maestra_();
-  let pl = plantillas_().concat([PLA_COMBUSTIBLE]).map(p => ({ id: p.id, nombre: p.nombre, version: p.version, activa: p.activa, campos: p.campos, mod_eval: p.mod_eval, fija: !!p.fija }));
+  let maestra = maestraCache_();
+  let pl = plantillasCache_().concat([PLA_COMBUSTIBLE]).map(p => ({ id: p.id, nombre: p.nombre, version: p.version, activa: p.activa, campos: p.campos, mod_eval: p.mod_eval, fija: !!p.fija, cfg: p.cfg || normCfg_({}) }));
   let umb = [], fun = [], vars = [], plc = [], are = [];
   if (us.rol === "admin") {
     umb = umbrales_();
@@ -1325,12 +1602,13 @@ function configObtener_(d, us) {
     are = areas_();
   } else {
     if (us.plantillas.indexOf(COMB_ID) >= 0) {       // Soporte necesita las placas, las áreas y los sub fundos con centro de costo
-      plc = placas_().filter(x => x.estado === "ACTIVO");
-      are = areas_().filter(x => x.estado === "ACTIVO");
-      fun = fundos_().filter(x => x.estado === "ACTIVO" && x.centro_costo).map(x => ({ sede: x.sede, fundo: x.fundo, sub_fundo: x.sub_fundo, centro_costo: x.centro_costo, id: x.id }));
+      plc = placasCache_().filter(x => x.estado === "ACTIVO");
+      are = areasCache_().filter(x => x.estado === "ACTIVO");
+      fun = fundosCache_().filter(x => x.estado === "ACTIVO" && x.centro_costo).map(x => ({ sede: x.sede, fundo: x.fundo, sub_fundo: x.sub_fundo, centro_costo: x.centro_costo, id: x.id }));
     }
     maestra = maestra.filter(x => x.estado === "ACTIVO" && us.subfundos.indexOf(x.sub_fundo) >= 0);
     pl = pl.filter(p => p.activa && us.plantillas.indexOf(p.id) >= 0).map(p => {
+      p = Object.assign({}, p);
       p.campos = p.campos.filter(c => c.activo !== false);
       return p;
     });
@@ -1502,10 +1780,11 @@ function anular_(lista, us) {
 
 // Cada registro va a la hoja de su cartilla (el servidor decide, no el celular).
 function sync_(d, us) {
+  if (Array.isArray(d.anulaciones) && d.anulaciones.length) procesarRecepcion_();     // lo recién enviado debe estar en su hoja para poder anularlo
   const an = anular_(d.anulaciones, us);       // primero las anulaciones: así una corrección puede reemplazar a su original
   const regs = Array.isArray(d.registros) ? d.registros : [];
   const pls = {};
-  plantillas_().forEach(p => pls[p.id] = p);
+  plantillasCache_().forEach(p => pls[p.id] = p);
   const grupos = {};
   regs.forEach(r => {
     const pid = String(r.plantilla_id || "");
@@ -1517,19 +1796,30 @@ function sync_(d, us) {
   });
   const ids = [], rechazados = [];
   let nuevos = 0;
+  const usarRec = recepcionActiva_();
   Object.keys(grupos).forEach(k => {
     const gr = grupos[k];
-    const sh = gr.p ? hojaCartilla_(gr.p, gr.mod) : hojaRegistros_(gr.mod);
-    const g = syncHoja_(sh, gr.regs, us, gr.mod, gr.p ? gr.p.campos.map(c => c.clave) : []);
+    let g;
+    if (usarRec && gr.mod.id !== "soporte") {
+      g = recepcionAgregar_(gr.regs, us, gr.mod.id);              // evaluaciones: a la hoja de recepción
+      g.rechazados = [];
+    } else {                                                       // reservas de combustible: se validan y guardan al instante
+      const sh = gr.p ? hojaCartilla_(gr.p, gr.mod) : hojaRegistros_(gr.mod);
+      g = syncHoja_(sh, gr.regs, us, gr.mod, gr.p ? gr.p.campos.map(c => c.clave) : [], gr.p ? gr.p.campos : []);
+    }
     g.ids.forEach(x => ids.push(x));
     g.rechazados.forEach(x => rechazados.push(x));
     nuevos += g.nuevos;
   });
+  if (usarRec) {                                  // si el activador de tiempo no corre, el siguiente envío vacía la recepción
+    const e = recepcionEstado_();
+    if (e.n && Date.now() - e.masVieja > REC_ESPERA_MS) procesarRecepcion_();
+  }
   // Token renovado: mientras el celular envíe datos, la sesión no vence
   return { ok: true, ids: ids, nuevos: nuevos, rechazados: rechazados, anuladas: an.anuladas, anul_rechazadas: an.anul_rechazadas, token: crearToken_(us.usuario, us.rol) };
 }
 
-function syncHoja_(sh, regs, us, mod, claves) {
+function syncHoja_(sh, regs, us0, mod, claves, campos) {
   const base = (mod && mod.base) || BASE;
   // IDs ya recibidos (para no duplicar si la app reintenta)
   const ultima = sh.getLastRow();
@@ -1553,6 +1843,7 @@ function syncHoja_(sh, regs, us, mod, claves) {
   }
 
   const ahora = new Date();
+  const calculados = (campos || []).filter(c => c.tipo === "calculado" && c.formula);
   const filas = [];
   const ids = [];
   const rechazados = [];
@@ -1567,6 +1858,7 @@ function syncHoja_(sh, regs, us, mod, claves) {
     }
   }
   regs.forEach(r => {
+    const us = r._us || us0;                     // si viene de la recepción, se usan los permisos del evaluador que envió
     ids.push(r.id);                              // se confirma siempre, aunque ya existiera
     if (existentes.has(String(r.id))) return;
     existentes.add(String(r.id));
@@ -1603,6 +1895,7 @@ function syncHoja_(sh, regs, us, mod, claves) {
       return;
     }
     const vals = r.valores || r.conteos || {};
+    calculados.forEach(c => { vals[c.clave] = calcFormula_(c.formula, vals); });      // el servidor repite la cuenta: el dato no depende del celular
     // Los datos nunca se pierden: si el registro es de un sub fundo o plantilla sin permiso
     // (por ejemplo, se quitó el acceso mientras el celular estaba sin señal), se guarda y se marca.
     // Un registro guardado en el celular por la versión anterior (sin sub fundo) no se marca.
@@ -1615,9 +1908,10 @@ function syncHoja_(sh, regs, us, mod, claves) {
       fundo: r.fundo, modulo: r.modulo || "", lote: r.lote, turno: r.turno || "", valvula: r.valvula || "",
       pep: r.pep || "", variedad: r.variedad || "", etapa: r.etapa || "", planta: r.planta,
       dias_desde_inicio_campana: r.dias_campana === undefined ? "" : r.dias_campana,
+      semana_cultivo: r.semana_cultivo === undefined ? "" : r.semana_cultivo,
       latitud: r.lat, longitud: r.lon, precision_m: r.prec,
       total_conteos: r.total_conteos !== undefined ? r.total_conteos : (r.total === undefined ? "" : r.total),
-      observaciones: r.obs, alerta_permiso: permitido ? "" : "SI", enviado_por: us.usuario, recibido: ahora,
+      observaciones: r.obs, alerta_permiso: permitido ? "" : "SI", enviado_por: us.usuario, recibido: r._recibido ? new Date(r._recibido) : ahora,
       corrige_a: r.corrige_a || ""
     };
     Object.keys(vals).forEach(p => valores[p] = vals[p]);
@@ -1648,6 +1942,7 @@ function valorExportar_(v) {
 }
 function exportar_(d) {
   d = d || {};
+  procesarRecepcion_();            // lo recién enviado debe estar ya en la hoja de la cartilla
   const desde = fechaValida_(String(d.desde || "")) ? String(d.desde) : "";
   const hasta = fechaValida_(String(d.hasta || "")) ? String(d.hasta) : "";
   if (!desde || !hasta) return fallo_("Indica la fecha desde y hasta");
@@ -1701,6 +1996,7 @@ function exportar_(d) {
 // Resumen de actividad entre dos fechas (por defecto, hoy): quién registró, cuánto, a qué hora y en qué cartilla.
 // Lee solo el final de cada hoja (las últimas 4000 filas) para no demorar.
 function supervision_(d) {
+  procesarRecepcion_();
   const hoy = hoy_();
   const desde = fechaValida_(String(d.desde || "")) ? String(d.desde) : hoy;
   let hasta = fechaValida_(String(d.hasta || "")) ? String(d.hasta) : hoy;
@@ -1754,6 +2050,7 @@ function supervision_(d) {
     por_usuario: Object.keys(porUsuario).map(k => porUsuario[k]).sort((a, b) => b.registros - a.registros),
     por_cartilla: Object.keys(porCartilla).map(k => ({ cartilla: k, registros: porCartilla[k] })).sort((a, b) => b.registros - a.registros),
     sin_actividad: activos.filter(u => !porUsuario[u.usuario]).map(u => ({ usuario: u.usuario, nombre: u.nombre })),
-    evaluadores_activos: activos.length
+    evaluadores_activos: activos.length,
+    recepcion_pendientes: recepcionEstado_().n
   };
 }

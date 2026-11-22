@@ -1,8 +1,8 @@
 // Service worker: guarda la app en el celular para que abra sin internet.
-// Cuando cambies index.html, sube el número de versión (v11 -> v12) para que los celulares detecten la actualización.
+// Cuando cambies index.html, sube el número de versión (v12 -> v13) para que los celulares detecten la actualización.
 // La versión nueva NO se activa sola mientras alguien está usando la app: la app muestra el aviso
 // "Hay una nueva versión" y el usuario toca "Actualizar" cuando le conviene (sus borradores se conservan).
-const CACHE = "evalcampo-v11";
+const CACHE = "evalcampo-v12";
 const ARCHIVOS = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", e => {

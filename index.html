@@ -76,6 +76,10 @@ nav button.activa{color:var(--pri-osc);border-top:3px solid var(--pri)}
 .gps{font-size:13px;color:var(--tenue);margin-top:6px}
 .gps.ok{color:var(--pri-osc)}
 .gps.mal{color:var(--rojo)}
+.ctx{font-weight:700;text-align:center;background:var(--suave);font-size:17px;position:sticky;top:0;z-index:3}
+#avanzar-capas{margin-bottom:6px}
+#avanzar-capas .btn{font-size:14px;padding:10px 6px}
+input.calc{background:var(--suave);font-weight:700;color:var(--pri)}
 .ficha{background:var(--suave);border:1px solid var(--borde);border-radius:10px;padding:8px 10px;margin-top:10px;font-size:14px;line-height:1.5}
 .grupo-t{font-size:15px;font-weight:700;color:var(--pri-osc);margin:0 0 6px}
 .req{color:var(--rojo)}
@@ -188,13 +192,18 @@ textarea{min-height:110px}
       <div><label for="sel-fundo">Fundo</label><select id="sel-fundo"></select></div>
       <div><label for="sel-modulo">Módulo</label><select id="sel-modulo"></select></div>
       <div><label for="sel-lote">Lote</label><select id="sel-lote"></select></div>
-      <div><label for="sel-turno">Turno</label><select id="sel-turno"></select></div>
-      <div><label for="sel-valvula">Válvula</label><select id="sel-valvula"></select></div>
+      <div id="w-turno"><label for="sel-turno">Turno</label><select id="sel-turno"></select></div>
+      <div id="w-valvula"><label for="sel-valvula">Válvula</label><select id="sel-valvula"></select></div>
     </div>
     <div class="ficha" id="ficha" hidden></div>
+    <div id="wrap-fecha" hidden>
+      <label for="fecha-eval">Fecha de la evaluación</label>
+      <input id="fecha-eval" type="date">
+      <p class="ayuda" id="fecha-aviso" hidden style="color:#b91c1c;font-weight:600"></p>
+    </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="card-planta">
     <label>Planta / punto N°</label>
     <div class="planta-n">
       <button type="button" id="p-menos">−</button>
@@ -204,6 +213,7 @@ textarea{min-height:110px}
     <div class="gps" id="gps">📍 Buscando ubicación…</div>
   </div>
 
+  <div class="card ctx" id="ctx-capas" hidden></div>
   <div id="form-dinamico"></div>
 
   <div class="card">
@@ -478,13 +488,28 @@ textarea{min-height:110px}
       <div class="mini"><label><input type="checkbox" id="ed-activa" data-ed="activa"> Activa (visible para los evaluadores)</label></div>
       <p class="ayuda" id="ed-info"></p>
     </div>
+    <div class="card" id="ed-cfg">
+      <label style="margin-bottom:0">Encabezado de la evaluación</label>
+      <p class="ayuda">Campaña, sub fundo, fundo, módulo y lote siempre se piden. Aquí eliges hasta dónde llega esta cartilla.</p>
+      <label for="ed-nivel">Nivel de la evaluación</label>
+      <select id="ed-nivel"><option value="valvula">Hasta válvula (lote › turno › válvula)</option><option value="turno">Hasta turno</option><option value="lote">Solo hasta lote</option></select>
+      <div id="ed-turno-w"><label for="ed-turno">Turno</label>
+        <select id="ed-turno"><option value="si">Obligatorio</option><option value="opcional">Opcional (puede quedar sin elegir)</option><option value="no">No pedir turno</option></select></div>
+      <div class="mini">
+        <label><input type="checkbox" id="ed-fecha"> Permitir cambiar la fecha (por defecto hoy; no se aceptan fechas futuras)</label>
+        <label><input type="checkbox" id="ed-semana"> Calcular la semana de cultivo (desde el inicio de campaña del lote)</label>
+      </div>
+      <label for="ed-capas">Capas de evaluación (opcional)</label>
+      <textarea id="ed-capas" style="min-height:70px" placeholder="Una por línea, de la mayor a la menor. Ej.:&#10;Planta&#10;Rama&#10;Brote"></textarea>
+      <p class="ayuda">Úsalas cuando se evalúa por niveles (una planta tiene ramas y cada rama tiene brotes). Se guarda <b>una fila por la capa más profunda</b>, repitiendo en ella los datos de las capas superiores. Máximo 4 capas. Deja vacío si la evaluación es simple.</p>
+    </div>
     <div id="ed-campos"></div>
     <datalist id="dl-grupos"></datalist>
     <div class="card">
       <button class="btn sec" id="ed-agregar">+ Agregar campo</button>
       <button class="btn" id="ed-guardar">Guardar plantilla</button>
       <button class="btn sec" id="ed-cerrar">Cerrar sin guardar</button>
-      <p class="ayuda">Al guardar, los celulares reciben la nueva versión cuando tengan internet. Un campo ya guardado no se elimina ni cambia de tipo: se oculta, para no romper los datos históricos.</p>
+      <p class="ayuda">Al guardar, los celulares reciben la nueva versión cuando tengan internet. Un campo ya guardado no se elimina: se oculta, para no romper los datos históricos. Si le cambias el tipo, lo ya guardado no se modifica y los registros nuevos usan el tipo nuevo.</p>
     </div>
   </div>
 </section>
@@ -588,12 +613,13 @@ textarea{min-height:110px}
       <option value="oscura">Oscura</option>
     </select>
   </div>
-  <p class="ayuda" style="text-align:center">Versión 11.0 · Los datos quedan en este celular hasta que se envían a la hoja central.</p>
+  <p class="ayuda" style="text-align:center">Versión 12.0 · Los datos quedan en este celular hasta que se envían a la hoja central.</p>
 </section>
 
 </main>
 
 <div class="barra-guardar">
+  <div class="fila" id="avanzar-capas" hidden></div>
   <div class="fila">
     <button class="btn sec" id="borrador">💾 Borrador</button>
     <button class="btn" id="guardar">Guardar y pasar a la siguiente planta</button>
@@ -623,7 +649,7 @@ textarea{min-height:110px}
    Pega aquí la URL que te da Apps Script (termina en /exec).
    Sin esta URL nadie puede ingresar a la app. */
 const SYNC = {
-  url: "https://script.google.com/macros/s/AKfycbwww3I9xUCzQB6H5EODxcDwl-9NZbZzlCoVULoBgzoXq6dSm1jNym100zLT19RXE3EZ/exec"
+  url: ""
 };
 
 const ROLES = { admin:"Administrador", evaluador:"Evaluador" };
@@ -632,7 +658,7 @@ const NIV_TXT = { campana:"Campaña", sub_fundo:"Sub fundo", fundo:"Fundo", modu
 const SEDES = ["CARAZ","ICA","NEPEÑA","NAZCA","CASCAS"];
 const GRUPOS = ["Benéficos","Plagas","Enfermedades"];
 const ORGANOS = ["Brote","Planta","Flores","Baya","Cobertura"];
-const ESQUEMA = 10;     // cambia cuando cambia la forma de la configuración descargada
+const ESQUEMA = 11;     // cambia cuando cambia la forma de la configuración descargada
 const TIPOS = {
   conteo:"Conteo: número entero desde 0, con botones + y −. Se suma en «total_conteos».",
   entero:"Número entero (se puede limitar con mínimo y máximo).",
@@ -640,9 +666,10 @@ const TIPOS = {
   texto:"Texto libre.",
   lista:"Lista: el evaluador elige una de las opciones que definas.",
   si_no:"Sí / No.",
-  fecha:"Fecha (calendario)."
+  fecha:"Fecha (calendario).",
+  calculado:"Calculado: se obtiene solo con una operación entre otros campos numéricos (suma, resta, porcentaje…). El evaluador no lo escribe."
 };
-const TIPOS_CORTO = { conteo:"Conteo (+/−)", entero:"Número entero", decimal:"Número decimal", texto:"Texto", lista:"Lista de opciones", si_no:"Sí / No", fecha:"Fecha" };
+const TIPOS_CORTO = { conteo:"Conteo (+/−)", entero:"Número entero", decimal:"Número decimal", texto:"Texto", lista:"Lista de opciones", si_no:"Sí / No", fecha:"Fecha", calculado:"Calculado (automático)" };
 const RESERVADAS = ["id","fecha","hora","usuario","evaluador","plantilla","version_plantilla","campana","sede","cultivo","sub_fundo",
   "fundo","modulo","lote","turno","valvula","pep","variedad","etapa","planta","dias_desde_inicio_campana","latitud","longitud",
   "precision_m","total_conteos","observaciones","alerta_permiso","enviado_por","recibido","maestra_id","plantilla_id",
@@ -855,7 +882,7 @@ function iniciarSesion(u){
   MODACT=""; setTitulo();
   construirNav(); aplicarConfig(true); iniciarGPS();
   if(SES.rol!=="admin"){ const d=modulosDisponibles(); if(d.length===1) entrarModulo(d[0]); }
-  refrescarRegistros().then(()=>sincronizar(false));
+  refrescarRegistros().then(()=>pedirSync());
   cargarConfig(true, true);
   if(navigator.storage && navigator.storage.persist) navigator.storage.persist();
 }
@@ -922,7 +949,7 @@ function irA(id){
   document.querySelector(".barra-guardar").style.display = id==="s-evaluar" ? "" : "none";
   if(id==="s-inicio") renderInicio();
   if(id==="s-registros") refrescarRegistros();
-  if(id==="s-evaluar") mostrarBorradorEval();
+  if(id==="s-evaluar"){ mostrarBorradorEval(); if(cfgDe(plantillaActual()).fecha_editable) ponerFechaAuto(); }
   if(id==="s-supervision"){ poblarDescarga(); renderSupervision(); }
   if(id==="s-usuarios"){ renderAccesos(); cargarUsuarios(); }
   if(id==="s-maestra") renderMaestra();
@@ -1008,6 +1035,7 @@ function aplicarConfig(inicial){
   const sel = inicial ? TRAB.sel : selActual();
   renderCascada(sel);
   onValvulaCambio(true);
+  { const c=cfgDe(plantillaActual()); $("wrap-fecha").hidden=!c.fecha_editable; if(c.fecha_editable) ponerFechaAuto(); $("card-planta").hidden=c.capas.length>0; if(!CORR) $("guardar").textContent=txtGuardar(); renderAvanzar(); }
   renderForm(prev);
   actualizarAviso();
   renderMaestra(); renderUmbrales(); renderPlantillas(); renderFundos(); renderAreas(); renderPlacas(); renderVariedades(); renderReserva(); renderAjustes();
@@ -1029,20 +1057,46 @@ function actualizarAviso(){
    ===================================================================== */
 const abiertas = () => CFG.maestra.filter(r=>r.estado!=="CERRADO");
 
+function cfgDe(p){ return Object.assign({nivel:"valvula",turno:"si",fecha_editable:false,semana_cultivo:false,capas:[]},(p&&p.cfg)||{}); }
+// Niveles del encabezado que pide la cartilla actual (hay evaluaciones que llegan solo hasta lote o hasta turno)
+function nivActivos(){
+  const c=cfgDe(plantillaActual());
+  return NIV.filter(n=> n==="turno" ? (c.nivel!=="lote"&&c.turno!=="no") : n==="valvula" ? c.nivel==="valvula" : true);
+}
 function selActual(){ const s={}; NIV.forEach(n=>s[n]=$("sel-"+n).value); return s; }
+function agregarFilas(rows,nivel){
+  const f=Object.assign({},rows[0]);
+  f.turno = nivel==="turno" ? rows[0].turno : ""; f.valvula="";
+  const suma=k=>rows.some(r=>r[k]!==""&&r[k]!==undefined) ? rows.reduce((a,r)=>a+(Number(r[k])||0),0) : "";
+  f.plantas=suma("plantas"); f.area=suma("area");
+  f.densidad = (f.plantas!==""&&f.area) ? Math.round(f.plantas/f.area*100)/100 : "";
+  f.id=(nivel==="turno"?"T|":"L|")+[f.campana,f.sub_fundo,f.fundo,f.modulo,f.lote,f.turno].join("|");
+  f.agregada=true;
+  return f;
+}
 function filaSel(){
-  const s=selActual();
-  if(NIV.some(n=>!s[n])) return null;
-  return abiertas().find(r=>NIV.every(n=>r[n]===s[n]))||null;
+  const s=selActual(), act=nivActivos(), c=cfgDe(plantillaActual());
+  if(act.some(n=>!s[n] && !(n==="turno"&&c.turno==="opcional"))) return null;
+  const rows=abiertas().filter(r=>act.every(n=>!s[n]||r[n]===s[n]));
+  if(!rows.length) return null;
+  return c.nivel==="valvula" ? rows[0] : agregarFilas(rows,c.nivel);
+}
+function nivFaltan(){
+  const act=nivActivos(), c=cfgDe(plantillaActual());
+  return act.filter(n=>!(n==="turno"&&c.turno==="opcional")).map(n=>NIV_TXT[n].toLowerCase()).join(", ");
 }
 function renderCascada(sel){
   const res={}; let ok=true, perdida=false;
+  const act=nivActivos(), cf=cfgDe(plantillaActual());
   NIV.forEach(n=>{
-    const el=$("sel-"+n);
+    const el=$("sel-"+n), w=$("w-"+n);
+    if(w) w.hidden=!act.includes(n);
+    if(!act.includes(n)){ res[n]=""; el.innerHTML=""; el.value=""; return; }      // este nivel no lo pide la cartilla
+    const opcional = n==="turno" && cf.turno==="opcional";
     let opts=[];
     if(ok){
       let rows=abiertas();
-      for(const m of NIV){ if(m===n) break; rows=rows.filter(r=>r[m]===res[m]); }
+      for(const m of NIV){ if(m===n) break; if(res[m]) rows=rows.filter(r=>r[m]===res[m]); }
       opts=[...new Set(rows.map(r=>r[n]))].sort(coll);
     }
     let v=(sel&&sel[n])||"";
@@ -1051,11 +1105,11 @@ function renderCascada(sel){
       // Si lo que había elegido ya no existe (p. ej. lote cerrado), se deja en blanco y se avisa:
       // moverlo en silencio a otro lote haría que registre datos en el lugar equivocado.
       if(v) perdida=true;
-      v = (!(sel&&sel[n]) && opts.length===1) ? opts[0] : "";
+      v = (!(sel&&sel[n]) && opts.length===1 && !opcional) ? opts[0] : "";
     }
-    el.innerHTML=`<option value="">${opts.length?"Selecciona…":"—"}</option>`+opts.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join("");
+    el.innerHTML=`<option value="">${opcional?"(sin elegir)":opts.length?"Selecciona…":"—"}</option>`+opts.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join("");
     el.value=v; el.disabled=!opts.length;
-    res[n]=v; if(!v) ok=false;
+    res[n]=v; if(!v && !opcional) ok=false;
   });
   if(perdida) toast("Tu selección anterior ya no está disponible (lote cerrado o cambiado). Elige de nuevo.");
   return res;
@@ -1090,7 +1144,15 @@ function renderPlantillaSelect(sel){
   if(sel && act.some(p=>p.id===sel)) $("plantilla").value=sel;
   $("wrap-plantilla").hidden = act.length<=1;
 }
-$("plantilla").addEventListener("change",()=>{ renderForm(null); saveTrab(); });
+function aplicarCfgPlantilla(){
+  const p=plantillaActual(), c=cfgDe(p);
+  renderCascada(selActual()); filaPrevId=""; onValvulaCambio(true);
+  $("wrap-fecha").hidden=!c.fecha_editable; if(c.fecha_editable) ponerFechaAuto();
+  $("card-planta").hidden=c.capas.length>0;
+  if(!CORR) $("guardar").textContent=txtGuardar();
+  renderAvanzar();
+}
+$("plantilla").addEventListener("change",()=>{ aplicarCfgPlantilla(); renderForm(null); saveTrab(); });
 const plantillaActual = () => CFG.plantillas.find(p=>p.id===$("plantilla").value && p.activa) || null;
 
 function valorInicial(c, prev){
@@ -1101,17 +1163,100 @@ function valorInicial(c, prev){
   return c.defecto===undefined||c.defecto===null ? "" : c.defecto;
 }
 
+/* ---------- Fecha de la evaluación (por defecto hoy; algunas cartillas permiten cambiarla) ---------- */
+const FE={auto:true,dia:""};
+function fechaEval(){
+  const c=cfgDe(plantillaActual()), v=$("fecha-eval").value, hoy=hoyISO();
+  return (c.fecha_editable && /^\d{4}-\d{2}-\d{2}$/.test(v) && v<=hoy) ? v : hoy;
+}
+function ponerFechaAuto(){
+  const hoy=hoyISO(), i=$("fecha-eval");
+  i.max=hoy;
+  if(FE.auto || !i.value || i.value>hoy){ i.value=hoy; FE.auto=true; }
+  FE.dia=hoy; avisoFecha();
+}
+function avisoFecha(){
+  const v=$("fecha-eval").value, hoy=hoyISO(), a=$("fecha-aviso");
+  a.hidden = !v || v===hoy; a.textContent = (v&&v!==hoy) ? "⚠ La fecha no es la de hoy ("+hoy+"). Revísala antes de guardar." : "";
+}
+$("fecha-eval").addEventListener("change",()=>{ if($("fecha-eval").value>hoyISO()) $("fecha-eval").value=hoyISO(); FE.auto=$("fecha-eval").value===hoyISO(); avisoFecha(); sucioEval=true; });
+
+/* ---------- Campos calculados y capas ---------- */
+const OPS_SIMB={suma:"+",resta:"−",producto:"×",division:"÷",porcentaje:"÷",promedio:"+"};
+function calcFormula(f,v){
+  if(!f||!Array.isArray(f.campos)||!f.campos.length) return "";
+  const xs=[];
+  for(const k of f.campos){
+    let x=v[k];
+    if(x===""||x===undefined||x===null){ if(f.op==="suma"){ xs.push(0); continue; } return ""; }
+    x=Number(String(x).replace(",",".")); if(isNaN(x)) return "";
+    xs.push(x);
+  }
+  let r;
+  switch(f.op){
+    case "suma": r=xs.reduce((a,b)=>a+b,0); break;
+    case "resta": r=xs.slice(1).reduce((a,b)=>a-b,xs[0]); break;
+    case "producto": r=xs.reduce((a,b)=>a*b,1); break;
+    case "promedio": r=xs.reduce((a,b)=>a+b,0)/xs.length; break;
+    case "division": if(!xs[1]) return ""; r=xs[0]/xs[1]; break;
+    case "porcentaje": if(!xs[1]) return ""; r=xs[0]/xs[1]*100; break;
+    default: return "";
+  }
+  return Math.round(r*100)/100;
+}
+function valoresActuales(p){
+  const o={};
+  p.campos.filter(c=>c.activo!==false).forEach(c=>{ const el=$("f_"+c.clave); if(el) o[c.clave]=el.value; });
+  return o;
+}
+function recalcular(){
+  const p=plantillaActual(); if(!p) return;
+  const cs=p.campos.filter(c=>c.tipo==="calculado"&&c.activo!==false&&c.formula);
+  if(cs.length){ const v=valoresActuales(p); cs.forEach(c=>{ const el=$("f_"+c.clave); if(el) el.value=calcFormula(c.formula,v); }); }
+  renderCtx();
+}
+function contadorDe(p,capa){ return p.campos.find(x=>x.contador&&x.capa===capa&&x.activo!==false)||null; }
+function renderCtx(){
+  const p=plantillaActual(), c=cfgDe(p), box=$("ctx-capas");
+  if(!p||!c.capas.length){ box.hidden=true; return; }
+  box.textContent=c.capas.map(cp=>{ const f=contadorDe(p,cp), el=f&&$("f_"+f.clave); return el&&el.value!==""?`${cp} ${el.value}`:cp; }).join(" · ");
+  box.hidden=false;
+}
+function renderAvanzar(){
+  const p=plantillaActual(), c=cfgDe(p), box=$("avanzar-capas");
+  if(!p||c.capas.length<2||CORR){ box.hidden=true; box.innerHTML=""; return; }
+  let h=""; for(let k=c.capas.length-2;k>=0;k--) h+=`<button type="button" class="btn sec" data-k="${k}">Guardar · siguiente ${esc(c.capas[k].toLowerCase())}</button>`;
+  box.innerHTML=h; box.hidden=false;
+}
+$("avanzar-capas").addEventListener("click",e=>{ const b=e.target.closest("button[data-k]"); if(b) guardarEval(parseInt(b.dataset.k)); });
+// Lo que pasa al guardar: las capas superiores se conservan; en la capa que avanzas el contador sube 1 y lo demás vuelve al valor por defecto
+function proximoPrev(p,c,valores,avance){
+  const prev={};
+  p.campos.filter(x=>x.activo!==false&&x.tipo!=="calculado").forEach(f=>{
+    const ci=c.capas.indexOf(f.capa);
+    if(ci<0||ci<avance) prev[f.clave]=valores[f.clave];
+    else if(ci===avance&&f.contador) prev[f.clave]=(Number(valores[f.clave])||0)+1;
+  });
+  return prev;
+}
+function ctxTxt(p,c,valores){ return c.capas.map(cp=>{ const f=contadorDe(p,cp); return f?`${cp} ${valores[f.clave]}`:cp; }).join(" · "); }
+
 function renderForm(prev){
   const p=plantillaActual(), cont=$("form-dinamico");
   if(!p){ cont.innerHTML=""; return; }
-  const campos=p.campos.filter(c=>c.activo!==false);
+  const campos=p.campos.filter(c=>c.activo!==false), cf=cfgDe(p);
   const grupos=[];
-  campos.forEach(c=>{
+  if(cf.capas.length){                       // por capas: primero los datos generales y luego cada capa, de la mayor a la menor
+    const gen=campos.filter(c=>!cf.capas.includes(c.capa));
+    if(gen.length) grupos.push({n:"Datos generales",c:gen});
+    cf.capas.forEach(cp=>{ const cs=campos.filter(c=>c.capa===cp); if(cs.length) grupos.push({n:cp,c:cs}); });
+  } else campos.forEach(c=>{
     const g=c.grupo||"Datos";
     let x=grupos.find(y=>y.n===g); if(!x){ x={n:g,c:[]}; grupos.push(x); }
     x.c.push(c);
   });
   cont.innerHTML=grupos.map(g=>`<div class="card"><p class="grupo-t">${esc(g.n)}</p>${g.c.map(c=>htmlCampo(c,valorInicial(c,prev))).join("")}</div>`).join("");
+  recalcular();
 }
 function htmlCampo(c,v){
   const id="f_"+c.clave, req=c.obligatorio?` <span class="req">*</span>`:"";
@@ -1128,6 +1273,8 @@ function htmlCampo(c,v){
         <input id="${esc(id)}" inputmode="${c.tipo==="entero"?"numeric":"decimal"}" autocomplete="off" value="${esc(v)}">${ayuda}`;
     case "texto":
       return `<label for="${esc(id)}">${esc(c.nombre)}${req}</label><input id="${esc(id)}" autocomplete="off" value="${esc(v)}">${ayuda}`;
+    case "calculado":
+      return `<label for="${esc(id)}">${esc(c.nombre)} <span class="ayuda">(automático)</span></label><input id="${esc(id)}" class="calc" readonly tabindex="-1" value="">${ayuda}`;
     case "fecha":
       return `<label for="${esc(id)}">${esc(c.nombre)}${req}</label><input id="${esc(id)}" type="date" value="${esc(v)}">${ayuda}`;
     case "si_no":
@@ -1142,7 +1289,10 @@ function htmlCampo(c,v){
 $("form-dinamico").addEventListener("click", e=>{
   const b=e.target.closest("button[data-k]"); if(!b) return;
   const inp=$("f_"+b.dataset.k);
-  inp.value=Math.max(0,(parseInt(inp.value)||0)+parseInt(b.dataset.d));
+  const cp=(plantillaActual()||{campos:[]}).campos.find(x=>x.clave===b.dataset.k);
+  const piso=cp&&cp.min!==""&&cp.min!==undefined&&!isNaN(Number(cp.min))?Number(cp.min):0;
+  inp.value=Math.max(piso,(parseInt(inp.value)||0)+parseInt(b.dataset.d));
+  recalcular();
   if(navigator.vibrate) navigator.vibrate(15);
 });
 function leerValoresCrudos(){
@@ -1154,6 +1304,7 @@ function leerValoresCrudos(){
 function leerCampo(c){
   const el=$("f_"+c.clave); let v=String(el.value||"").trim();
   const mal=m=>({err:`${c.nombre}: ${m}`,el});
+  if(c.tipo==="calculado") return {v:calcFormula(c.formula,valoresActuales(plantillaActual()))};
   if(v===""){ return c.obligatorio ? {err:`Falta: ${c.nombre}`,el} : {v:""}; }
   let n=null;
   if(c.tipo==="conteo"||c.tipo==="entero"){
@@ -1180,30 +1331,40 @@ $("p-mas").onclick  =()=>{ $("planta").value=(parseInt($("planta").value)||0)+1;
 $("planta").addEventListener("change",saveTrab);
 
 /* ---------- Guardar evaluación ---------- */
-$("guardar").onclick = async ()=>{
+$("guardar").onclick = ()=>guardarEval(null);
+async function guardarEval(avance){
   if(!SES) return;
   const p=plantillaActual();
   if(!p){ toast("No hay una plantilla activa"); return; }
+  const cfg=cfgDe(p), capas=cfg.capas;
+  if(avance===null||avance===undefined) avance=capas.length-1;
   const fila=filaSel();
-  if(!fila){ toast("Selecciona campaña, sub fundo, fundo, módulo, lote, turno y válvula"); return; }
-  const planta=parseInt($("planta").value);
-  if(!planta||planta<1){ toast("N° de planta no válido"); return; }
+  if(!fila){ toast("Selecciona "+nivFaltan()); return; }
 
   const valores={}; let total=0, atipico="";
   for(const c of p.campos.filter(x=>x.activo!==false)){
     const r=leerCampo(c);
     if(r.err){ toast(r.err); if(r.el&&r.el.focus){ r.el.focus(); try{ r.el.scrollIntoView({block:"center"}); }catch(e){} } return; }
     valores[c.clave]=r.v;
-    if(c.tipo==="conteo"){ total+=r.v; if(r.v>100 && (c.max===""||c.max===undefined)) atipico=c.nombre; }
+    if(c.tipo==="conteo"&&!c.contador){ total+=r.v; if(r.v>100 && (c.max===""||c.max===undefined)) atipico=c.nombre; }
   }
+  let planta;
+  if(capas.length){ const cp=contadorDe(p,capas[0]); planta=cp?(parseInt(valores[cp.clave])||1):1; }
+  else { planta=parseInt($("planta").value); if(!planta||planta<1){ toast("N° de planta no válido"); return; } }
   if(atipico && !confirm(`${atipico} tiene un conteo mayor a 100. ¿Es correcto?`)) return;
-  if(fila.plantas!=="" && planta>fila.plantas && !confirm(`Esta válvula tiene ${num(fila.plantas)} plantas y estás registrando la N° ${planta}. ¿Es correcto?`)) return;
+  if(!capas.length && fila.plantas!=="" && planta>fila.plantas && !confirm(`Esta válvula tiene ${num(fila.plantas)} plantas y estás registrando la N° ${planta}. ¿Es correcto?`)) return;
   const corr=CORR&&CORR.tipo==="eval"?CORR:null;
-  const hoy=corr?corr.fecha:hoyISO();
-  const dup=!corr&&(await dbAll()||[]).some(r=>r.usuario===SES.usuario&&!r.anulado&&r.maestra_id===fila.id&&r.plantilla_id===p.id&&r.planta===planta&&r.fecha===hoy);
-  if(dup && !confirm(`Ya registraste hoy la planta N° ${planta} de esta válvula. ¿Guardar otra vez?`)) return;
+  const hoy=corr?corr.fecha:fechaEval();
+  if(!corr){
+    const mios=(await dbAll()||[]).filter(r=>r.usuario===SES.usuario&&!r.anulado&&r.maestra_id===fila.id&&r.plantilla_id===p.id&&r.fecha===hoy);
+    let dup;
+    if(!capas.length) dup=mios.some(r=>r.planta===planta);
+    else { const ck=p.campos.filter(x=>x.contador&&x.activo!==false); dup=ck.length>0&&mios.some(r=>ck.every(x=>String((r.valores||{})[x.clave])===String(valores[x.clave]))); }
+    if(dup && !confirm(capas.length ? `Ya registraste este mismo punto (${ctxTxt(p,cfg,valores)}). ¿Guardar otra vez?` : `Ya registraste hoy la planta N° ${planta} de esta válvula. ¿Guardar otra vez?`)) return;
+  }
 
   const ahora=new Date();
+  const dias=fila.inicio_campana ? diasEntre(fila.inicio_campana,hoy) : "";
   const reg={
     id:(corr&&!corr.enviado)?corr.id:uuid(), fecha:hoy,
     hora:corr?corr.hora:`${pad(ahora.getHours())}:${pad(ahora.getMinutes())}:${pad(ahora.getSeconds())}`,
@@ -1213,7 +1374,8 @@ $("guardar").onclick = async ()=>{
     maestra_id:fila.id, campana:fila.campana, sede:fila.sede, cultivo:fila.cultivo, sub_fundo:fila.sub_fundo,
     fundo:fila.fundo, modulo:fila.modulo, lote:fila.lote, turno:fila.turno, valvula:fila.valvula,
     pep:fila.pep, variedad:fila.variedad, etapa:fila.etapa, planta,
-    dias_campana: fila.inicio_campana ? diasEntre(fila.inicio_campana,hoy) : "",
+    dias_campana: dias,
+    semana_cultivo: (cfg.semana_cultivo && dias!=="" && dias>=0) ? Math.floor(dias/7)+1 : "",
     lat:pos?pos.lat:"", lon:pos?pos.lon:"", prec:pos?Math.round(pos.prec):"",
     valores, total_conteos:total, obs:$("obs").value.trim(), exportado:false, enviado:false
   };
@@ -1227,17 +1389,17 @@ $("guardar").onclick = async ()=>{
     borrBorrar(MODACT); sucioEval=false; mostrarBorradorEval();
     if(corr){ finCorreccion(); toast("Corrección guardada"); }
     else {
-      toast(`Planta ${planta} guardada`+(total?` · total ${total}`:"")+(pos?"":" · sin GPS"));
+      toast((capas.length?`Guardado: ${ctxTxt(p,cfg,valores)}`:`Planta ${planta} guardada`)+(total?` · total ${total}`:"")+(pos?"":" · sin GPS"));
       TRAB.rec=TRAB.rec||{};
       p.campos.forEach(c=>{ if(c.recordar&&c.clave in valores) TRAB.rec[c.clave]=valores[c.clave]; });
-      $("planta").value=planta+1; saveTrab();
-      $("obs").value=""; renderForm(null);
+      if(capas.length){ saveTrab(); $("obs").value=""; renderForm(proximoPrev(p,cfg,valores,avance)); }
+      else { $("planta").value=planta+1; saveTrab(); $("obs").value=""; renderForm(null); }
     }
     window.scrollTo({top:0,behavior:"smooth"});
     await refrescarRegistros();
-    sincronizar(false);
+    pedirSync();
   }catch(e){ toast("Error al guardar: "+(e&&e.message||e)); }
-};
+}
 
 /* ---------- Registros ---------- */
 const visibles = todos => (SES && SES.rol==="admin") ? todos : todos.filter(r=>SES && r.usuario===SES.usuario);
@@ -1283,14 +1445,14 @@ function construirCSV(regs){
   CFG.plantillas.filter(p=>!esEval(MODACT)||modPl(p)===MODACT).forEach(p=>p.campos.forEach(c=>{ if(!claves.includes(c.clave)) claves.push(c.clave); }));
   regs.forEach(r=>Object.keys(r.valores||r.conteos||{}).forEach(k=>{ if(!claves.includes(k)) claves.push(k); }));
   const cab=["id","fecha","hora","usuario","evaluador","plantilla","version_plantilla","campana","sede","cultivo","fundo","sub_fundo","modulo",
-             "lote","turno","valvula","pep","variedad","etapa","planta","dias_desde_inicio_campana","latitud","longitud","precision_m",
+             "lote","turno","valvula","pep","variedad","etapa","planta","dias_desde_inicio_campana","semana_cultivo","latitud","longitud","precision_m",
              "total_conteos","observaciones",...claves];
   const filas=regs.map(r=>{
     const v=r.valores||r.conteos||{};
     const tot=r.total_conteos!==undefined?r.total_conteos:(r.total===undefined?"":r.total);
     const dias=r.dias_campana!==undefined?r.dias_campana:(r.dias_poda===undefined?"":r.dias_poda);
     return [r.id,r.fecha,r.hora,r.usuario,r.evaluador,r.plantilla_nombre||"",r.plantilla_version||"",r.campana||"",r.sede||"",r.cultivo||"",
-            r.fundo,r.sub_fundo||"",r.modulo||"",r.lote,r.turno||"",r.valvula||"",r.pep||"",r.variedad||"",r.etapa||"",r.planta,dias,
+            r.fundo,r.sub_fundo||"",r.modulo||"",r.lote,r.turno||"",r.valvula||"",r.pep||"",r.variedad||"",r.etapa||"",r.planta,dias,r.semana_cultivo===undefined?"":r.semana_cultivo,
             r.lat,r.lon,r.prec,tot,r.obs,...claves.map(k=>v[k]===undefined?"":v[k])];
   });
   return csvTexto(cab,filas);
@@ -1334,6 +1496,21 @@ $("borrar-exp").onclick=async ()=>{
 
 /* ---------- Envío automático a la hoja central ---------- */
 let sincronizando=false;
+// Los envíos automáticos se reparten en el tiempo (con 80 celulares, todos a la vez saturarían el servidor) y, si fallan,
+// se reintentan solos esperando cada vez más. «Enviar ahora» sale al instante.
+const SYNC_JITTER=15000;
+let tSync=null, fallosSync=0;
+const jitterMs=()=> window.__SYNC_JITTER!==undefined ? window.__SYNC_JITTER : SYNC_JITTER;
+function pedirSync(retrasoMs){
+  if(!SES||tSync) return;
+  tSync=setTimeout(async()=>{
+    tSync=null;
+    const r=await sincronizar(false);
+    if(r===false){ fallosSync++; pedirSync(Math.min(300000,15000*Math.pow(2,fallosSync-1))+Math.random()*5000); }
+    else if(r===true) fallosSync=0;
+  }, retrasoMs!==undefined ? retrasoMs : Math.random()*jitterMs());
+}
+function pedirConfig(){ setTimeout(()=>cargarConfig(false,true), Math.random()*jitterMs()); }
 async function sincronizar(manual){
   if(!SES) return;
   if(!SYNC.url){ if(manual) toast("El envío automático no está configurado"); return; }
@@ -1344,7 +1521,7 @@ async function sincronizar(manual){
     const todos=await dbAll()||[];
     const pend=todos.filter(r=>!r.enviado&&!r.rechazado&&!r.anulado).sort((a,b)=>a.ts-b.ts);
     const anuls=todos.filter(r=>r.anulado&&r.enviado&&!r.anul_enviado);
-    if(!pend.length&&!anuls.length){ if(manual) toast("Todo está enviado ✔"); return; }
+    if(!pend.length&&!anuls.length){ if(manual) toast("Todo está enviado ✔"); return true; }
     let enviados=0, rechazadas=0, anuladas=0;
     const lotes=[]; for(let i=0;i<pend.length;i+=50) lotes.push(pend.slice(i,i+50));
     if(!lotes.length) lotes.push([]);
@@ -1368,9 +1545,11 @@ async function sincronizar(manual){
     sesionVencida=false;
     if(manual||enviados||anuladas) toast(`${enviados} registros enviados ✔`+(anuladas?` · ${anuladas} anulados`:""));
     if(rechazadas) toast(`${rechazadas} reserva(s) rechazada(s): ya existía una para esa placa y fecha. Revisa Registros.`);
+    return true;
   }catch(e){
-    if(e&&e.message==="sesion") toast(MSG_SESION);
-    else if(manual) toast("No se pudo enviar: "+(e&&e.message||e)+". Se reintentará solo.");
+    if(e&&e.message==="sesion"){ toast(MSG_SESION); return null; }
+    if(manual) toast("No se pudo enviar: "+(e&&e.message||e)+". Se reintentará solo.");
+    return false;
   }finally{
     sincronizando=false;
     refrescarRegistros();
@@ -1750,8 +1929,10 @@ $("um-importar").onclick=()=>{
    ADMINISTRADOR: PLANTILLAS
    ===================================================================== */
 let ED=null;     // plantilla en edición
-function nuevoCampo(grupo){
-  return {clave:"",nombre:"",tipo:"conteo",grupo:grupo||"",obligatorio:true,min:0,max:"",defecto:0,opciones:[],ayuda:"",unidad:"",recordar:false,activo:true,_nuevo:true};
+let UID=0;
+function nuevoCampo(grupo,capa){
+  return {clave:"",nombre:"",tipo:"conteo",grupo:grupo||"",obligatorio:true,min:0,max:"",defecto:0,opciones:[],ayuda:"",unidad:"",recordar:false,activo:true,
+          capa:capa||"",contador:false,formula:null,_nuevo:true,_uid:"n"+(++UID)};
 }
 function renderPlantillas(){
   if(!SES||SES.rol!=="admin") return;
@@ -1769,13 +1950,14 @@ $("pl-lista").addEventListener("click",async e=>{
     catch(err){ toast(err.message); }
     return;
   }
-  abrirEditor({id:p.id,nombre:p.nombre,activa:p.activa,version:p.version,mod_eval:modPl(p),
-    campos:JSON.parse(JSON.stringify(p.campos)).map(c=>Object.assign(c,{_nuevo:false}))});
+  abrirEditor({id:p.id,nombre:p.nombre,activa:p.activa,version:p.version,mod_eval:modPl(p),cfg:JSON.parse(JSON.stringify(cfgDe(p))),
+    campos:JSON.parse(JSON.stringify(p.campos)).map(c=>Object.assign({capa:"",contador:false,formula:null},c,{_nuevo:false,_uid:c.clave}))});
 });
-$("pl-nueva").onclick=()=>abrirEditor({id:"",nombre:"",activa:true,version:0,mod_eval:"fitosanidad",campos:[nuevoCampo("")]});
+$("pl-nueva").onclick=()=>abrirEditor({id:"",nombre:"",activa:true,version:0,mod_eval:"fitosanidad",cfg:cfgDe(null),campos:[nuevoCampo("")]});
 
 function abrirEditor(p){
-  ED=p; $("pl-listado").hidden=true; $("pl-editor").hidden=false;
+  ED=p; ED.cfg=cfgDe({cfg:p.cfg}); ED.campos.forEach(c=>{ if(!c._uid) c._uid=c.clave||("n"+(++UID)); });
+  $("pl-listado").hidden=true; $("pl-editor").hidden=false;
   $("ed-mod").innerHTML=MODS.map(m=>`<option value="${m.id}">${m.n}</option>`).join(""); $("ed-mod").value=p.mod_eval||"fitosanidad"; $("ed-mod").disabled=!!p.id;
   $("ed-nombre").value=p.nombre; $("ed-activa").checked=p.activa;
   $("ed-info").textContent = p.id ? `Versión actual: ${p.version}. Al guardar pasará a la ${p.version+1}.` : "Plantilla nueva.";
@@ -1784,30 +1966,49 @@ function abrirEditor(p){
 function cerrarEditor(){ ED=null; $("pl-editor").hidden=true; $("pl-listado").hidden=false; renderPlantillas(); }
 $("ed-cerrar").onclick=()=>{ if(!ED || confirm("¿Cerrar sin guardar los cambios?")) cerrarEditor(); };
 
+function txtFormula(c){
+  const f=c.formula; if(!f||!f.campos.length) return "Marca los campos que intervienen.";
+  const orden=ED.campos.filter(x=>f.campos.includes(x._uid)).map(x=>x.nombre||"(sin nombre)");
+  const sep={suma:" + ",resta:" − ",producto:" × ",division:" ÷ ",porcentaje:" ÷ ",promedio:" + "}[f.op]||" + ";
+  const base=orden.join(f.op==="resta"?" − ":sep);
+  return f.op==="porcentaje" ? `(${base}) × 100` : f.op==="promedio" ? `(${base}) ÷ ${orden.length}` : base;
+}
 function renderEditor(){
   if(!ED) return;
+  const cfg=ED.cfg, capas=cfg.capas;
+  $("ed-nivel").value=cfg.nivel; $("ed-turno").value=cfg.turno; $("ed-turno-w").hidden=cfg.nivel==="lote";
+  [...$("ed-turno").options].forEach(o=>{ o.hidden=(cfg.nivel==="turno"&&o.value==="no"); });
+  $("ed-fecha").checked=!!cfg.fecha_editable; $("ed-semana").checked=!!cfg.semana_cultivo;
+  if(document.activeElement!==$("ed-capas")) $("ed-capas").value=capas.join("\n");
   const grupos=[...new Set(ED.campos.map(c=>c.grupo).filter(Boolean))];
   $("dl-grupos").innerHTML=grupos.map(g=>`<option value="${esc(g)}">`).join("");
   $("ed-campos").innerHTML=ED.campos.map((c,i)=>{
-    const numerico=["conteo","entero","decimal"].includes(c.tipo);
+    const numerico=["conteo","entero","decimal"].includes(c.tipo), calc=c.tipo==="calculado";
+    const refs=ED.campos.filter(x=>x!==c&&["conteo","entero","decimal"].includes(x.tipo));
     return `<div class="campo-ed ${c.activo?"":"oculto"}">
       <div class="grid2">
         <div><label>Nombre del campo</label><input data-i="${i}" data-f="nombre" value="${esc(c.nombre)}" placeholder="Ej. Mosca blanca"></div>
-        <div><label>Tipo de dato</label><select data-i="${i}" data-f="tipo" ${c._nuevo?"":"disabled"}>${Object.keys(TIPOS_CORTO).map(t=>`<option value="${t}"${t===c.tipo?" selected":""}>${TIPOS_CORTO[t]}</option>`).join("")}</select></div>
+        <div><label>Tipo de dato</label><select data-i="${i}" data-f="tipo">${Object.keys(TIPOS_CORTO).map(t=>`<option value="${t}"${t===c.tipo?" selected":""}>${TIPOS_CORTO[t]}</option>`).join("")}</select></div>
       </div>
       <p class="ayuda">${esc(TIPOS[c.tipo])}</p>
-      <label>Grupo (sección en la pantalla)</label><input list="dl-grupos" data-i="${i}" data-f="grupo" value="${esc(c.grupo)}" placeholder="Ej. Plagas">
+      ${capas.length?`<div class="grid2"><div><label>Capa de evaluación</label><select data-i="${i}" data-f="capa"><option value="">General (se llena una vez)</option>${capas.map(k=>`<option value="${esc(k)}"${k===c.capa?" selected":""}>${esc(k)}</option>`).join("")}</select></div>
+        <div>${c.capa&&["conteo","entero"].includes(c.tipo)?`<label style="margin-top:34px"><input type="checkbox" data-i="${i}" data-f="contador"${c.contador?" checked":""}> Es el contador de su capa (N° de ${esc(c.capa.toLowerCase())})</label>`:""}</div></div>`
+        :`<label>Grupo (sección en la pantalla)</label><input list="dl-grupos" data-i="${i}" data-f="grupo" value="${esc(c.grupo)}" placeholder="Ej. Plagas">`}
       ${numerico?`<div class="grid2"><div><label>Mínimo</label><input data-i="${i}" data-f="min" inputmode="decimal" value="${esc(c.min)}"></div>
         <div><label>Máximo</label><input data-i="${i}" data-f="max" inputmode="decimal" value="${esc(c.max)}"></div>
         <div><label>Valor por defecto</label><input data-i="${i}" data-f="defecto" inputmode="decimal" value="${esc(c.defecto)}"></div>
         <div><label>Unidad (opcional)</label><input data-i="${i}" data-f="unidad" value="${esc(c.unidad)}" placeholder="Ej. cm"></div></div>`:""}
       ${c.tipo==="texto"?`<label>Valor por defecto</label><input data-i="${i}" data-f="defecto" value="${esc(c.defecto)}">`:""}
       ${c.tipo==="lista"?`<label>Opciones (una por línea)</label><textarea data-i="${i}" data-f="opciones" style="min-height:90px">${esc((c.opciones||[]).join("\n"))}</textarea>`:""}
+      ${calc?`<label>Operación</label><select data-i="${i}" data-f="fop">${[["suma","Suma"],["resta","Resta (el primero menos los demás)"],["producto","Multiplicación"],["division","División (el primero ÷ el segundo)"],["porcentaje","Porcentaje (el primero ÷ el segundo × 100)"],["promedio","Promedio"]].map(o=>`<option value="${o[0]}"${(c.formula&&c.formula.op)===o[0]?" selected":""}>${o[1]}</option>`).join("")}</select>
+        <label>Campos que intervienen (se toman en el orden de la lista)</label>
+        <div class="mini">${refs.map(x=>`<label><input type="checkbox" data-i="${i}" data-f="fcampo" data-u="${esc(x._uid)}"${c.formula&&c.formula.campos.includes(x._uid)?" checked":""}> ${esc(x.nombre||"(sin nombre)")}</label>`).join("")||"<span class='ayuda'>Primero agrega campos numéricos.</span>"}</div>
+        <p class="ayuda"><b>Resultado =</b> ${esc(txtFormula(c))}</p>`:""}
       <label>Texto de ayuda (opcional)</label><input data-i="${i}" data-f="ayuda" value="${esc(c.ayuda)}">
       <div class="mini">
-        <label><input type="checkbox" data-i="${i}" data-f="obligatorio"${c.obligatorio?" checked":""}> Obligatorio</label>
+        ${calc?"":`<label><input type="checkbox" data-i="${i}" data-f="obligatorio"${c.obligatorio?" checked":""}> Obligatorio</label>`}
         <label><input type="checkbox" data-i="${i}" data-f="activo"${c.activo?" checked":""}> Visible</label>
-        ${c.tipo!=="conteo"?`<label><input type="checkbox" data-i="${i}" data-f="recordar"${c.recordar?" checked":""}> Recordar el valor entre plantas</label>`:""}
+        ${(c.tipo!=="conteo"&&!calc)?`<label><input type="checkbox" data-i="${i}" data-f="recordar"${c.recordar?" checked":""}> Recordar el valor entre plantas</label>`:""}
       </div>
       <p class="ayuda">${c._nuevo?"Columna en el Excel: se creará al guardar.":"Columna en el Excel: <b>"+esc(c.clave)+"</b>"}</p>
       <div class="acc" style="justify-content:flex-start;margin-top:8px">
@@ -1825,21 +2026,60 @@ function editorCambio(el){
   }
   const i=el.dataset.i, f=el.dataset.f; if(i===undefined||!f) return;
   const c=ED.campos[i]; if(!c) return;
+  if(f==="fop"){ c.formula=c.formula||{op:"suma",campos:[]}; c.formula.op=el.value; renderEditor(); return; }
+  if(f==="fcampo"){
+    c.formula=c.formula||{op:"suma",campos:[]};
+    const a=c.formula.campos, u=el.dataset.u, k=a.indexOf(u);
+    if(el.checked&&k<0) a.push(u); if(!el.checked&&k>=0) a.splice(k,1);
+    renderEditor(); return;
+  }
+  if(f==="capa"){ c.capa=el.value; if(!c.capa) c.contador=false; renderEditor(); return; }
+  if(f==="contador"){          // un contador de capa (N° de planta, rama, brote…) empieza en 1
+    c.contador=el.checked;
+    if(c.contador){ if(!(Number(c.min)>=1)) c.min=1; if(!(Number(c.defecto)>=1)) c.defecto=1; }
+    renderEditor(); return;
+  }
   if(el.type==="checkbox") c[f]=el.checked;
   else if(f==="opciones") c.opciones=el.value.split("\n");
   else c[f]=el.value;
   if(f==="activo") renderEditor();
 }
-$("ed-campos").addEventListener("input",e=>{ if(e.target.dataset.f && e.target.dataset.f!=="tipo" && e.target.type!=="checkbox") editorCambio(e.target); });
+$("ed-campos").addEventListener("input",e=>{ if(e.target.dataset.f && e.target.dataset.f!=="tipo" && e.target.type!=="checkbox" && e.target.tagName!=="SELECT") editorCambio(e.target); });
 $("ed-campos").addEventListener("change",e=>{
   const el=e.target; if(!el.dataset.f) return;
-  editorCambio(el);
   if(el.dataset.f==="tipo"){
-    const c=ED.campos[el.dataset.i];
+    const c=ED.campos[el.dataset.i], nuevo=el.value;
+    if(c.tipo===nuevo) return;
+    if(!c._nuevo && !confirm(`Vas a cambiar el tipo de «${c.nombre}» de ${TIPOS_CORTO[c.tipo]} a ${TIPOS_CORTO[nuevo]}.\n\nLo que ya se guardó no se modifica; solo los registros nuevos usarán el tipo nuevo. Revisa esa columna en tu reporte de Power BI.\n\n¿Continuar?`)){ renderEditor(); return; }
+    c.tipo=nuevo;
     if(c.tipo==="conteo"){ c.min=0; c.defecto=0; } else { c.min=""; c.max=""; c.defecto=""; }
-    c.opciones = c.tipo==="lista" ? (c.opciones&&c.opciones.length?c.opciones:["",""]) : [];
-    renderEditor();
+    c.opciones = c.tipo==="lista" ? (c.opciones&&c.opciones.length&&c.opciones.some(Boolean)?c.opciones:["",""]) : [];
+    if(c.tipo==="calculado"){ c.formula=c.formula||{op:"suma",campos:[]}; c.obligatorio=false; c.contador=false; c.recordar=false; }
+    else c.formula=null;
+    if(!["conteo","entero"].includes(c.tipo)) c.contador=false;
+    renderEditor(); return;
   }
+  editorCambio(el);
+});
+// Configuración del encabezado y de las capas
+function leerCapas(){ const a=[]; $("ed-capas").value.split("\n").map(x=>x.trim()).forEach(x=>{ if(x&&!a.includes(x)) a.push(x); }); return a.slice(0,4); }
+$("ed-nivel").addEventListener("change",()=>{ if(!ED) return; ED.cfg.nivel=$("ed-nivel").value; if(ED.cfg.nivel==="lote") ED.cfg.turno="no"; else if(ED.cfg.nivel==="turno"&&ED.cfg.turno==="no") ED.cfg.turno="si"; else if(ED.cfg.turno==="no"&&ED.cfg.nivel==="valvula") ED.cfg.turno="si"; renderEditor(); });
+$("ed-turno").addEventListener("change",()=>{ if(ED) ED.cfg.turno=$("ed-turno").value; });
+$("ed-fecha").addEventListener("change",()=>{ if(ED) ED.cfg.fecha_editable=$("ed-fecha").checked; });
+$("ed-semana").addEventListener("change",()=>{ if(ED) ED.cfg.semana_cultivo=$("ed-semana").checked; });
+$("ed-capas").addEventListener("input",()=>{ if(ED) ED.cfg.capas=leerCapas(); });
+$("ed-capas").addEventListener("change",()=>{
+  if(!ED) return;
+  const viejo=ED.cfg.capas.slice(), nuevo=leerCapas();
+  ED.cfg.capas=nuevo;
+  // si solo cambió el nombre de una capa, sus campos la siguen; si se quitó una, sus campos pasan a «General»
+  ED.campos.forEach(c=>{
+    if(!c.capa||nuevo.includes(c.capa)) return;
+    const k=viejo.indexOf(c.capa);
+    c.capa = (nuevo.length===viejo.length && k>=0) ? nuevo[k] : "";
+    if(!c.capa) c.contador=false;
+  });
+  renderEditor();
 });
 document.querySelector("#s-plantilla").addEventListener("input",e=>{ if(e.target.dataset.ed) editorCambio(e.target); });
 document.querySelector("#s-plantilla").addEventListener("change",e=>{ if(e.target.dataset.ed) editorCambio(e.target); });
@@ -1848,13 +2088,16 @@ $("ed-campos").addEventListener("click",e=>{
   const i=parseInt(b.dataset.i), a=ED.campos;
   if(b.dataset.acc==="sube" && i>0){ [a[i-1],a[i]]=[a[i],a[i-1]]; }
   else if(b.dataset.acc==="baja" && i<a.length-1){ [a[i+1],a[i]]=[a[i],a[i+1]]; }
-  else if(b.dataset.acc==="borra"){ a.splice(i,1); }
+  else if(b.dataset.acc==="borra"){
+    const u=a[i]._uid; a.splice(i,1);
+    a.forEach(c=>{ if(c.formula) c.formula.campos=c.formula.campos.filter(x=>x!==u); });
+  }
   renderEditor();
 });
 $("ed-agregar").onclick=()=>{
   if(!ED) return;
-  const ult=ED.campos.length?ED.campos[ED.campos.length-1].grupo:"";
-  ED.campos.push(nuevoCampo(ult)); renderEditor();
+  const ult=ED.campos.length?ED.campos[ED.campos.length-1]:null;
+  ED.campos.push(nuevoCampo(ult?ult.grupo:"",ult?ult.capa:"")); renderEditor();
   const cs=document.querySelectorAll("#ed-campos .campo-ed"); const u=cs[cs.length-1];
   if(u){ try{ u.scrollIntoView({block:"center"}); }catch(e){} const inp=u.querySelector("input"); if(inp) inp.focus(); }
 };
@@ -1878,7 +2121,9 @@ $("ed-guardar").onclick=async ()=>{
   for(const c of ED.campos){
     const o={clave:c.clave,nombre:c.nombre,tipo:c.tipo,grupo:c.grupo,obligatorio:!!c.obligatorio,activo:c.activo!==false,recordar:!!c.recordar,
              ayuda:c.ayuda,unidad:c.unidad,opciones:c.tipo==="lista"?(c.opciones||[]).map(x=>x.trim()).filter(Boolean):[],
-             min:"",max:"",defecto:""};
+             min:"",max:"",defecto:"",
+             capa:ED.cfg.capas.includes(c.capa)?c.capa:"", contador:!!c.contador&&ED.cfg.capas.includes(c.capa),
+             formula:c.tipo==="calculado"&&c.formula?{op:c.formula.op,campos:ED.campos.filter(x=>c.formula.campos.includes(x._uid)).map(x=>x.clave)}:null};
     if(["conteo","entero","decimal"].includes(c.tipo)){
       o.min=numOVacio(c.min); o.max=numOVacio(c.max); o.defecto=numOVacio(c.defecto);
       if([o.min,o.max,o.defecto].some(x=>typeof x==="number"&&isNaN(x))){ toast(`Mínimo, máximo o valor por defecto no válido en «${c.nombre}»`); nuevasClaves.forEach(x=>x.clave=""); return; }
@@ -1887,9 +2132,9 @@ $("ed-guardar").onclick=async ()=>{
   }
   $("ed-guardar").disabled=true;
   try{
-    const j=await apiAdmin("plantilla_guardar",{plantilla:{id:ED.id||undefined,nombre:ED.nombre,activa:ED.activa,mod_eval:ED.mod_eval,campos}});
+    const j=await apiAdmin("plantilla_guardar",{plantilla:{id:ED.id||undefined,nombre:ED.nombre,activa:ED.activa,mod_eval:ED.mod_eval,cfg:ED.cfg,campos}});
     ED.id=j.id; ED.version=j.plantilla_version; $("ed-mod").disabled=true;
-    ED.campos.forEach(c=>{ c._nuevo=false; });
+    ED.campos.forEach(c=>{ c._nuevo=false; c._uid=c.clave; });
     toast(`Plantilla guardada (versión ${j.plantilla_version})`);
     $("ed-info").textContent=`Versión actual: ${ED.version}. Al guardar pasará a la ${ED.version+1}.`;
     renderEditor();
@@ -2173,7 +2418,7 @@ $("rv-guardar").onclick=async ()=>{
     $("rv-placa").value=""; $("rv-conductor").value=""; $("rv-tipo").value=""; $("rv-sub").value=""; $("rv-area").value=""; $("rv-cc").value=""; $("rv-comb").value=""; $("rv-cap").textContent=""; $("rv-km").value=""; $("rv-gal").value=""; $("rv-obs").value=""; $("rv-fecha").value=hoyISO();
     window.scrollTo({top:0,behavior:"smooth"});
     await refrescarRegistros();
-    sincronizar(false);
+    pedirSync(Math.random()*3000);
   }catch(e){ toast("Error al guardar: "+(e&&e.message||e)); }
 };
 
@@ -2335,16 +2580,16 @@ function actualizarRed(){
   env.textContent = sincronizando ? "Enviando…" : "☁ Enviar ahora";
 }
 $("enviar-ya").onclick=()=>sincronizar(true);
-addEventListener("online",()=>{ actualizarRed(); sincronizar(false); cargarConfig(false,true); });
+addEventListener("online",()=>{ actualizarRed(); pedirSync(); pedirConfig(); });
 addEventListener("offline",actualizarRed);
-document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ sincronizar(false); cargarConfig(false,true); } });
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ pedirSync(); pedirConfig(); } });
 
 /* =====================================================================
    VERSIÓN 10: cabecera con estado, cambio de clave, borradores, duplicar,
    corregir / anular registros, supervisión y aviso de nueva versión
    ===================================================================== */
-const APP_VERSION="11.0";
-const TXT_GUARDAR="Guardar y pasar a la siguiente planta";
+const APP_VERSION="12.0";
+function txtGuardar(){ const c=cfgDe(plantillaActual()); return c.capas.length ? "Guardar · siguiente "+c.capas[c.capas.length-1].toLowerCase() : "Guardar y pasar a la siguiente planta"; }
 const hhmm = ts => { const d=new Date(ts); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 
 /* ---- Cambiar mi clave ---- */
@@ -2382,7 +2627,7 @@ const borrBorrar=k=>borrPut(k,null);
 let sucioEval=false, sucioRv=false, tBorr=null;
 function snapEval(){
   const p=plantillaActual(); if(!p||!esEval(MODACT)) return null;
-  return {plantilla:p.id, sel:selActual(), planta:parseInt($("planta").value)||1, valores:leerValoresCrudos(), obs:$("obs").value, ts:Date.now()};
+  return {plantilla:p.id, sel:selActual(), planta:parseInt($("planta").value)||1, valores:leerValoresCrudos(), obs:$("obs").value, fecha:$("fecha-eval").value, ts:Date.now()};
 }
 function snapRv(){
   return {placa:$("rv-placa").value, conductor:$("rv-conductor").value, tipo:$("rv-tipo").value, sub:$("rv-sub").value, area:$("rv-area").value,
@@ -2394,7 +2639,7 @@ function volcarBorradores(){
   if(sucioRv && MODACT==="soporte") borrPut("soporte",snapRv());
 }
 function programarBorrador(){ clearTimeout(tBorr); tBorr=setTimeout(volcarBorradores,600); }
-$("form-dinamico").addEventListener("input",()=>{ sucioEval=true; programarBorrador(); });
+$("form-dinamico").addEventListener("input",()=>{ recalcular(); sucioEval=true; programarBorrador(); });
 $("form-dinamico").addEventListener("change",()=>{ sucioEval=true; programarBorrador(); });
 $("form-dinamico").addEventListener("click",e=>{ if(e.target.closest("button[data-k]")){ sucioEval=true; programarBorrador(); } });
 $("obs").addEventListener("input",()=>{ sucioEval=true; programarBorrador(); });
@@ -2417,9 +2662,11 @@ function retomarEval(){
   const p=CFG.plantillas.find(x=>x.id===b.plantilla&&x.activa&&modPl(x)===MODACT);
   if(!p){ toast("La cartilla del borrador ya no está activa"); return; }
   $("plantilla").value=p.id;
+  aplicarCfgPlantilla();
   renderCascada(b.sel||{}); filaPrevId=""; onValvulaCambio(false);
   if(!filaSel()) toast("El lote o la válvula del borrador ya no está disponible. Elige de nuevo.");
   $("planta").value=b.planta||1;
+  if(b.fecha&&cfgDe(p).fecha_editable){ $("fecha-eval").value=b.fecha<=hoyISO()?b.fecha:hoyISO(); FE.auto=$("fecha-eval").value===hoyISO(); avisoFecha(); }
   renderForm(b.valores||{}); $("obs").value=b.obs||"";
   sucioEval=false; saveTrab(); $("borr-aviso").hidden=true; toast("Borrador recuperado");
 }
@@ -2466,7 +2713,7 @@ $("rv-borrador").onclick=()=>{
 
 /* ---- Corregir y anular registros ---- */
 function finCorreccion(){
-  CORR=null; $("corr-aviso").hidden=true; $("guardar").textContent=TXT_GUARDAR;
+  CORR=null; $("corr-aviso").hidden=true; $("guardar").textContent=txtGuardar(); renderAvanzar();
   renderForm(null); $("obs").value="";
   const f=filaSel(); filaPrevId=f?f.id:""; $("planta").value=f?(TRAB.plantas[f.id]||1):1;
 }
@@ -2510,6 +2757,7 @@ function iniciarCorreccion(r){
   CORR={tipo:"eval",id:r.id,enviado:!!r.enviado,fecha:r.fecha,hora:r.hora};
   irA("s-evaluar");
   $("plantilla").value=p.id;
+  aplicarCfgPlantilla();
   renderCascada({campana:r.campana,sub_fundo:r.sub_fundo,fundo:r.fundo,modulo:r.modulo,lote:r.lote,turno:r.turno,valvula:r.valvula});
   filaPrevId=""; onValvulaCambio(true);
   if(!filaSel()){ CORR=null; toast("Ese lote o válvula ya no está activo: no se puede corregir"); return; }
@@ -2517,7 +2765,7 @@ function iniciarCorreccion(r){
   $("planta").value=r.planta;
   const v={}; Object.keys(r.valores||{}).forEach(k=>{ v[k]=String(r.valores[k]); });
   renderForm(v); $("obs").value=r.obs||"";
-  $("guardar").textContent="Guardar corrección";
+  $("guardar").textContent="Guardar corrección"; renderAvanzar();
   $("borr-aviso").hidden=true;
   bannerCorreccion($("corr-aviso"),`(${r.fundo} · ${r.lote} · V${r.valvula||""} · Pl. ${r.planta})`,!!r.enviado);
   window.scrollTo(0,0);
@@ -2533,7 +2781,7 @@ async function anularRegistro(r){
   r.anulado=true; r.anul_motivo=m.slice(0,200); r.anul_ts=Date.now(); r.anul_enviado=false;
   await dbPut(r);
   toast("Registro anulado. Se marcará como ANULADO en la hoja al enviar.");
-  await refrescarRegistros(); sincronizar(false);
+  await refrescarRegistros(); pedirSync();
 }
 $("lista-reg").addEventListener("click", async e=>{
   const b=e.target.closest("button[data-acc]"); if(!b) return;
@@ -2564,7 +2812,7 @@ async function renderSupervision(){
     $("sv-car").innerHTML=j.por_cartilla.map(c=>`<div class="reg"><div><span class="t">${esc(c.cartilla)}</span></div><b>${esc(c.registros)}</b></div>`).join("") || "<p class='ayuda'>Sin registros en este periodo.</p>";
     $("sv-sin-card").hidden=!j.sin_actividad.length;
     $("sv-sin").innerHTML=j.sin_actividad.map(u=>`<div class="reg"><div><span class="t">${esc(u.nombre)}</span><small>${esc(u.usuario)}</small></div></div>`).join("");
-    info.textContent=`Del ${j.desde} al ${j.hasta} · actualizado ${hhmm(Date.now())}`+(j.alertas?` · ${j.alertas} registros con alerta de permiso`:"")+(j.truncado?" · hay registros antiguos que no se leyeron":"");
+    info.textContent=`Del ${j.desde} al ${j.hasta} · actualizado ${hhmm(Date.now())}`+(j.alertas?` · ${j.alertas} registros con alerta de permiso`:"")+(j.truncado?" · hay registros antiguos que no se leyeron":"")+(j.recepcion_pendientes?` · ${j.recepcion_pendientes} en recepción`:"");
   }catch(e){ info.textContent=e.message; }
 }
 /* ---- Descargar una cartilla por rango de fechas (administrador) ---- */

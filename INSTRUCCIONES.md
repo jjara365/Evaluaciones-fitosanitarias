@@ -1,3 +1,49 @@
+# Puesta en marcha — versión 12 (80 evaluadores y cartillas más flexibles)
+
+## Qué trae la versión 12 (novedades sobre la 11)
+
+### A. Refuerzos para 80 evaluadores
+1. **Envíos escalonados.** Los envíos automáticos esperan entre 0 y 15 segundos al azar, así los celulares no llegan todos juntos. Si un envío falla, la app reintenta sola esperando cada vez más (15 s, 30 s, 1 min… hasta 5 min). **☁ Enviar ahora** sale al instante.
+2. **Caché de configuración en el servidor.** El servidor guarda unos minutos una copia de plantillas, maestra, fundos, áreas y placas, y los 80 celulares leen esa copia en vez de leer las hojas. Cualquier cambio hecho **desde la app** la renueva sola. Si editas las hojas **a mano**, usa el menú **Evaluaciones > Forzar actualización en los celulares**.
+3. **Hoja «Recepcion».** Los envíos de evaluaciones caen primero en la hoja `Recepcion` (rápido) y se pasan por lotes a la hoja de cada cartilla. Las reservas de combustible se siguen guardando al instante (por la regla de una reserva por placa y día).
+   - **Instala el activador (recomendado, 1 minuto):** Apps Script > icono del reloj (Activadores) > **Añadir activador** > función `procesarRecepcionAuto` > evento: *controlado por tiempo* > *temporizador de minutos* > **cada minuto**. La primera vez pedirá autorizar.
+   - **Si no lo instalas:** lo recibido pasa a las hojas en el siguiente envío de cualquiera (cuando lo más antiguo lleva más de 90 s), al abrir Supervisión, al descargar una cartilla por fechas, o con el menú **Evaluaciones > Procesar recepción ahora**. **Antes de bajar el Sheet para cargarlo a tu base, usa ese menú** para que no quede nada en `Recepcion`.
+   - Si una fila de recepción no se puede leer, pasa a `Recepcion_errores`. Si falla la escritura, los registros se quedan en `Recepcion` y se reintentan; no se pierde nada.
+   - Para volver a escribir directo en las hojas (como en la v11): Apps Script > Configuración del proyecto > Propiedades del script > agrega `RECEPCION` = `NO`.
+4. **Prueba de carga (simulada).** 80 evaluadores enviando tandas de 20 registros contra una hoja de 5 000 filas: cada envío lee en promedio unas 1 900 celdas con recepción, frente a unas 11 500 con escritura directa; 0 registros perdidos y 0 duplicados, incluso cuando 40 evaluadores reenviaron su última tanda; y 80 sondeos de configuración sin cambios no leyeron ninguna hoja. Es una simulación de la lógica: **no mide la velocidad real de Google**, por eso conviene el piloto real.
+
+### B. Más opciones al crear o editar cartillas (Agrícola > Plantillas)
+1. **Cambiar el tipo de dato** de un campo que ya existe (pide confirmación). Lo ya guardado no se modifica; los registros nuevos usan el tipo nuevo. Ojo: si pasas de texto a número, los datos viejos de la columna siguen siendo texto.
+2. **Encabezado de la cartilla:**
+   - **Nivel:** hasta válvula (lote › turno › válvula), hasta turno, o **solo hasta lote**. A nivel de lote, el registro guarda turno y válvula vacíos y la app suma plantas y área de las válvulas del lote.
+   - **Turno:** obligatorio, opcional o no pedirlo.
+   - **Fecha editable:** por defecto hoy; se puede elegir una fecha pasada (con aviso en rojo), nunca futura.
+   - **Semana de cultivo:** se calcula desde el **inicio de campaña** del lote (se asume que es la fecha de poda) y se guarda en la columna `semana_cultivo`.
+3. **Capas de evaluación** (planta › rama › brote…): escribe una capa por línea, de la mayor a la menor (máximo 4), y asigna cada campo a su capa.
+   - Cada capa puede tener **un contador** (N° de planta, N° de rama, N° de brote). Al marcarlo, empieza en 1.
+   - Se guarda **una fila por la capa más profunda** (un brote = una fila) repitiendo en ella los datos de la planta y la rama. Así Power BI lo lee sin trabajo extra.
+   - Botones al guardar: **siguiente brote** (planta y rama se conservan, brote +1, el resto vuelve a su valor por defecto), **siguiente rama** y **siguiente planta**. No hay máximo de ramas ni de brotes.
+4. **Campos calculados:** suma, resta, multiplicación, división, porcentaje y promedio entre campos numéricos. Se toman **en el orden de la lista** (la pantalla del editor muestra la fórmula en palabras antes de guardar: «(A ÷ B) × 100»). El servidor repite la cuenta, así que el dato guardado no depende del celular.
+
+### C. Nueva cartilla «Eval. Axilas» (módulo Fenología)
+- Se crea sola una vez, con el servidor nuevo. Se puede editar o desactivar.
+- Encabezado: fecha (editable), campaña, variedad, fundo, sub fundo, módulo, lote y válvula desde el programa; turno opcional; semana de cultivo automática.
+- Datos generales: **Tipo de poda** (Normal, Adelanta, Traspaso, Siembra, Ensayo, Otro).
+- Capa **Planta:** N° de planta (conteo, empieza en 1) y Categoría (Normal, Pequeña, Enferma).
+- Capa **Rama:** N° de rama (conteo, empieza en 1).
+- Capa **Brote:** N° de brote (empieza en 1); axilas vegetativo, veg. órganos, yemas, productivos y falso cargador (conteo, empiezan en 0) y **Total axilas** (suma automática de los 5).
+- Hoja propia: `Fenología - Eval. Axilas`, una fila por brote.
+- **Asígnala a los evaluadores** en Usuarios > Accesos.
+
+### Para actualizar (versión 12)
+1. Pega el nuevo `Code.gs` en Apps Script y publica **Nueva versión** (la URL no cambia). La hoja `Plantillas` gana sola la columna «Configuración» y las cartillas anteriores quedan con encabezado completo hasta válvula, igual que antes.
+2. Instala el **activador** de `procesarRecepcionAuto` (punto A.3).
+3. Sube a GitHub `index.html` y `sw.js` (revisa tu URL `/exec` en `const SYNC`: el archivo viene vacío). Los celulares verán "Hay una nueva versión – Actualizar".
+4. Haz un piloto real con 2 o 3 evaluadores antes de abrirlo a todos.
+
+---
+
+## (versión anterior)
 # Puesta en marcha — versión 11 (umbrales por cultivo, descarga por fechas, cartilla de poda)
 
 ## Qué trae la versión 11 (novedades sobre la 10)
