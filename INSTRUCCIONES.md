@@ -1,3 +1,30 @@
+# Versión 13 — qué cambió y cómo actualizar
+
+**Actualizar (importante):**
+1. Reemplaza en GitHub `index.html`, `sw.js` (y `manifest`/íconos si no cambian, no hace falta). Vuelve a pegar tu URL en `const SYNC={url:""}`.
+2. En Apps Script reemplaza todo `Code.gs` y haz **Implementar → Administrar implementaciones → Editar → Nueva versión**.
+3. Ejecuta una vez cualquier función (por ejemplo `cerrarCampanasDiario`) y **autoriza el acceso a Drive** (las fotos se guardan ahí). Sin este paso las fotos no suben.
+4. Opcional: activador diario de tiempo para `cerrarCampanasDiario` (el sistema igual revisa solo una vez al día cuando alguien abre la app).
+
+**Novedades**
+- Teclado: la tecla de acción dice «siguiente» y pasa a la siguiente variable; en la última, «listo».
+- Fotos: botón «Tomar foto» (hasta 3 por defecto; en el editor de cartillas se elige 0, 1, 3 o 5). Se comprimen y suben aparte de los datos, sin frenar. Hoja nueva **Fotos** con el enlace, el código de muestra y el usuario. Carpeta de Drive «Fotos evaluaciones…».
+- Espaciado más compacto en las cartillas.
+- Campaña vigente: solo se puede evaluar entre inicio y cierre de campaña (ambos días incluidos). El aviso sale bajo la válvula. Pasado el cierre, la válvula pasa a CERRADO al día siguiente. Si la fecha del lote está vacía no se valida. El servidor marca `alerta_campana` si llegara algo fuera de fecha (por ejemplo, evaluación hecha sin señal).
+- Registros: tabla resumen (evaluaciones, muestras, lotes, válvulas, hectáreas, tiempo promedio, fotos, por cartilla) con botón «Compartir imagen» para mandar al supervisor, y «Ver recorrido».
+- Eval. Axilas: el botón de abajo ahora es «Guardar brote N». Arriba, junto a «Planta · Rama · Brote», están «＋ Nueva rama (N)» y «＋ Nueva planta (N)». Estos dos NO guardan: si hay datos sin guardar en el brote actual, preguntan antes de descartarlos.
+- Mapa de recorrido: dibujo SVG sin mapa de fondo (no gasta datos). El evaluador ve el suyo en Registros; el administrador, el de todos en Supervisión (periodo y cartilla a elegir, hasta 1 500 puntos).
+- Código de muestra: `USUARIO-AAMMDD-NNN`, correlativo por usuario y día (funciona sin señal). En cartillas por capas todos los brotes de una planta comparten el código. Se conserva al corregir.
+- Columnas nuevas en cada cartilla: `codigo_muestra`, `duracion_s`, `area_ha`, `n_fotos`, `alerta_campana`.
+
+**Límites a tener en cuenta**
+- El tiempo por evaluación se mide desde que se abre el formulario hasta guardar; mayores de 30 min no cuentan.
+- Las fotos no se guardan en el borrador; los enlaces de Drive son privados salvo que compartas la carpeta.
+- Si el mismo usuario evalúa desde dos celulares el mismo día, los correlativos pueden repetirse.
+- Pruebas hechas con simulación (no en Sheet ni celular reales): hacer piloto con 2–3 evaluadores.
+
+---
+
 # Puesta en marcha — versión 12 (80 evaluadores y cartillas más flexibles)
 
 ## Qué trae la versión 12 (novedades sobre la 11)

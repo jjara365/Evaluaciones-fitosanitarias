@@ -2,7 +2,7 @@
 // Cuando cambies index.html, sube el número de versión (v12 -> v13) para que los celulares detecten la actualización.
 // La versión nueva NO se activa sola mientras alguien está usando la app: la app muestra el aviso
 // "Hay una nueva versión" y el usuario toca "Actualizar" cuando le conviene (sus borradores se conservan).
-const CACHE = "evalcampo-v12";
+const CACHE = "evalcampo-v13";
 const ARCHIVOS = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", e => {

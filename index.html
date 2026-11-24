@@ -128,6 +128,37 @@ textarea{min-height:110px}
 .tile small{font-size:12.5px;color:var(--tenue);line-height:1.3}
 .tile.adm{border-style:dashed}
 .tile .pend{background:var(--pri);color:#fff;border-radius:10px;padding:1px 8px;font-size:12px;font-weight:700}
+/* v13: formulario más compacto */
+#form-dinamico .card{padding:8px 10px;margin-bottom:8px}
+#form-dinamico label{margin:6px 0 2px;font-size:13.5px}
+#form-dinamico input,#form-dinamico select{padding:8px 10px;font-size:17px;border-radius:9px}
+#form-dinamico .plaga{padding:3px 0}
+#form-dinamico .contador button{width:46px;height:46px;font-size:26px}
+#form-dinamico .contador input{padding:6px 2px;font-size:20px;width:58px}
+#form-dinamico .grupo-t{margin:0 0 2px;font-size:14px}
+#form-dinamico .ayuda{margin:2px 0 0;font-size:12px}
+/* v13: contexto de capas con botones aparte del Guardar */
+.ctx #ctx-txt{font-weight:700;font-size:16px}
+#avanzar-capas{display:flex;gap:8px;margin-top:8px}
+#avanzar-capas .btn{margin:0;font-size:14px;padding:9px 6px;font-weight:600}
+.cod-muestra{margin:0 0 8px;padding:6px 10px;border-radius:10px;background:var(--suave);font-size:14px}
+.camp-aviso{margin:6px 0 0;font-size:13px;font-weight:600;color:var(--tenue)}
+.camp-aviso.mal{color:#b91c1c}
+.fotos-mini{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+.fotos-mini .foto{position:relative;width:76px;height:76px;border-radius:10px;overflow:hidden;border:1.5px solid var(--borde)}
+.fotos-mini img{width:100%;height:100%;object-fit:cover;display:block}
+.fotos-mini button{position:absolute;top:2px;right:2px;width:26px;height:26px;border:0;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;font-size:14px;padding:0}
+.tabla-res{width:100%;border-collapse:collapse;font-size:14px}
+.tabla-res td,.tabla-res th{padding:5px 6px;border-bottom:1px solid var(--suave);text-align:left}
+.tabla-res td:last-child,.tabla-res th:last-child{text-align:right;font-weight:700}
+.tabla-res.multi td:last-child,.tabla-res.multi th:last-child{font-weight:400}
+.tabla-res.multi td,.tabla-res.multi th{text-align:right}
+.tabla-res.multi td:first-child,.tabla-res.multi th:first-child{text-align:left}
+#res-captura{padding:10px;border-radius:12px;background:var(--card);border:1px solid var(--borde)}
+#res-captura h3{margin:0 0 2px;font-size:16px}
+.mapa-svg{width:100%;height:auto;background:var(--suave);border-radius:12px;touch-action:manipulation}
+.mapa-leyenda{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;margin:6px 0}
+.mapa-leyenda i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
 </style>
 </head>
 <body>
@@ -196,6 +227,7 @@ textarea{min-height:110px}
       <div id="w-valvula"><label for="sel-valvula">Válvula</label><select id="sel-valvula"></select></div>
     </div>
     <div class="ficha" id="ficha" hidden></div>
+    <p class="camp-aviso" id="camp-aviso" hidden></p>
     <div id="wrap-fecha" hidden>
       <label for="fecha-eval">Fecha de la evaluación</label>
       <input id="fecha-eval" type="date">
@@ -213,12 +245,24 @@ textarea{min-height:110px}
     <div class="gps" id="gps">📍 Buscando ubicación…</div>
   </div>
 
-  <div class="card ctx" id="ctx-capas" hidden></div>
+  <div class="card ctx" id="ctx-capas" hidden>
+    <div id="ctx-txt"></div>
+    <div id="avanzar-capas" hidden></div>
+  </div>
+  <div class="cod-muestra" id="cod-muestra" hidden></div>
   <div id="form-dinamico"></div>
 
   <div class="card">
     <label for="obs">Observaciones (opcional)</label>
     <textarea id="obs" style="min-height:80px" placeholder="Ej. daño en bordes del lote"></textarea>
+  </div>
+
+  <div class="card" id="card-fotos" hidden>
+    <label style="margin-top:0">Fotos <small id="fotos-lim" class="ayuda"></small></label>
+    <div class="fotos-mini" id="fotos-mini"></div>
+    <button type="button" class="btn sec" id="foto-btn" style="margin-top:4px">📷 Tomar foto</button>
+    <input type="file" id="foto-input" accept="image/*" capture="environment" hidden>
+    <p class="ayuda">Se comprimen y se envían cuando haya señal. No se guardan en el borrador.</p>
   </div>
 </section>
 
@@ -256,6 +300,16 @@ textarea{min-height:110px}
   <div class="resumen">
     <div><b id="r-total">0</b><small>Registros</small></div>
     <div><b id="r-pend">0</b><small id="r-pend-lbl">Sin enviar</small></div>
+  </div>
+  <div class="card">
+    <label for="res-rango" style="margin-top:0">Resumen de mi trabajo</label>
+    <select id="res-rango"><option value="hoy">Hoy</option><option value="ayer">Ayer</option><option value="7">Últimos 7 días</option></select>
+    <div id="res-captura" style="margin-top:8px"></div>
+    <div class="grid2" style="margin-top:8px">
+      <button class="btn" id="res-compartir">📤 Compartir imagen</button>
+      <button class="btn sec" id="res-mapa-btn">🗺 Ver recorrido</button>
+    </div>
+    <div id="res-mapa" hidden style="margin-top:8px"></div>
   </div>
   <div class="card">
     <button class="btn" id="enviar-ahora">☁ Enviar ahora</button>
@@ -499,6 +553,8 @@ textarea{min-height:110px}
         <label><input type="checkbox" id="ed-fecha"> Permitir cambiar la fecha (por defecto hoy; no se aceptan fechas futuras)</label>
         <label><input type="checkbox" id="ed-semana"> Calcular la semana de cultivo (desde el inicio de campaña del lote)</label>
       </div>
+      <label for="ed-fotos">Fotos por evaluación</label>
+      <select id="ed-fotos"><option value="0">No permitir fotos</option><option value="1">Hasta 1 foto</option><option value="3">Hasta 3 fotos</option><option value="5">Hasta 5 fotos</option></select>
       <label for="ed-capas">Capas de evaluación (opcional)</label>
       <textarea id="ed-capas" style="min-height:70px" placeholder="Una por línea, de la mayor a la menor. Ej.:&#10;Planta&#10;Rama&#10;Brote"></textarea>
       <p class="ayuda">Úsalas cuando se evalúa por niveles (una planta tiene ramas y cada rama tiene brotes). Se guarda <b>una fila por la capa más profunda</b>, repitiendo en ella los datos de las capas superiores. Máximo 4 capas. Deja vacío si la evaluación es simple.</p>
@@ -585,6 +641,13 @@ textarea{min-height:110px}
     <button class="btn" id="dl-bajar">⬇ Descargar CSV</button>
     <p class="ayuda" id="dl-info"></p>
   </div>
+  <div class="card" id="mapa-card">
+    <label style="margin:0 0 4px">Mapa de recorrido</label>
+    <p class="ayuda" style="margin:0 0 8px">Dónde evaluó cada persona en el periodo elegido arriba (máx. 1 500 puntos). Es un dibujo liviano, sin mapa de fondo.</p>
+    <select id="mp-cartilla"><option value="">Todas las cartillas</option></select>
+    <button class="btn sec" id="mp-ver" style="margin-top:8px">🗺 Ver recorrido</button>
+    <div id="mp-box" style="margin-top:8px"></div>
+  </div>
   <div class="card" id="sv-sin-card" hidden><label style="margin:0 0 6px">Sin registros en el periodo</label><div id="sv-sin"></div></div>
 </section>
 
@@ -619,7 +682,6 @@ textarea{min-height:110px}
 </main>
 
 <div class="barra-guardar">
-  <div class="fila" id="avanzar-capas" hidden></div>
   <div class="fila">
     <button class="btn sec" id="borrador">💾 Borrador</button>
     <button class="btn" id="guardar">Guardar y pasar a la siguiente planta</button>
@@ -649,7 +711,7 @@ textarea{min-height:110px}
    Pega aquí la URL que te da Apps Script (termina en /exec).
    Sin esta URL nadie puede ingresar a la app. */
 const SYNC = {
-  url: "https://script.google.com/macros/s/AKfycbwww3I9xUCzQB6H5EODxcDwl-9NZbZzlCoVULoBgzoXq6dSm1jNym100zLT19RXE3EZ/exec"
+  url: ""
 };
 
 const ROLES = { admin:"Administrador", evaluador:"Evaluador" };
@@ -772,17 +834,17 @@ async function pbkdf2(clave, saltHex){
 const DB_NAME="evalcampo", STORE="registros";
 function openDB(){
   return new Promise((res,rej)=>{
-    const r=indexedDB.open(DB_NAME,1);
-    r.onupgradeneeded=()=>r.result.createObjectStore(STORE,{keyPath:"id"});
+    const r=indexedDB.open(DB_NAME,2);
+    r.onupgradeneeded=()=>{ const d=r.result; if(!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE,{keyPath:"id"}); if(!d.objectStoreNames.contains("fotos")) d.createObjectStore("fotos",{keyPath:"id"}); };
     r.onsuccess=()=>res(r.result);
     r.onerror=()=>rej(r.error);
   });
 }
-async function dbOp(mode, fn){
+async function dbOp(mode, fn, store){
   const db=await openDB();
   return new Promise((res,rej)=>{
-    const t=db.transaction(STORE,mode);
-    const req=fn(t.objectStore(STORE));
+    const t=db.transaction(store||STORE,mode);
+    const req=fn(t.objectStore(store||STORE));
     t.oncomplete=()=>{db.close(); res(req && req.result);};
     t.onerror=()=>{db.close(); rej(t.error);};
     t.onabort=()=>{db.close(); rej(t.error);};
@@ -791,6 +853,9 @@ async function dbOp(mode, fn){
 const dbAll = () => dbOp("readonly", s=>s.getAll());
 const dbPut = r  => dbOp("readwrite", s=>s.put(r));
 const dbDel = id => dbOp("readwrite", s=>s.delete(id));
+const fAll = () => dbOp("readonly", s=>s.getAll(), "fotos");
+const fPut = r  => dbOp("readwrite", s=>s.put(r), "fotos");
+const fDel = id => dbOp("readwrite", s=>s.delete(id), "fotos");
 
 /* ---------- Llamadas al servidor ---------- */
 async function api(accion, datos, ms){
@@ -1055,9 +1120,29 @@ function actualizarAviso(){
 /* =====================================================================
    EVALUAR: selección en cascada + formulario dinámico
    ===================================================================== */
-const abiertas = () => CFG.maestra.filter(r=>r.estado!=="CERRADO");
+// Una válvula está abierta si su estado no es CERRADO y la fecha de cierre de campaña no ha pasado (el servidor la cierra sola al día siguiente; aquí también, por si el celular está sin señal)
+const abiertas = () => { const hoy=hoyISO(); return CFG.maestra.filter(r=>r.estado!=="CERRADO" && !(r.cierre_campana && r.cierre_campana<hoy)); };
+// La evaluación solo vale dentro del intervalo [inicio de campaña, cierre de campaña] (ambos días incluidos). Si falta una fecha, ese lado no se valida.
+function vigenciaCampana(f,fecha){
+  if(!f) return {ok:true};
+  if(f.inicio_campana && fecha<f.inicio_campana) return {ok:false,msg:`La campaña de este lote inicia el ${f.inicio_campana}: no se puede evaluar el ${fecha}.`};
+  if(f.cierre_campana && fecha>f.cierre_campana) return {ok:false,msg:`La campaña de este lote cerró el ${f.cierre_campana}: no se puede evaluar el ${fecha}.`};
+  return {ok:true};
+}
+function avisoCampana(){
+  const f=filaSel(), a=$("camp-aviso"), p=plantillaActual();
+  if(!f||!p){ a.hidden=true; $("guardar").disabled=false; return; }
+  const fecha=CORR?CORR.fecha:fechaEval(), v=vigenciaCampana(f,fecha);
+  a.hidden=false; a.classList.toggle("mal",!v.ok);
+  if(!v.ok) a.textContent="⛔ "+v.msg;
+  else if(f.inicio_campana||f.cierre_campana){
+    const q=f.cierre_campana?diasEntre(fecha,f.cierre_campana):null;
+    a.textContent=`Campaña: ${f.inicio_campana||"—"} → ${f.cierre_campana||"sin cierre"}`+(q!==null?` · ${q===0?"último día":"quedan "+q+" días"}`:"");
+  } else a.textContent="Esta válvula no tiene fechas de campaña: no se puede validar la fecha.";
+  $("guardar").disabled=!v.ok;
+}
 
-function cfgDe(p){ return Object.assign({nivel:"valvula",turno:"si",fecha_editable:false,semana_cultivo:false,capas:[]},(p&&p.cfg)||{}); }
+function cfgDe(p){ return Object.assign({nivel:"valvula",turno:"si",fecha_editable:false,semana_cultivo:false,fotos_max:3,capas:[]},(p&&p.cfg)||{}); }
 // Niveles del encabezado que pide la cartilla actual (hay evaluaciones que llegan solo hasta lote o hasta turno)
 function nivActivos(){
   const c=cfgDe(plantillaActual());
@@ -1069,6 +1154,8 @@ function agregarFilas(rows,nivel){
   f.turno = nivel==="turno" ? rows[0].turno : ""; f.valvula="";
   const suma=k=>rows.some(r=>r[k]!==""&&r[k]!==undefined) ? rows.reduce((a,r)=>a+(Number(r[k])||0),0) : "";
   f.plantas=suma("plantas"); f.area=suma("area");
+  const ini=rows.map(r=>r.inicio_campana).filter(Boolean).sort(), cie=rows.map(r=>r.cierre_campana).filter(Boolean).sort();
+  f.inicio_campana=ini[0]||""; f.cierre_campana=cie.length?cie[cie.length-1]:"";
   f.densidad = (f.plantas!==""&&f.area) ? Math.round(f.plantas/f.area*100)/100 : "";
   f.id=(nivel==="turno"?"T|":"L|")+[f.campana,f.sub_fundo,f.fundo,f.modulo,f.lote,f.turno].join("|");
   f.agregada=true;
@@ -1130,6 +1217,7 @@ function onValvulaCambio(conservarPlanta){
     h+=` · <b>Inicio de cosecha:</b> ${f.inicio_cosecha?esc(f.inicio_cosecha):"—"}`;
     box.innerHTML=h; box.hidden=false;
   } else { box.hidden=true; box.innerHTML=""; }
+  avisoCampana(); renderCodigo();
   const id=f?f.id:"";
   if(id!==filaPrevId){
     filaPrevId=id;
@@ -1179,7 +1267,7 @@ function avisoFecha(){
   const v=$("fecha-eval").value, hoy=hoyISO(), a=$("fecha-aviso");
   a.hidden = !v || v===hoy; a.textContent = (v&&v!==hoy) ? "⚠ La fecha no es la de hoy ("+hoy+"). Revísala antes de guardar." : "";
 }
-$("fecha-eval").addEventListener("change",()=>{ if($("fecha-eval").value>hoyISO()) $("fecha-eval").value=hoyISO(); FE.auto=$("fecha-eval").value===hoyISO(); avisoFecha(); sucioEval=true; });
+$("fecha-eval").addEventListener("change",()=>{ if($("fecha-eval").value>hoyISO()) $("fecha-eval").value=hoyISO(); FE.auto=$("fecha-eval").value===hoyISO(); avisoFecha(); avisoCampana(); renderCodigo(); sucioEval=true; });
 
 /* ---------- Campos calculados y capas ---------- */
 const OPS_SIMB={suma:"+",resta:"−",producto:"×",division:"÷",porcentaje:"÷",promedio:"+"};
@@ -1218,17 +1306,41 @@ function recalcular(){
 function contadorDe(p,capa){ return p.campos.find(x=>x.contador&&x.capa===capa&&x.activo!==false)||null; }
 function renderCtx(){
   const p=plantillaActual(), c=cfgDe(p), box=$("ctx-capas");
+  if(p&&!CORR) $("guardar").textContent=txtGuardar();
+  renderCodigo();
   if(!p||!c.capas.length){ box.hidden=true; return; }
-  box.textContent=c.capas.map(cp=>{ const f=contadorDe(p,cp), el=f&&$("f_"+f.clave); return el&&el.value!==""?`${cp} ${el.value}`:cp; }).join(" · ");
+  $("ctx-txt").textContent=c.capas.map(cp=>{ const f=contadorDe(p,cp), el=f&&$("f_"+f.clave); return el&&el.value!==""?`${cp} ${el.value}`:cp; }).join(" · ");
   box.hidden=false;
 }
 function renderAvanzar(){
   const p=plantillaActual(), c=cfgDe(p), box=$("avanzar-capas");
   if(!p||c.capas.length<2||CORR){ box.hidden=true; box.innerHTML=""; return; }
-  let h=""; for(let k=c.capas.length-2;k>=0;k--) h+=`<button type="button" class="btn sec" data-k="${k}">Guardar · siguiente ${esc(c.capas[k].toLowerCase())}</button>`;
+  let h=""; for(let k=c.capas.length-2;k>=0;k--){
+    const f=contadorDe(p,c.capas[k]), el=f&&$("f_"+f.clave), n=el&&el.value!==""?(Number(el.value)||0)+1:"";
+    h+=`<button type="button" class="btn sec" data-k="${k}">＋ Nueva ${esc(c.capas[k].toLowerCase())}${n!==""?" ("+n+")":""}</button>`;
+  }
   box.innerHTML=h; box.hidden=false;
 }
-$("avanzar-capas").addEventListener("click",e=>{ const b=e.target.closest("button[data-k]"); if(b) guardarEval(parseInt(b.dataset.k)); });
+// Estos botones NO guardan: solo pasan a la rama / planta siguiente (lo escrito en el brote actual se pierde, por eso pregunta)
+$("avanzar-capas").addEventListener("click",e=>{ const b=e.target.closest("button[data-k]"); if(b) nuevaCapa(parseInt(b.dataset.k)); });
+function capaProfundaSucia(p,c){
+  const cp=c.capas[c.capas.length-1];
+  return p.campos.some(f=>{
+    if(f.activo===false||f.capa!==cp||f.contador||f.tipo==="calculado") return false;
+    const el=$("f_"+f.clave); if(!el||el.value==="") return false;
+    return String(el.value)!==String(valorInicial(f,null));
+  });
+}
+function nuevaCapa(k){
+  const p=plantillaActual(), c=cfgDe(p); if(!p||CORR||!c.capas.length) return;
+  const prof=c.capas[c.capas.length-1], f=contadorDe(p,c.capas[k]), el=f&&$("f_"+f.clave);
+  const n=el&&el.value!==""?(Number(el.value)||0)+1:"";
+  if(capaProfundaSucia(p,c) && !confirm(`Hay datos sin guardar en ${prof.toLowerCase()==="brote"?"el":"la"} ${prof.toLowerCase()} actual. ¿Pasar a ${c.capas[k].toLowerCase()} ${n} y descartarlos?`)) return;
+  FOTOS=[]; renderForm(proximoPrev(p,c,leerValoresCrudos(),k));
+  sucioEval=true; programarBorrador();
+  toast("Nueva "+c.capas[k].toLowerCase()+": "+ctxTxt(p,c,leerValoresCrudos()));
+  window.scrollTo({top:0,behavior:"smooth"});
+}
 // Lo que pasa al guardar: las capas superiores se conservan; en la capa que avanzas el contador sube 1 y lo demás vuelve al valor por defecto
 function proximoPrev(p,c,valores,avance){
   const prev={};
@@ -1241,9 +1353,36 @@ function proximoPrev(p,c,valores,avance){
 }
 function ctxTxt(p,c,valores){ return c.capas.map(cp=>{ const f=contadorDe(p,cp); return f?`${cp} ${valores[f.clave]}`:cp; }).join(" · "); }
 
+function camposNavegables(){
+  return [...$("form-dinamico").querySelectorAll("input,select")].filter(e=>!e.readOnly&&!e.disabled&&e.type!=="hidden"&&!e.classList.contains("calc")&&!e.closest("[hidden]"));
+}
+function marcarTeclado(){            // la tecla de acción del teclado dice «siguiente» (→) y en el último campo «listo»
+  const l=camposNavegables();
+  l.forEach(e=>{ if(e.tagName==="INPUT") e.setAttribute("enterkeyhint","next"); });
+  const u=l[l.length-1]; if(u&&u.tagName==="INPUT") u.setAttribute("enterkeyhint","done");
+}
+function irSiguienteCampo(el){
+  const l=camposNavegables(), i=l.indexOf(el), sig=l[i+1];
+  if(sig){
+    sig.focus();
+    if(sig.tagName==="INPUT"){ try{ sig.select(); }catch(e){} }
+    try{ sig.scrollIntoView({block:"center"}); }catch(e){}
+  } else { el.blur(); window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"}); }
+}
+$("form-dinamico").addEventListener("keydown",e=>{
+  if(e.key!=="Enter"||e.target.tagName!=="INPUT") return;
+  e.preventDefault(); irSiguienteCampo(e.target);
+});
+$("form-dinamico").addEventListener("change",e=>{        // al elegir en una lista, si lo siguiente se escribe, el cursor ya queda ahí
+  if(e.target.tagName!=="SELECT") return;
+  const l=camposNavegables(), sig=l[l.indexOf(e.target)+1];
+  if(sig&&sig.tagName==="INPUT"&&sig.type!=="date"){ sig.focus(); try{ sig.select(); }catch(x){} }
+});
+let TINI=Date.now();                // cuándo empezó a llenarse este formulario (para el tiempo por evaluación)
 function renderForm(prev){
   const p=plantillaActual(), cont=$("form-dinamico");
-  if(!p){ cont.innerHTML=""; return; }
+  TINI=Date.now();
+  if(!p){ cont.innerHTML=""; FOTOS=[]; renderFotosCard(); return; }
   const campos=p.campos.filter(c=>c.activo!==false), cf=cfgDe(p);
   const grupos=[];
   if(cf.capas.length){                       // por capas: primero los datos generales y luego cada capa, de la mayor a la menor
@@ -1256,7 +1395,9 @@ function renderForm(prev){
     x.c.push(c);
   });
   cont.innerHTML=grupos.map(g=>`<div class="card"><p class="grupo-t">${esc(g.n)}</p>${g.c.map(c=>htmlCampo(c,valorInicial(c,prev))).join("")}</div>`).join("");
+  marcarTeclado();
   recalcular();
+  renderFotosCard();
 }
 function htmlCampo(c,v){
   const id="f_"+c.clave, req=c.obligatorio?` <span class="req">*</span>`:"";
@@ -1330,6 +1471,105 @@ $("p-menos").onclick=()=>{ $("planta").value=Math.max(1,(parseInt($("planta").va
 $("p-mas").onclick  =()=>{ $("planta").value=(parseInt($("planta").value)||0)+1; saveTrab(); };
 $("planta").addEventListener("change",saveTrab);
 
+/* ---------- Fotos ---------- */
+// Se reducen a 1280 px (JPEG 70 %, ~150 KB) y viajan aparte de los datos, una por una, para no frenar el envío de la evaluación.
+let FOTOS=[];                                           // fotos de la evaluación en curso: [{id,data}]
+const urlFoto = new Map();
+function fotosMax(){ const p=plantillaActual(); return p?cfgDe(p).fotos_max:0; }
+function renderFotosCard(){
+  const p=plantillaActual(), mx=p?fotosMax():0, card=$("card-fotos");
+  card.hidden=!p||!mx||!!CORR;
+  $("fotos-lim").textContent=`(${FOTOS.length}/${mx})`;
+  $("foto-btn").disabled=FOTOS.length>=mx;
+  $("fotos-mini").innerHTML=FOTOS.map((f,i)=>`<div class="foto"><img src="${f.data}" alt="foto ${i+1}"><button type="button" data-i="${i}" aria-label="Quitar">✕</button></div>`).join("");
+}
+function reducirImagen(file,maxPx,q){
+  return new Promise((res,rej)=>{
+    const img=new Image(), u=URL.createObjectURL(file);
+    img.onload=()=>{
+      const k=Math.min(1,maxPx/Math.max(img.width,img.height)), c=document.createElement("canvas");
+      c.width=Math.round(img.width*k); c.height=Math.round(img.height*k);
+      c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+      URL.revokeObjectURL(u); res(c.toDataURL("image/jpeg",q));
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(u); rej(new Error("imagen")); };
+    img.src=u;
+  });
+}
+$("foto-btn").onclick=()=>{ if(FOTOS.length<fotosMax()) $("foto-input").click(); };
+$("foto-input").addEventListener("change",async e=>{
+  const f=e.target.files&&e.target.files[0]; e.target.value="";
+  if(!f) return;
+  try{
+    const data=await reducirImagen(f,1280,0.7);
+    FOTOS.push({id:"f"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),data});
+    sucioEval=true; renderFotosCard();
+  }catch(x){ toast("No se pudo leer la foto"); }
+});
+$("fotos-mini").addEventListener("click",e=>{ const b=e.target.closest("button[data-i]"); if(!b) return; FOTOS.splice(parseInt(b.dataset.i,10),1); renderFotosCard(); });
+async function guardarFotos(reg,fotos){
+  for(let i=0;i<fotos.length;i++) await fPut({id:reg.id+"|"+(i+1),reg_id:reg.id,n:i+1,data:fotos[i].data,enviada:false,plantilla_id:reg.plantilla_id,mod_eval:modReg(reg),codigo:reg.codigo_muestra});
+  FOTOS=[]; renderFotosCard();
+}
+// Sube las fotos de las evaluaciones ya enviadas (una por llamada, con pausa corta). Si falla, queda para el próximo ciclo.
+async function sincronizarFotos(){
+  const todas=(await fAll()||[]).filter(f=>!f.enviada);
+  if(!todas.length) return;
+  const regs=new Map((await dbAll()||[]).map(r=>[r.id,r]));
+  for(const f of todas){
+    const r=regs.get(f.reg_id);
+    if(!r){ await fDel(f.id); continue; }
+    if(!r.enviado||r.anulado) { if(r.anulado) await fDel(f.id); continue; }   // primero debe existir la evaluación en el servidor
+    try{
+      await srv("foto_subir",{reg_id:f.reg_id,n:f.n,codigo:f.codigo||r.codigo_muestra||"",plantilla_id:f.plantilla_id,mod_eval:f.mod_eval,fecha:r.fecha,data:f.data},90000);
+      f.enviada=true; f.data=""; await fPut(f);       // se libera el espacio; queda la marca de enviada
+    }catch(e){ if(e&&e.message==="sesion") return; break; }
+    await new Promise(z=>setTimeout(z,400));
+  }
+}
+async function fotosPendientes(){ return (await fAll()||[]).filter(f=>!f.enviada).length; }
+
+/* ---------- Código de muestra ---------- */
+// Formato: USUARIO-AAMMDD-NNN (el N° sigue contando por usuario y día, también sin señal).
+// En cartillas por capas, todos los brotes de una misma planta comparten el código (la muestra es la planta).
+const IDXM={map:new Map(),max:{}};
+function idxMuestras(regs){
+  IDXM.map=new Map(); IDXM.max={};
+  regs.forEach(r=>{
+    if(!r.codigo_muestra) return;
+    if(r.muestra_key) IDXM.map.set(r.muestra_key,r.codigo_muestra);
+    const m=/^(.*-)(\d+)$/.exec(r.codigo_muestra); if(m) IDXM.max[m[1]]=Math.max(IDXM.max[m[1]]||0,Number(m[2]));
+  });
+}
+function lsNum(k){ try{ return Number(localStorage.getItem(k))||0; }catch(e){ return 0; } }
+function codigoSiguiente(fecha){
+  const u=String(SES.usuario||"").toUpperCase().replace(/[^A-Z0-9]/g,""), prefix=`${u}-${String(fecha).slice(2,4)}${String(fecha).slice(5,7)}${String(fecha).slice(8,10)}-`;
+  const n=Math.max(IDXM.max[prefix]||0, lsNum("seqm_"+prefix))+1;
+  return {codigo:prefix+String(n).padStart(3,"0"), prefix, n};
+}
+function codigoDe(p,fila,fecha){
+  const c=cfgDe(p);
+  if(c.capas.length){
+    const cp=contadorDe(p,c.capas[0]), el=cp&&$("f_"+cp.clave), pl=el&&el.value!==""?el.value:"1";
+    const key=[p.id,fila.id,fecha,pl].join("|");
+    if(IDXM.map.has(key)) return {codigo:IDXM.map.get(key),key,nueva:false};
+    return Object.assign(codigoSiguiente(fecha),{key,nueva:true});
+  }
+  return Object.assign(codigoSiguiente(fecha),{key:"",nueva:true});
+}
+function confirmarCodigo(c){
+  if(!c.nueva) return;
+  IDXM.max[c.prefix]=Math.max(IDXM.max[c.prefix]||0,c.n);
+  try{ localStorage.setItem("seqm_"+c.prefix,String(c.n)); }catch(e){}
+  if(c.key) IDXM.map.set(c.key,c.codigo);
+}
+function renderCodigo(){
+  const el=$("cod-muestra"), p=plantillaActual(), f=SES&&p?filaSel():null;
+  if(!f){ el.hidden=true; return; }
+  const cod=CORR&&CORR.tipo==="eval"&&CORR.codigo ? {codigo:CORR.codigo,nueva:false} : codigoDe(p,f,CORR?CORR.fecha:fechaEval());
+  el.hidden=false; el.innerHTML=`🏷 Código de muestra: <b>${esc(cod.codigo)}</b>`+(cod.nueva?"":" <small>(misma planta)</small>");
+}
+
 /* ---------- Guardar evaluación ---------- */
 $("guardar").onclick = ()=>guardarEval(null);
 async function guardarEval(avance){
@@ -1355,6 +1595,8 @@ async function guardarEval(avance){
   if(!capas.length && fila.plantas!=="" && planta>fila.plantas && !confirm(`Esta válvula tiene ${num(fila.plantas)} plantas y estás registrando la N° ${planta}. ¿Es correcto?`)) return;
   const corr=CORR&&CORR.tipo==="eval"?CORR:null;
   const hoy=corr?corr.fecha:fechaEval();
+  const vg=vigenciaCampana(fila,hoy);
+  if(!vg.ok){ toast(vg.msg); avisoCampana(); return; }
   if(!corr){
     const mios=(await dbAll()||[]).filter(r=>r.usuario===SES.usuario&&!r.anulado&&r.maestra_id===fila.id&&r.plantilla_id===p.id&&r.fecha===hoy);
     let dup;
@@ -1364,6 +1606,8 @@ async function guardarEval(avance){
   }
 
   const ahora=new Date();
+  const cod=corr&&corr.codigo ? {codigo:corr.codigo,nueva:false} : codigoDe(p,fila,hoy);
+  const durS=Math.round((Date.now()-TINI)/1000), fotos=FOTOS.slice();
   const dias=fila.inicio_campana ? diasEntre(fila.inicio_campana,hoy) : "";
   const reg={
     id:(corr&&!corr.enviado)?corr.id:uuid(), fecha:hoy,
@@ -1377,11 +1621,16 @@ async function guardarEval(avance){
     dias_campana: dias,
     semana_cultivo: (cfg.semana_cultivo && dias!=="" && dias>=0) ? Math.floor(dias/7)+1 : "",
     lat:pos?pos.lat:"", lon:pos?pos.lon:"", prec:pos?Math.round(pos.prec):"",
+    codigo_muestra:cod.codigo, muestra_key:corr&&corr.muestra_key!==undefined?corr.muestra_key:(cod.key||""),
+    duracion_s:(durS>=1&&durS<=1800)?durS:"",                      // más de 30 min = hubo una pausa: no cuenta para el promedio
+    area_ha:fila.area===""||fila.area===undefined?"":fila.area, n_fotos:fotos.length,
     valores, total_conteos:total, obs:$("obs").value.trim(), exportado:false, enviado:false
   };
   try{
     if(corr&&corr.enviado) reg.corrige_a=corr.id;
     await dbPut(reg);
+    confirmarCodigo(cod);
+    await guardarFotos(reg,fotos);
     if(corr&&corr.enviado){
       const o=(await dbAll()||[]).find(y=>y.id===corr.id);
       if(o){ o.anulado=true; o.anul_motivo="Corregido"; o.anul_ts=Date.now(); o.anul_enviado=false; o.reemplazado_por=reg.id; await dbPut(o); }
@@ -1408,22 +1657,109 @@ const resuelto = r => !!r.rechazado || (SYNC.url ? (!!r.enviado && (!r.anulado |
 async function refrescarRegistros(){
   if(!SES) return;
   const todos=visibles(await dbAll()||[]).sort((a,b)=>b.ts-a.ts);
+  idxMuestras(todos.filter(r=>r.usuario===SES.usuario));
   nPend=todos.filter(r=>!resuelto(r)).length;
   const vm = esModReg(MODACT) ? todos.filter(r=>modReg(r)===MODACT) : todos;      // en un módulo solo se ven sus registros
   $("r-total").textContent=vm.length;
   $("r-pend").textContent=vm.filter(r=>!resuelto(r)).length;
   $("r-pend-lbl").textContent=SYNC.url?"Sin enviar":"Sin exportar";
   actualizarRed();
+  renderResumen();
   if(!MODACT) renderInicio();
   $("lista-reg").innerHTML = vm.slice(0,50).map(r=>`
     <div class="reg${r.anulado?" anul":""}">
       <div>
         <span class="t">${modReg(r)==="soporte" ? `${esc(r.placa)} · ${esc(r.galones)} gal` : `${esc(r.fundo)} · ${esc(r.modulo||"")} · ${esc(r.lote)} · V${esc(r.valvula||"")} · Pl. ${esc(r.planta)}`}</span>
         <span class="tag ${r.rechazado||r.anulado?"no":resuelto(r)?"ok":""}">${r.anulado?(r.anul_enviado?"anulado":"anulando…"):r.rechazado?"rechazado":SYNC.url?(r.enviado?"enviado":"sin enviar"):(r.exportado?"exportado":"pendiente")}</span>
-        <small>${modReg(r)==="soporte" ? `${esc(r.fecha_abastecimiento)} · ${r.km===""||r.km===undefined?"sin km":esc(r.km)+" km"} · ${esc(r.conductor)}` : `${esc(r.fecha)} ${esc(String(r.hora||"").slice(0,5))}${r.total_conteos!==undefined?" · total "+esc(r.total_conteos):""}`}${SES.rol==="admin"&&r.evaluador?" · "+esc(r.evaluador):""}</small>${r.rechazado?`<small style="color:var(--rojo)">${esc(r.motivo_rechazo||"Rechazado por el servidor")}. Elimínalo y regístralo de nuevo si corresponde.</small>`:""}
+        <small>${modReg(r)==="soporte" ? `${esc(r.fecha_abastecimiento)} · ${r.km===""||r.km===undefined?"sin km":esc(r.km)+" km"} · ${esc(r.conductor)}` : `${esc(r.fecha)} ${esc(String(r.hora||"").slice(0,5))}${r.total_conteos!==undefined?" · total "+esc(r.total_conteos):""}`}${SES.rol==="admin"&&r.evaluador?" · "+esc(r.evaluador):""}${r.codigo_muestra?" · 🏷 "+esc(r.codigo_muestra):""}${r.n_fotos?" · 📷"+r.n_fotos:""}</small>${r.rechazado?`<small style="color:var(--rojo)">${esc(r.motivo_rechazo||"Rechazado por el servidor")}. Elimínalo y regístralo de nuevo si corresponde.</small>`:""}
       </div>
       <div class="acc">${r.anulado?"":`<button data-acc="corr" data-id="${esc(r.id)}">✏ Corregir</button><button class="rojo" data-acc="${r.rechazado?"del":"anul"}" data-id="${esc(r.id)}">${r.rechazado?"Eliminar":"Anular"}</button>`}</div>
     </div>`).join("") || "<p class='ayuda'>Aún no hay registros.</p>";
+}
+
+/* ---------- Resumen del trabajo + mapa de recorrido ---------- */
+function rangoFechas(v){
+  const h=hoyISO(); if(v==="ayer"){ const d=new Date(); d.setDate(d.getDate()-1); const a=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; return [a,a,"Ayer"]; }
+  if(v==="7"){ const d=new Date(); d.setDate(d.getDate()-6); return [`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`,h,"Últimos 7 días"]; }
+  return [h,h,"Hoy"];
+}
+const esEvalReg = r => modReg(r)!=="soporte"&&modReg(r)!=="reserva";
+function calcResumen(regs){
+  const ev=regs.filter(r=>esEvalReg(r)&&!r.anulado&&!r.rechazado);
+  const lotes=new Set(ev.map(r=>[r.fundo,r.modulo,r.lote].join("|")));
+  const vals=new Map(); ev.forEach(r=>{ if(r.valvula) vals.set([r.fundo,r.modulo,r.lote,r.valvula].join("|"),1); });
+  const areaPor=new Map(); ev.forEach(r=>{ const a=Number(r.area_ha); if(!isNaN(a)&&r.area_ha!==""&&r.area_ha!==undefined) areaPor.set(r.maestra_id||[r.fundo,r.modulo,r.lote,r.valvula].join("|"),a); });
+  let ha=0; areaPor.forEach(a=>ha+=a);
+  const d=ev.map(r=>Number(r.duracion_s)).filter(x=>x>0);
+  const prom=d.length?d.reduce((a,b)=>a+b,0)/d.length:0;
+  const muestras=new Set(ev.map(r=>r.codigo_muestra).filter(Boolean));
+  const porCart=new Map(); ev.forEach(r=>{ const k=r.plantilla_nombre||"—"; const o=porCart.get(k)||{n:0,dur:[],m:new Set()}; o.n++; if(Number(r.duracion_s)>0) o.dur.push(Number(r.duracion_s)); if(r.codigo_muestra) o.m.add(r.codigo_muestra); porCart.set(k,o); });
+  return {n:ev.length,lotes:lotes.size,valvulas:vals.size,ha,prom,muestras:muestras.size,fotos:ev.reduce((a,r)=>a+(r.n_fotos||0),0),porCart};
+}
+function fmtDur(s){ if(!s) return "—"; s=Math.round(s); return s>=60?`${Math.floor(s/60)} min ${pad(s%60)} s`:`${s} s`; }
+let RESUMEN=null;
+async function renderResumen(){
+  const el=$("res-captura"); if(!el||!SES) return;
+  const [d,h,tit]=rangoFechas($("res-rango").value);
+  const mis=(await dbAll()||[]).filter(r=>r.usuario===SES.usuario&&r.fecha>=d&&r.fecha<=h&&(!MODACT||!esModReg(MODACT)||modReg(r)===MODACT));
+  const R=calcResumen(mis); RESUMEN={R,tit,d,h};
+  const filas=[["Evaluaciones realizadas",R.n],["Muestras (códigos distintos)",R.muestras],["Lotes evaluados",R.lotes],["Válvulas evaluadas",R.valvulas],["Hectáreas evaluadas",R.ha?num(R.ha):"—"],["Tiempo promedio por evaluación",fmtDur(R.prom)],["Fotos tomadas",R.fotos]];
+  const cart=[...R.porCart].map(([k,o])=>`<tr><td>${esc(k)}</td><td>${o.n}</td><td>${fmtDur(o.dur.length?o.dur.reduce((a,b)=>a+b,0)/o.dur.length:0)}</td></tr>`).join("");
+  el.innerHTML=`<h3>${esc(SES.nombre)} · ${esc(tit)}</h3><small class="ayuda">${d===h?esc(d):esc(d)+" a "+esc(h)} · generado ${esc(hoyISO())} ${new Date().toTimeString().slice(0,5)}</small>
+    <table class="tabla-res">${filas.map(f=>`<tr><td>${f[0]}</td><td>${esc(f[1])}</td></tr>`).join("")}</table>
+    ${cart?`<table class="tabla-res multi" style="margin-top:8px"><tr><th>Cartilla</th><th>Eval.</th><th>Prom.</th></tr>${cart}</table>`:""}`;
+}
+$("res-rango").addEventListener("change",()=>{ renderResumen(); $("res-mapa").hidden=true; });
+// Imagen PNG para mandar por WhatsApp (se dibuja en un canvas; no depende de librerías)
+$("res-compartir").onclick=async()=>{
+  await renderResumen(); if(!RESUMEN) return;
+  const {R,tit,d,h}=RESUMEN, W=760, filas=[["Evaluaciones realizadas",R.n],["Muestras",R.muestras],["Lotes evaluados",R.lotes],["Válvulas evaluadas",R.valvulas],["Hectáreas evaluadas",R.ha?num(R.ha):"—"],["Tiempo promedio por evaluación",fmtDur(R.prom)],["Fotos tomadas",R.fotos]];
+  const cart=[...R.porCart], H=150+filas.length*46+(cart.length?60+cart.length*40:0)+30;
+  const c=document.createElement("canvas"); c.width=W; c.height=H; const x=c.getContext("2d");
+  x.fillStyle="#fff"; x.fillRect(0,0,W,H); x.fillStyle="#14532d"; x.fillRect(0,0,W,84);
+  x.fillStyle="#fff"; x.font="bold 30px sans-serif"; x.fillText("Resumen de evaluaciones",28,40); x.font="20px sans-serif"; x.fillText(`${SES.nombre} · ${tit} (${d===h?d:d+" a "+h})`,28,68);
+  let y=130; x.font="24px sans-serif";
+  filas.forEach(f=>{ x.fillStyle="#111"; x.textAlign="left"; x.fillText(f[0],28,y); x.font="bold 26px sans-serif"; x.textAlign="right"; x.fillText(String(f[1]),W-28,y); x.font="24px sans-serif"; x.strokeStyle="#e5e7eb"; x.beginPath(); x.moveTo(28,y+14); x.lineTo(W-28,y+14); x.stroke(); y+=46; });
+  if(cart.length){ y+=24; x.textAlign="left"; x.fillStyle="#14532d"; x.font="bold 22px sans-serif"; x.fillText("Por cartilla",28,y); y+=36; x.font="22px sans-serif";
+    cart.forEach(([k,o])=>{ x.fillStyle="#111"; x.textAlign="left"; x.fillText(k.slice(0,34),28,y); x.textAlign="right"; x.fillText(`${o.n} eval. · ${fmtDur(o.dur.length?o.dur.reduce((a,b)=>a+b,0)/o.dur.length:0)}`,W-28,y); y+=40; }); }
+  x.textAlign="left"; x.fillStyle="#6b7280"; x.font="16px sans-serif"; x.fillText("Generado "+hoyISO()+" "+new Date().toTimeString().slice(0,5),28,H-12);
+  const blob=await new Promise(r=>c.toBlob(r,"image/png")), nombre=`resumen_${SES.usuario}_${d}.png`;
+  const file=new File([blob],nombre,{type:"image/png"});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file],title:"Resumen de evaluaciones"}); return; }catch(e){ if(e&&e.name==="AbortError") return; } }
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=nombre; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+};
+$("res-mapa-btn").onclick=async()=>{
+  const box=$("res-mapa"); if(!box.hidden){ box.hidden=true; return; }
+  const [d,h]=rangoFechas($("res-rango").value);
+  const pts=(await dbAll()||[]).filter(r=>r.usuario===SES.usuario&&esEvalReg(r)&&!r.anulado&&!r.rechazado&&r.fecha>=d&&r.fecha<=h&&r.lat!==undefined&&r.lat!==""&&r.lat!==null)
+    .map(r=>({lat:+r.lat,lon:+r.lon,t:r.fecha+" "+String(r.hora||"").slice(0,5),u:SES.nombre,cod:r.codigo_muestra||"",lote:[r.lote,r.valvula&&"V"+r.valvula].filter(Boolean).join(" ")}));
+  box.hidden=false; dibujarMapa(box,pts);
+};
+
+// Mapa de recorrido: SVG simple, sin mapa de fondo ni descargas (no consume datos ni hace lenta la app).
+// Une los puntos en orden de hora; cada evaluador tiene su color. Toca un punto para ver el detalle.
+const COL_MAPA=["#15803d","#2563eb","#dc2626","#9333ea","#d97706","#0891b2","#be185d","#4b5563"];
+function dibujarMapa(box,pts){
+  pts=pts.filter(p=>isFinite(p.lat)&&isFinite(p.lon)&&!(p.lat===0&&p.lon===0));
+  if(!pts.length){ box.innerHTML="<p class='ayuda'>No hay evaluaciones con ubicación GPS en este periodo.</p>"; return; }
+  if(pts.length>1500) pts=pts.filter((_,i)=>i%Math.ceil(pts.length/1500)===0);
+  const la0=Math.min(...pts.map(p=>p.lat)), la1=Math.max(...pts.map(p=>p.lat)), lo0=Math.min(...pts.map(p=>p.lon)), lo1=Math.max(...pts.map(p=>p.lon));
+  const kx=Math.cos(((la0+la1)/2)*Math.PI/180), W=640, M=24;
+  let dx=Math.max((lo1-lo0)*kx,1e-5), dy=Math.max(la1-la0,1e-5);
+  const esc_=Math.min((W-2*M)/dx,(W-2*M)/dy), Wd=dx*esc_+2*M, Ht=dy*esc_+2*M;
+  const X=p=>M+(p.lon-lo0)*kx*esc_, Y=p=>M+(la1-p.lat)*esc_;
+  const us=[...new Set(pts.map(p=>p.u))], col=u=>COL_MAPA[us.indexOf(u)%COL_MAPA.length];
+  let g="";
+  us.forEach(u=>{
+    const l=pts.filter(p=>p.u===u).sort((a,b)=>a.t<b.t?-1:1);
+    if(l.length>1) g+=`<polyline fill="none" stroke="${col(u)}" stroke-width="2" stroke-opacity=".5" points="${l.map(p=>X(p).toFixed(1)+","+Y(p).toFixed(1)).join(" ")}"/>`;
+    l.forEach((p,i)=>{ g+=`<circle cx="${X(p).toFixed(1)}" cy="${Y(p).toFixed(1)}" r="${i===0||i===l.length-1?7:5}" fill="${col(u)}" stroke="#fff" stroke-width="1.5" data-i="${pts.indexOf(p)}"/>`; });
+  });
+  const km=dy*111.32;
+  box.innerHTML=`<svg class="mapa-svg" viewBox="0 0 ${Wd.toFixed(0)} ${Ht.toFixed(0)}" role="img" aria-label="Mapa de recorrido">${g}<text x="${M}" y="14" font-size="11" fill="#6b7280">N ↑ · alto aprox. ${km<1?Math.round(km*1000)+" m":km.toFixed(1)+" km"}</text></svg>
+    <div class="mapa-leyenda">${us.map(u=>`<span><i style="background:${col(u)}"></i>${esc(u)} (${pts.filter(p=>p.u===u).length})</span>`).join("")}</div>
+    <p class="ayuda" id="mapa-det">${pts.length} puntos · toca uno para ver el detalle. Punto grande = primera y última evaluación.</p>`;
+  box.querySelector("svg").addEventListener("click",e=>{ const c=e.target.closest("circle[data-i]"); if(!c) return; const p=pts[+c.dataset.i]; box.querySelector("#mapa-det").innerHTML=`<b>${esc(p.u)}</b> · ${esc(p.t)} · ${esc(p.lote)} · 🏷 ${esc(p.cod)}`; });
 }
 
 /* ---------- Exportar CSV (respaldo) ---------- */
@@ -1446,14 +1782,14 @@ function construirCSV(regs){
   regs.forEach(r=>Object.keys(r.valores||r.conteos||{}).forEach(k=>{ if(!claves.includes(k)) claves.push(k); }));
   const cab=["id","fecha","hora","usuario","evaluador","plantilla","version_plantilla","campana","sede","cultivo","fundo","sub_fundo","modulo",
              "lote","turno","valvula","pep","variedad","etapa","planta","dias_desde_inicio_campana","semana_cultivo","latitud","longitud","precision_m",
-             "total_conteos","observaciones",...claves];
+             "total_conteos","observaciones","codigo_muestra","duracion_s","area_ha","n_fotos",...claves];
   const filas=regs.map(r=>{
     const v=r.valores||r.conteos||{};
     const tot=r.total_conteos!==undefined?r.total_conteos:(r.total===undefined?"":r.total);
     const dias=r.dias_campana!==undefined?r.dias_campana:(r.dias_poda===undefined?"":r.dias_poda);
     return [r.id,r.fecha,r.hora,r.usuario,r.evaluador,r.plantilla_nombre||"",r.plantilla_version||"",r.campana||"",r.sede||"",r.cultivo||"",
             r.fundo,r.sub_fundo||"",r.modulo||"",r.lote,r.turno||"",r.valvula||"",r.pep||"",r.variedad||"",r.etapa||"",r.planta,dias,r.semana_cultivo===undefined?"":r.semana_cultivo,
-            r.lat,r.lon,r.prec,tot,r.obs,...claves.map(k=>v[k]===undefined?"":v[k])];
+            r.lat,r.lon,r.prec,tot,r.obs,r.codigo_muestra||"",r.duracion_s===undefined?"":r.duracion_s,r.area_ha===undefined?"":r.area_ha,r.n_fotos||0,...claves.map(k=>v[k]===undefined?"":v[k])];
   });
   return csvTexto(cab,filas);
 }
@@ -1512,6 +1848,11 @@ function pedirSync(retrasoMs){
 }
 function pedirConfig(){ setTimeout(()=>cargarConfig(false,true), Math.random()*jitterMs()); }
 async function sincronizar(manual){
+  const r0=await sincronizarDatos(manual);
+  if(r0!==false&&r0!==null&&SYNC.url&&navigator.onLine){ try{ await sincronizarFotos(); }catch(e){} }
+  return r0;
+}
+async function sincronizarDatos(manual){
   if(!SES) return;
   if(!SYNC.url){ if(manual) toast("El envío automático no está configurado"); return; }
   if(sincronizando) return;
@@ -1978,6 +2319,7 @@ function renderEditor(){
   const cfg=ED.cfg, capas=cfg.capas;
   $("ed-nivel").value=cfg.nivel; $("ed-turno").value=cfg.turno; $("ed-turno-w").hidden=cfg.nivel==="lote";
   [...$("ed-turno").options].forEach(o=>{ o.hidden=(cfg.nivel==="turno"&&o.value==="no"); });
+  $("ed-fotos").value=String(cfg.fotos_max===undefined?3:cfg.fotos_max);
   $("ed-fecha").checked=!!cfg.fecha_editable; $("ed-semana").checked=!!cfg.semana_cultivo;
   if(document.activeElement!==$("ed-capas")) $("ed-capas").value=capas.join("\n");
   const grupos=[...new Set(ED.campos.map(c=>c.grupo).filter(Boolean))];
@@ -2066,6 +2408,7 @@ function leerCapas(){ const a=[]; $("ed-capas").value.split("\n").map(x=>x.trim(
 $("ed-nivel").addEventListener("change",()=>{ if(!ED) return; ED.cfg.nivel=$("ed-nivel").value; if(ED.cfg.nivel==="lote") ED.cfg.turno="no"; else if(ED.cfg.nivel==="turno"&&ED.cfg.turno==="no") ED.cfg.turno="si"; else if(ED.cfg.turno==="no"&&ED.cfg.nivel==="valvula") ED.cfg.turno="si"; renderEditor(); });
 $("ed-turno").addEventListener("change",()=>{ if(ED) ED.cfg.turno=$("ed-turno").value; });
 $("ed-fecha").addEventListener("change",()=>{ if(ED) ED.cfg.fecha_editable=$("ed-fecha").checked; });
+$("ed-fotos").addEventListener("change",()=>{ if(ED) ED.cfg.fotos_max=parseInt($("ed-fotos").value,10)||0; });
 $("ed-semana").addEventListener("change",()=>{ if(ED) ED.cfg.semana_cultivo=$("ed-semana").checked; });
 $("ed-capas").addEventListener("input",()=>{ if(ED) ED.cfg.capas=leerCapas(); });
 $("ed-capas").addEventListener("change",()=>{
@@ -2588,8 +2931,13 @@ document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ pedirSy
    VERSIÓN 10: cabecera con estado, cambio de clave, borradores, duplicar,
    corregir / anular registros, supervisión y aviso de nueva versión
    ===================================================================== */
-const APP_VERSION="12.0";
-function txtGuardar(){ const c=cfgDe(plantillaActual()); return c.capas.length ? "Guardar · siguiente "+c.capas[c.capas.length-1].toLowerCase() : "Guardar y pasar a la siguiente planta"; }
+const APP_VERSION="13.0";
+function txtGuardar(){
+  const p=plantillaActual(), c=cfgDe(p);
+  if(!c.capas.length) return "Guardar y pasar a la siguiente planta";
+  const prof=c.capas[c.capas.length-1], f=contadorDe(p,prof), el=f&&$("f_"+f.clave);
+  return "Guardar "+prof.toLowerCase()+(el&&el.value!==""?" "+el.value:"");
+}
 const hhmm = ts => { const d=new Date(ts); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 
 /* ---- Cambiar mi clave ---- */
@@ -2754,7 +3102,7 @@ function iniciarCorreccion(r){
   if(modReg(r)==="soporte"){ corregirReserva(r); return; }
   const p=CFG.plantillas.find(x=>x.id===r.plantilla_id&&x.activa);
   if(!p){ toast("Esa cartilla ya no está activa: no se puede corregir"); return; }
-  CORR={tipo:"eval",id:r.id,enviado:!!r.enviado,fecha:r.fecha,hora:r.hora};
+  CORR={tipo:"eval",id:r.id,enviado:!!r.enviado,fecha:r.fecha,hora:r.hora,codigo:r.codigo_muestra||"",muestra_key:r.muestra_key||""};
   irA("s-evaluar");
   $("plantilla").value=p.id;
   aplicarCfgPlantilla();
@@ -2821,7 +3169,7 @@ function poblarDescarga(){
   const nm=p=>{ const m=modPl(p), t=m==="soporte"?"Soporte":modNombre(m); return `${t} · ${p.nombre}${p.activa?"":" (inactiva)"}`; };
   const l=(CFG.plantillas||[]).filter(p=>!p.fija&&p.id!=="combustible").slice().sort((a,b)=>coll(nm(a),nm(b)));
   $("dl-cartilla").innerHTML=`<option value="">Selecciona…</option>`+l.map(p=>`<option value="${esc(p.id)}">${esc(nm(p))}</option>`).join("")+`<option value="combustible">Soporte · Reserva de combustible</option>`;
-  $("dl-cartilla").value=cur;
+  $("dl-cartilla").value=cur; poblarMapaCartillas();
   if(!$("dl-desde").value){ const h=new Date(); $("dl-hasta").value=hoyISO(); $("dl-desde").value=(d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`)(new Date(h.getTime()-6*864e5)); }
 }
 $("dl-bajar").onclick=async ()=>{
@@ -2840,6 +3188,20 @@ $("dl-bajar").onclick=async ()=>{
   }catch(e){ info.textContent=e.message; }
   finally{ $("dl-bajar").disabled=false; }
 };
+$("mp-ver").onclick=async()=>{
+  const box=$("mp-box"); if(!navigator.onLine){ box.innerHTML="<p class='ayuda'>Necesitas internet.</p>"; return; }
+  box.innerHTML="<p class='ayuda'>Cargando…</p>"; $("mp-ver").disabled=true;
+  try{
+    const j=await apiAdmin("ruta",Object.assign(rangoSv(),{plantilla_id:$("mp-cartilla").value}));
+    dibujarMapa(box,(j.puntos||[]).map(a=>({lat:a[0],lon:a[1],t:a[2],u:a[3],cod:a[4],lote:a[5]})));
+    if(j.truncado) box.insertAdjacentHTML("beforeend","<p class='ayuda'>Se muestran solo los primeros 1 500 puntos del periodo.</p>");
+  }catch(e){ box.innerHTML=`<p class='ayuda'>${esc(e.message)}</p>`; }
+  finally{ $("mp-ver").disabled=false; }
+};
+function poblarMapaCartillas(){
+  const cur=$("mp-cartilla").value, l=(CFG.plantillas||[]).filter(p=>!p.fija&&p.id!=="combustible"&&modPl(p)!=="soporte");
+  $("mp-cartilla").innerHTML=`<option value="">Todas las cartillas</option>`+l.map(p=>`<option value="${esc(p.id)}">${esc(p.nombre)}</option>`).join(""); $("mp-cartilla").value=cur;
+}
 $("sv-act").onclick=renderSupervision;
 $("sv-rango").onchange=renderSupervision;
 

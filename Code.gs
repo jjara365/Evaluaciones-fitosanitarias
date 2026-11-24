@@ -65,7 +65,7 @@ const COMBUSTIBLES = ["Gasolina regular", "Gasolina 95", "Petróleo diesel 2"];
 const BASE = ["id","fecha","hora","usuario","evaluador","plantilla","version_plantilla","campana",
               "sede","cultivo","fundo","sub_fundo","modulo","lote","turno","valvula","pep","variedad","etapa",
               "planta","dias_desde_inicio_campana","semana_cultivo","latitud","longitud","precision_m","total_conteos",
-              "observaciones","alerta_permiso","enviado_por","recibido",
+              "observaciones","codigo_muestra","duracion_s","area_ha","n_fotos","alerta_campana","alerta_permiso","enviado_por","recibido",
               "estado_registro","corrige_a","anulado_por","anulado_en","motivo_anulacion"];
 const RESERVADAS = BASE.concat(["maestra_id","plantilla_id"]);
 
@@ -111,6 +111,7 @@ function onOpen() {
     .addItem("Crear administrador", "crearAdministrador")
     .addItem("Forzar actualización en los celulares", "forzarActualizacion")
     .addItem("Procesar recepción ahora", "procesarRecepcionAhora")
+    .addItem("Cerrar campañas vencidas ahora", "cerrarCampanasAhora")
     .addToUi();
 }
 
@@ -146,6 +147,17 @@ function doGet() {
 }
 
 function doPost(e) {
+  // Las fotos pesan y tardan en Drive: no deben hacer esperar a los demás celulares, así que no usan el bloqueo general.
+  try {
+    const d0 = JSON.parse(e.postData.contents);
+    if (d0 && d0.accion === "foto_subir") {
+      const us0 = autenticar_(d0.token);
+      if (!us0) return salida({ ok: false, error: "sesion" });
+      return salida(fotoSubir_(d0, us0));
+    }
+  } catch (err) {
+    return salida({ ok: false, error: String(err) });
+  }
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);                       // evita choques si varios envían a la vez
   try {
@@ -184,6 +196,7 @@ function doPost(e) {
       case "placa_guardar":
       case "placa_eliminar":
       case "supervision":
+      case "ruta":
       case "exportar":
         if (us.rol !== "admin") return salida({ ok: false, error: "No tienes permiso para esta acción" });
         return salida(accionAdmin_(d, us));
@@ -560,6 +573,7 @@ function maestra_() {
 }
 
 function maestraEscribir_(lista) {
+  PropertiesService.getScriptProperties().setProperty("CIERRE_DIA", "");      // el cambio puede traer campañas ya vencidas: se revisan en la próxima consulta
   const sh = hojaMaestra_();
   asegurarTamano_(sh, lista.length + 1, MAE_KEYS.length);
   const m = lista.map(o => MAE_KEYS.map(k => o[k] === undefined ? "" : o[k]));
@@ -1219,7 +1233,8 @@ function normCfg_(c) {
   if (nivel === "turno" && turno === "no") turno = "si";
   const capas = [];
   (Array.isArray(c.capas) ? c.capas : []).forEach(x => { const t = limpiar_(x); if (t && capas.indexOf(t) < 0) capas.push(t); });
-  return { nivel: nivel, turno: turno, fecha_editable: !!c.fecha_editable, semana_cultivo: !!c.semana_cultivo, capas: capas.slice(0, 4) };
+  return { nivel: nivel, turno: turno, fecha_editable: !!c.fecha_editable, semana_cultivo: !!c.semana_cultivo, capas: capas.slice(0, 4),
+           fotos_max: [0, 1, 3, 5].indexOf(Number(c.fotos_max)) >= 0 ? Number(c.fotos_max) : (c.fotos_max === undefined ? 3 : 0) };
 }
 
 // Fórmulas de los campos calculados (la app hace la misma cuenta en el celular; el servidor la repite para que el dato sea confiable)
@@ -1587,6 +1602,7 @@ function procesarRecepcionAhora() {
 // El administrador recibe todo. El evaluador recibe solo las válvulas ACTIVAS de los sub fundos
 // que se le asignaron y solo las plantillas activas que se le asignaron.
 function configObtener_(d, us) {
+  cerrarCampanasVencidas_(false);
   sembrarPlantillaPoda_();
   sembrarPlantillaAxilas_();
   const v = versionCfg_();
@@ -1654,6 +1670,7 @@ function accionAdmin_(d, admin) {
     case "placa_eliminar":    return placaEliminar_(d.id);
     case "supervision":       return supervision_(d);
     case "exportar":          return exportar_(d);
+    case "ruta":              return ruta_(d);
   }
   return fallo_("acción desconocida");
 }
@@ -1843,6 +1860,22 @@ function syncHoja_(sh, regs, us0, mod, claves, campos) {
   }
 
   const ahora = new Date();
+  // Ventana de campaña por lote (inicio más temprano y cierre más tardío de sus válvulas), para marcar evaluaciones fuera de fecha
+  const ventana = {};
+  if (!(mod && mod.id === "soporte") && regs.length) {
+    maestraCache_().forEach(x => {
+      const k = claveLote_(x), w = ventana[k] = ventana[k] || { ini: "", cie: "" };
+      if (x.inicio_campana && (!w.ini || x.inicio_campana < w.ini)) w.ini = x.inicio_campana;
+      if (x.cierre_campana && x.cierre_campana > w.cie) w.cie = x.cierre_campana;
+    });
+  }
+  const alertaCampana_ = r => {
+    const w = ventana[claveLote_(r)];
+    if (!w || !r.fecha) return "";
+    if (w.ini && String(r.fecha) < w.ini) return "ANTES DE INICIO";
+    if (w.cie && String(r.fecha) > w.cie) return "DESPUES DE CIERRE";
+    return "";
+  };
   const calculados = (campos || []).filter(c => c.tipo === "calculado" && c.formula);
   const filas = [];
   const ids = [];
@@ -1911,7 +1944,9 @@ function syncHoja_(sh, regs, us0, mod, claves, campos) {
       semana_cultivo: r.semana_cultivo === undefined ? "" : r.semana_cultivo,
       latitud: r.lat, longitud: r.lon, precision_m: r.prec,
       total_conteos: r.total_conteos !== undefined ? r.total_conteos : (r.total === undefined ? "" : r.total),
-      observaciones: r.obs, alerta_permiso: permitido ? "" : "SI", enviado_por: us.usuario, recibido: r._recibido ? new Date(r._recibido) : ahora,
+      observaciones: r.obs, codigo_muestra: r.codigo_muestra || "", duracion_s: r.duracion_s === undefined ? "" : r.duracion_s,
+      area_ha: r.area_ha === undefined ? "" : r.area_ha, n_fotos: r.n_fotos || 0, alerta_campana: alertaCampana_(r),
+      alerta_permiso: permitido ? "" : "SI", enviado_por: us.usuario, recibido: r._recibido ? new Date(r._recibido) : ahora,
       corrige_a: r.corrige_a || ""
     };
     Object.keys(vals).forEach(p => valores[p] = vals[p]);
@@ -2053,4 +2088,122 @@ function supervision_(d) {
     evaluadores_activos: activos.length,
     recepcion_pendientes: recepcionEstado_().n
   };
+}
+
+
+/* ============================ v13: FOTOS, CIERRE DE CAMPAÑAS, RUTA ============================ */
+
+const HOJA_FOTOS = "Fotos";
+const FOTO_MAX_B64 = 3500000;     // ~2,6 MB de imagen; la app envía ~150 KB
+
+function carpetaFotos_() {
+  const props = PropertiesService.getScriptProperties();
+  let id = props.getProperty("FOTOS_CARPETA");
+  if (id) { try { return DriveApp.getFolderById(id); } catch (e) { /* se vuelve a crear */ } }
+  const f = DriveApp.createFolder("Fotos evaluaciones - " + SpreadsheetApp.getActiveSpreadsheet().getName());
+  props.setProperty("FOTOS_CARPETA", f.getId());
+  return f;
+}
+function subcarpeta_(raiz, nombre) {
+  const it = raiz.getFoldersByName(nombre);
+  return it.hasNext() ? it.next() : raiz.createFolder(nombre);
+}
+function hojaFotos_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(HOJA_FOTOS);
+  if (!sh) {
+    sh = ss.insertSheet(HOJA_FOTOS);
+    sh.getRange(1, 1, 1, 8).setValues([["fecha_evaluacion", "codigo_muestra", "registro_id", "n", "usuario", "enlace", "archivo", "subido"]]).setFontWeight("bold");
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+// Idempotente: si la app reintenta, el archivo (nombre = registro + número) no se duplica.
+function fotoSubir_(d, us) {
+  const id = String(d.reg_id || ""), n = parseInt(d.n, 10) || 1;
+  if (!/^[\w\-|.]{3,80}$/.test(id)) return { ok: false, error: "registro no válido" };
+  let b64 = String(d.data || "");
+  const m = /^data:image\/jpeg;base64,/.exec(b64);
+  if (!m) return { ok: false, error: "formato de foto no válido" };
+  b64 = b64.slice(m[0].length);
+  if (b64.length > FOTO_MAX_B64) return { ok: false, error: "foto demasiado grande" };
+  const nombre = id.replace(/[^\w\-]/g, "_") + "_" + n + ".jpg";
+  const fecha = fechaValida_(String(d.fecha || "")) ? String(d.fecha) : hoy_();
+  const lock = LockService.getDocumentLock();         // bloqueo propio (no el general) solo para anotar en la hoja
+  const carpeta = subcarpeta_(carpetaFotos_(), fecha.slice(0, 7));
+  const sh = hojaFotos_();                              // primero la hoja: si algo falla aquí, no queda una foto sin su fila
+  const ya = carpeta.getFilesByName(nombre);
+  if (ya.hasNext()) return { ok: true, repetida: true, archivo: nombre };
+  const blob = Utilities.newBlob(Utilities.base64Decode(b64), "image/jpeg", nombre);
+  const archivo = carpeta.createFile(blob);
+  lock.waitLock(15000);
+  try {
+    sh.appendRow([fecha, String(d.codigo || ""), id, n, us.usuario, archivo.getUrl(), nombre, new Date()]);
+  } finally { lock.releaseLock(); }
+  return { ok: true, archivo: nombre };
+}
+
+// Una válvula cuya fecha de cierre ya pasó (cierre < hoy) pasa a CERRADO. Se revisa una vez al día (o a pedido).
+function cerrarCampanasVencidas_(forzar) {
+  const hoy = hoy_();
+  const props = PropertiesService.getScriptProperties();
+  if (!forzar && props.getProperty("CIERRE_DIA") === hoy) return 0;
+  props.setProperty("CIERRE_DIA", hoy);
+  const lista = maestra_();
+  let n = 0;
+  lista.forEach(x => { if (x.estado !== "CERRADO" && x.cierre_campana && x.cierre_campana < hoy) { x.estado = "CERRADO"; n++; } });
+  if (n) { maestraEscribir_(lista); subirVersion_(); }
+  return n;
+}
+// Para el menú de la hoja y para un activador diario opcional
+function cerrarCampanasAhora() {
+  const n = cerrarCampanasVencidas_(true);
+  SpreadsheetApp.getUi().alert(n ? n + " válvulas pasaron a CERRADO." : "No hay campañas vencidas por cerrar.");
+}
+function cerrarCampanasDiario() { cerrarCampanasVencidas_(true); }
+
+// Puntos GPS de las evaluaciones del periodo, para el mapa de recorrido (máx. 1500)
+function ruta_(d) {
+  procesarRecepcion_();
+  const hoy = hoy_();
+  const desde = fechaValida_(String(d.desde || "")) ? String(d.desde) : hoy;
+  let hasta = fechaValida_(String(d.hasta || "")) ? String(d.hasta) : hoy;
+  if (hasta < desde) hasta = desde;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const props = PropertiesService.getScriptProperties();
+  const pid = String(d.plantilla_id || "");
+  const fuentes = [];
+  const agregar = sh => { if (sh && !fuentes.some(x => x === sh)) fuentes.push(sh); };
+  plantillas_().forEach(p => {
+    if (pid && p.id !== pid) return;
+    const g = props.getProperty("hoja_" + p.id);
+    if (g) agregar(ss.getSheetByName(g));
+  });
+  if (!pid) MODULOS.forEach(m => { if (m.id === "soporte") return; let sh = ss.getSheetByName(m.hoja); if (!sh && m.id === "fitosanidad") sh = ss.getSheetByName(HOJA_VIEJA); agregar(sh); });
+  const MAXP = 1500;
+  const pts = [];
+  let truncado = false;
+  fuentes.forEach(sh => {
+    const n = sh.getLastRow();
+    if (n < 2 || truncado) return;
+    const cab = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+    const ix = c => cab.indexOf(c);
+    const iF = ix("fecha"), iH = ix("hora"), iN = ix("evaluador"), iU = ix("usuario"), iLa = ix("latitud"), iLo = ix("longitud");
+    const iE = ix("estado_registro"), iC = ix("codigo_muestra"), iL = ix("lote"), iV = ix("valvula"), iP = ix("plantilla");
+    if (iF < 0 || iLa < 0 || iLo < 0) return;
+    const ini = Math.max(2, n - 3999);
+    const filas = sh.getRange(ini, 1, n - ini + 1, cab.length).getValues();
+    const pl = pid ? (plantillas_().find(x => x.id === pid) || {}).nombre : "";
+    for (let i = 0; i < filas.length; i++) {
+      const f = filas[i], fe = fechaTxt_(f[iF]);
+      if (fe < desde || fe > hasta) continue;
+      if (iE >= 0 && String(f[iE]) === "ANULADO") continue;
+      if (pl && iP >= 0 && f[iP] !== "" && normTxt_(f[iP]) !== normTxt_(pl)) continue;
+      const la = Number(f[iLa]), lo = Number(f[iLo]);
+      if (f[iLa] === "" || f[iLo] === "" || isNaN(la) || isNaN(lo)) continue;
+      if (pts.length >= MAXP) { truncado = true; break; }
+      pts.push([la, lo, fe + " " + (iH >= 0 ? String(f[iH]).slice(0, 5) : ""), String(iN >= 0 && f[iN] ? f[iN] : (iU >= 0 ? f[iU] : "")), iC >= 0 ? String(f[iC]) : "", [iL >= 0 ? f[iL] : "", iV >= 0 && f[iV] ? "V" + f[iV] : ""].filter(String).join(" ")]);
+    }
+  });
+  return { ok: true, desde: desde, hasta: hasta, puntos: pts, truncado: truncado };
 }
